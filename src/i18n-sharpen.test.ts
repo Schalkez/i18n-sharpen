@@ -1,5 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from "vitest"
-import { flattenObject, unflattenObject, getNestedValue, setNestedValue, stripComments, writeLocaleFile, readLocaleFile, matchWildcard } from "./utils"
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type MockInstance
+} from "vitest"
+import {
+  flattenObject,
+  unflattenObject,
+  getNestedValue,
+  setNestedValue,
+  stripComments,
+  writeLocaleFile,
+  readLocaleFile,
+  matchWildcard
+} from "./utils"
 import { loadConfig } from "./config"
 import { validate } from "./commands/validate"
 import { extract } from "./commands/extract"
@@ -77,7 +94,10 @@ describe("i18n-sharpen core logic", () => {
   })
 
   it("should parse and stringify YAML locale files correctly", () => {
-    const tmpYamlFile = path.resolve(__dirname, "../scratch/test-temp-lang.yaml")
+    const tmpYamlFile = path.resolve(
+      __dirname,
+      "../scratch/test-temp-lang.yaml"
+    )
     const dir = path.dirname(tmpYamlFile)
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })
@@ -101,6 +121,40 @@ describe("i18n-sharpen core logic", () => {
     }
   })
 
+  it("should load an explicit config path via the configPath argument", () => {
+    const tmpDir = path.resolve(
+      __dirname,
+      `../scratch/cfg-${Math.random().toString(36).slice(2, 9)}`
+    )
+    fs.mkdirSync(tmpDir, { recursive: true })
+    const cfgPath = path.join(tmpDir, "custom.json")
+    fs.writeFileSync(
+      cfgPath,
+      JSON.stringify({
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "fr",
+        supportedLanguages: ["fr", "en"],
+        matchFunctions: ["tt"]
+      }),
+      "utf8"
+    )
+    try {
+      const config = loadConfig(tmpDir, cfgPath)
+      expect(config.defaultLanguage).toBe("fr")
+      expect(config.matchFunctions).toContain("tt")
+      // relative path resolves against cwd
+      const config2 = loadConfig(tmpDir, "custom.json")
+      expect(config2.defaultLanguage).toBe("fr")
+      // missing file throws
+      expect(() => loadConfig(tmpDir, "nonexistent.json")).toThrow(
+        /Config file not found/
+      )
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+  })
+
   it("should match wildcards correctly", () => {
     expect(matchWildcard("status.*", "status.success")).toBe(true)
     expect(matchWildcard("status.*", "status.failed")).toBe(true)
@@ -118,7 +172,10 @@ describe("i18n-sharpen command integration", () => {
   let warnSpy: MockInstance
 
   function getTempDir(): string {
-    return path.resolve(__dirname, `../scratch/temp-test-${Math.random().toString(36).slice(2, 11)}`)
+    return path.resolve(
+      __dirname,
+      `../scratch/temp-test-${Math.random().toString(36).slice(2, 11)}`
+    )
   }
 
   function createMockProject(dir: string, files: Record<string, string>) {
@@ -186,7 +243,9 @@ describe("i18n-sharpen command integration", () => {
 
     // Extract should extract normal.missing but NOT dynamic.prefix.
     extract(config, tempDir)
-    const extractedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
+    const extractedLocale = readLocaleFile(
+      path.join(tempDir, "locales/en.json")
+    )
     expect(flattenObject(extractedLocale)).toEqual({
       "normal.key": "Normal Key",
       "normal.missing": "normal.missing"
@@ -265,9 +324,9 @@ describe("i18n-sharpen command integration", () => {
         t('count')
       `,
       "locales/en.json": JSON.stringify({
-        "count_one": "One item",
-        "count_other": "Other items",
-        "unrelated_other": "Unrelated"
+        count_one: "One item",
+        count_other: "Other items",
+        unrelated_other: "Unrelated"
       })
     }
     createMockProject(tempDir, files)
@@ -291,8 +350,8 @@ describe("i18n-sharpen command integration", () => {
     prune(config, tempDir)
     const prunedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(prunedLocale)).toEqual({
-      "count_one": "One item",
-      "count_other": "Other items"
+      count_one: "One item",
+      count_other: "Other items"
     })
   })
 
@@ -328,11 +387,12 @@ describe("i18n-sharpen command integration", () => {
     expect(validateRes.missingKeys).not.toContain("ignored.key")
 
     extract(config, tempDir)
-    const extractedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
+    const extractedLocale = readLocaleFile(
+      path.join(tempDir, "locales/en.json")
+    )
     expect(flattenObject(extractedLocale)).toEqual({
       "header.title": "header.title",
       "paragraph.body": "paragraph.body"
     })
   })
 })
-

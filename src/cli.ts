@@ -54,7 +54,7 @@ program
   .action(() => {
     const opts = program.opts()
     try {
-      const config = loadConfig(opts.cwd)
+      const config = loadConfig(opts.cwd, opts.config)
       const results = validate(config, opts.cwd)
       const hasErrors =
         results.missingKeys.length > 0 ||
@@ -78,7 +78,7 @@ program
   .action(() => {
     const opts = program.opts()
     try {
-      const config = loadConfig(opts.cwd)
+      const config = loadConfig(opts.cwd, opts.config)
       extract(config, opts.cwd)
       process.exitCode = 0
     } catch (error) {
@@ -93,7 +93,7 @@ program
   .action(() => {
     const opts = program.opts()
     try {
-      const config = loadConfig(opts.cwd)
+      const config = loadConfig(opts.cwd, opts.config)
       prune(config, opts.cwd)
       process.exitCode = 0
     } catch (error) {

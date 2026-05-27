@@ -88,7 +88,23 @@ export const I18nCopConfigSchema = z.object({
   looseKeyMatch: z.boolean().optional()
 })
 
-export function loadConfig(cwd: string = process.cwd()): I18nCopConfig {
+/**
+ * Load i18n-sharpen configuration.
+ *
+ * Resolution order:
+ *   1. If `configPath` is provided, load that file (JSON). Errors are
+ *      fatal — the user explicitly asked for this file.
+ *   2. Otherwise, look for `i18n-sharpen.json` in `cwd`.
+ *   3. Otherwise, look for an `i18nSharpen` field in `cwd/package.json`.
+ *   4. Otherwise, use defaults only.
+ *
+ * `configPath` may be absolute or relative; relative paths are resolved
+ * against `cwd`.
+ */
+export function loadConfig(
+  cwd: string = process.cwd(),
+  configPath?: string
+): I18nCopConfig {
   // LO-03: validate cwd is a real directory. Previously a typo'd cwd
   // silently produced an all-defaults config with no error.
   if (!fs.existsSync(cwd)) {
@@ -103,7 +119,26 @@ export function loadConfig(cwd: string = process.cwd()): I18nCopConfig {
 
   let fileConfig: Partial<I18nCopConfig> = {}
 
-  if (fs.existsSync(configPathJson)) {
+  // Phase 5: explicit --config <path> takes precedence over discovery.
+  if (configPath) {
+    const resolved = path.isAbsolute(configPath)
+      ? configPath
+      : path.resolve(cwd, configPath)
+    if (!fs.existsSync(resolved)) {
+      throw new Error(`Config file not found: ${resolved}`)
+    }
+    if (!fs.statSync(resolved).isFile()) {
+      throw new Error(`Config path is not a file: ${resolved}`)
+    }
+    try {
+      const content = fs.readFileSync(resolved, "utf8")
+      fileConfig = JSON.parse(content)
+    } catch (error) {
+      throw new Error(
+        `Failed to parse config file '${resolved}': ${(error as Error).message}`
+      )
+    }
+  } else if (fs.existsSync(configPathJson)) {
     try {
       const content = fs.readFileSync(configPathJson, "utf8")
       fileConfig = JSON.parse(content)
