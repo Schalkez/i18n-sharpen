@@ -50,6 +50,9 @@ export function flattenObject(
   const map: Record<string, string> = {}
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      // Skip forbidden keys to defend against prototype-pollution
+      // from malicious / corrupted locale JSON.
+      if (FORBIDDEN_KEY_SEGMENTS.has(key)) continue
       const value = obj[key]
       const newKey = prefix ? `${prefix}.${key}` : key
       if (
@@ -70,7 +73,20 @@ export function flattenObject(
 }
 
 /**
+ * Forbidden path segments that could lead to prototype pollution
+ * when used as keys in setNestedValue / flattenObject.
+ */
+const FORBIDDEN_KEY_SEGMENTS = new Set([
+  "__proto__",
+  "prototype",
+  "constructor"
+])
+
+/**
  * Set a value in a nested object based on a dot-separated key path.
+ *
+ * Rejects path segments equal to `__proto__`, `prototype`, or `constructor`
+ * to prevent prototype-pollution via untrusted key strings.
  */
 export function setNestedValue(
   obj: Record<string, unknown>,
@@ -78,6 +94,12 @@ export function setNestedValue(
   value: unknown
 ): void {
   const parts = keyPath.split(".")
+  // Reject path segments that could pollute Object.prototype.
+  for (const part of parts) {
+    if (FORBIDDEN_KEY_SEGMENTS.has(part)) {
+      return
+    }
+  }
   let current: Record<string, unknown> = obj
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i]
@@ -137,7 +159,10 @@ export function unflattenObject(
  * Find the path of a locale file for a given language.
  * Checks for .json, .yaml, and .yml extensions.
  */
-export function findLocaleFile(localesDir: string, lang: string): string | null {
+export function findLocaleFile(
+  localesDir: string,
+  lang: string
+): string | null {
   const extensions = [".json", ".yaml", ".yml"]
   for (const ext of extensions) {
     const filePath = path.join(localesDir, `${lang}${ext}`)
@@ -154,7 +179,7 @@ export function findLocaleFile(localesDir: string, lang: string): string | null 
 export function readLocaleFile(filePath: string): Record<string, unknown> {
   const ext = path.extname(filePath).toLowerCase()
   const content = fs.readFileSync(filePath, "utf8")
-  
+
   if (ext === ".yaml" || ext === ".yml") {
     return YAML.parse(content) || {}
   }
@@ -164,7 +189,10 @@ export function readLocaleFile(filePath: string): Record<string, unknown> {
 /**
  * Write a locale object to a file (JSON or YAML format).
  */
-export function writeLocaleFile(filePath: string, obj: Record<string, unknown>): void {
+export function writeLocaleFile(
+  filePath: string,
+  obj: Record<string, unknown>
+): void {
   const ext = path.extname(filePath).toLowerCase()
   let content = ""
 
@@ -186,7 +214,9 @@ export function writeLocaleFile(filePath: string, obj: Record<string, unknown>):
  */
 export function matchWildcard(pattern: string, key: string): boolean {
   if (pattern === "*") return true
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")
+  const escaped = pattern
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*/g, ".*")
   const regex = new RegExp(`^${escaped}$`)
   return regex.test(key)
 }
