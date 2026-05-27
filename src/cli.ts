@@ -34,13 +34,13 @@ program
         results.missingKeys.length > 0 ||
         results.activePlaceholderKeys.length > 0 ||
         results.keysOnlyInLanguages.length > 0
-      if (hasErrors) {
-        process.exit(1)
-      }
-      process.exit(0)
+      // LO-01: set exitCode and let Node drain stdout naturally instead
+      // of calling process.exit() which can truncate buffered output
+      // when stdout is piped.
+      process.exitCode = hasErrors ? 1 : 0
     } catch (error) {
       log.error((error as Error).message)
-      process.exit(1)
+      process.exitCode = 1
     }
   })
 
@@ -54,10 +54,10 @@ program
     try {
       const config = loadConfig(opts.cwd)
       extract(config, opts.cwd)
-      process.exit(0)
+      process.exitCode = 0
     } catch (error) {
       log.error((error as Error).message)
-      process.exit(1)
+      process.exitCode = 1
     }
   })
 
@@ -69,10 +69,10 @@ program
     try {
       const config = loadConfig(opts.cwd)
       prune(config, opts.cwd)
-      process.exit(0)
+      process.exitCode = 0
     } catch (error) {
       log.error((error as Error).message)
-      process.exit(1)
+      process.exitCode = 1
     }
   })
 

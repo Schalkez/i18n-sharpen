@@ -78,6 +78,15 @@ export const I18nCopConfigSchema = z.object({
 })
 
 export function loadConfig(cwd: string = process.cwd()): I18nCopConfig {
+  // LO-03: validate cwd is a real directory. Previously a typo'd cwd
+  // silently produced an all-defaults config with no error.
+  if (!fs.existsSync(cwd)) {
+    throw new Error(`cwd does not exist: ${cwd}`)
+  }
+  if (!fs.statSync(cwd).isDirectory()) {
+    throw new Error(`cwd is not a directory: ${cwd}`)
+  }
+
   const configPathJson = path.join(cwd, "i18n-sharpen.json")
   const packageJsonPath = path.join(cwd, "package.json")
 
@@ -99,8 +108,12 @@ export function loadConfig(cwd: string = process.cwd()): I18nCopConfig {
       if (pkg.i18nSharpen) {
         fileConfig = pkg.i18nSharpen
       }
-    } catch {
-      // Ignore package.json read errors
+    } catch (error) {
+      // LO-02: surface the read error so the user is not confused why
+      // their package.json#i18nSharpen settings are ignored.
+      console.warn(
+        `⚠️ Failed to read package.json for i18nSharpen config: ${(error as Error).message}`
+      )
     }
   }
 
