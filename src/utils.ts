@@ -1,0 +1,213 @@
+import * as fs from "fs"
+import * as path from "path"
+import pc from "picocolors"
+import YAML from "yaml"
+
+/**
+ * Recursively find all source files in a directory matching specific extensions,
+ * ignoring specified directories.
+ */
+export function getFiles(
+  dir: string,
+  extensions: string[],
+  excludeDirs: string[]
+): string[] {
+  let results: string[] = []
+  if (!fs.existsSync(dir)) return results
+
+  const list = fs.readdirSync(dir)
+  for (const file of list) {
+    const filePath = path.join(dir, file)
+    const stat = fs.statSync(filePath)
+
+    if (stat && stat.isDirectory()) {
+      if (!excludeDirs.includes(file)) {
+        results = results.concat(getFiles(filePath, extensions, excludeDirs))
+      }
+    } else {
+      if (extensions.includes(path.extname(file))) {
+        results.push(filePath)
+      }
+    }
+  }
+  return results
+}
+
+/**
+ * Remove single-line and multi-line comments from JS/TS code to avoid false positives.
+ */
+export function stripComments(code: string): string {
+  return code.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, "$1")
+}
+
+/**
+ * Flatten a nested JSON/YAML object into a flat key-value map using dot notation.
+ */
+export function flattenObject(
+  obj: Record<string, unknown>,
+  prefix = ""
+): Record<string, string> {
+  const map: Record<string, string> = {}
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = obj[key]
+      const newKey = prefix ? `${prefix}.${key}` : key
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        Object.assign(
+          map,
+          flattenObject(value as Record<string, unknown>, newKey)
+        )
+      } else {
+        map[newKey] = String(value)
+      }
+    }
+  }
+  return map
+}
+
+/**
+ * Set a value in a nested object based on a dot-separated key path.
+ */
+export function setNestedValue(
+  obj: Record<string, unknown>,
+  keyPath: string,
+  value: unknown
+): void {
+  const parts = keyPath.split(".")
+  let current: Record<string, unknown> = obj
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
+    if (i === parts.length - 1) {
+      current[part] = value
+    } else {
+      if (
+        current[part] === undefined ||
+        typeof current[part] !== "object" ||
+        current[part] === null
+      ) {
+        current[part] = {}
+      }
+      current = current[part] as Record<string, unknown>
+    }
+  }
+}
+
+/**
+ * Get a value from a nested object based on a dot-separated key path.
+ */
+export function getNestedValue(
+  obj: Record<string, unknown>,
+  keyPath: string
+): unknown {
+  const parts = keyPath.split(".")
+  let current: unknown = obj
+  for (const part of parts) {
+    if (
+      current === undefined ||
+      current === null ||
+      typeof current !== "object"
+    ) {
+      return undefined
+    }
+    current = (current as Record<string, unknown>)[part]
+  }
+  return current
+}
+
+/**
+ * Build a nested object from a flat dot-notation key-value map.
+ */
+export function unflattenObject(
+  flatObj: Record<string, unknown>
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const key in flatObj) {
+    if (Object.prototype.hasOwnProperty.call(flatObj, key)) {
+      setNestedValue(result, key, flatObj[key])
+    }
+  }
+  return result
+}
+
+/**
+ * Find the path of a locale file for a given language.
+ * Checks for .json, .yaml, and .yml extensions.
+ */
+export function findLocaleFile(localesDir: string, lang: string): string | null {
+  const extensions = [".json", ".yaml", ".yml"]
+  for (const ext of extensions) {
+    const filePath = path.join(localesDir, `${lang}${ext}`)
+    if (fs.existsSync(filePath)) {
+      return filePath
+    }
+  }
+  return null
+}
+
+/**
+ * Load and parse a locale file (JSON or YAML).
+ */
+export function readLocaleFile(filePath: string): Record<string, unknown> {
+  const ext = path.extname(filePath).toLowerCase()
+  const content = fs.readFileSync(filePath, "utf8")
+  
+  if (ext === ".yaml" || ext === ".yml") {
+    return YAML.parse(content) || {}
+  }
+  return JSON.parse(content || "{}")
+}
+
+/**
+ * Write a locale object to a file (JSON or YAML format).
+ */
+export function writeLocaleFile(filePath: string, obj: Record<string, unknown>): void {
+  const ext = path.extname(filePath).toLowerCase()
+  let content = ""
+
+  if (ext === ".yaml" || ext === ".yml") {
+    content = YAML.stringify(obj, { indent: 2 })
+  } else {
+    content = JSON.stringify(obj, null, 2)
+  }
+
+  // Ensure trailing newline
+  if (!content.endsWith("\n")) {
+    content += "\n"
+  }
+  fs.writeFileSync(filePath, content, "utf8")
+}
+
+/**
+ * Test if a string matches a wildcard pattern (e.g. "status.*" matches "status.success").
+ */
+export function matchWildcard(pattern: string, key: string): boolean {
+  if (pattern === "*") return true
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")
+  const regex = new RegExp(`^${escaped}$`)
+  return regex.test(key)
+}
+
+/**
+ * Logging helper utilities.
+ */
+export const log = {
+  header(title: string): void {
+    console.log(`\n${pc.bold(pc.cyan(`=== ${title} ===`))}`)
+  },
+  info(msg: string): void {
+    console.log(msg)
+  },
+  success(msg: string): void {
+    console.log(`${pc.green("✅")} ${msg}`)
+  },
+  warn(msg: string): void {
+    console.log(`${pc.yellow("⚠️  Warning:")} ${msg}`)
+  },
+  error(msg: string): void {
+    console.error(`${pc.red("❌ Error:")} ${msg}`)
+  }
+}
