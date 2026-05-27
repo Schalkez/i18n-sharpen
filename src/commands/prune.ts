@@ -112,22 +112,28 @@ export function prune(
     }
   }
 
-  // Second pass: check if any locale key exists as a string literal anywhere in code
-  for (const key of allLocaleKeys) {
-    if (usedKeys.has(key)) continue
+  // Second pass: opt-in loose match (config.looseKeyMatch). When enabled,
+  // marks a locale key as "used" if its quoted form appears anywhere in
+  // scanned source — even outside a t(...)/attr=... call. Default-off
+  // because it keeps stale keys around forever and short keys collide
+  // with unrelated string literals.
+  if (config.looseKeyMatch) {
+    for (const key of allLocaleKeys) {
+      if (usedKeys.has(key)) continue
 
-    const doubleQuote = `"${key}"`
-    const singleQuote = `'${key}'`
-    const backtickQuote = `\`${key}\``
+      const doubleQuote = `"${key}"`
+      const singleQuote = `'${key}'`
+      const backtickQuote = `\`${key}\``
 
-    for (const cleanContent of fileContents) {
-      if (
-        cleanContent.includes(doubleQuote) ||
-        cleanContent.includes(singleQuote) ||
-        cleanContent.includes(backtickQuote)
-      ) {
-        usedKeys.add(key)
-        break
+      for (const cleanContent of fileContents) {
+        if (
+          cleanContent.includes(doubleQuote) ||
+          cleanContent.includes(singleQuote) ||
+          cleanContent.includes(backtickQuote)
+        ) {
+          usedKeys.add(key)
+          break
+        }
       }
     }
   }

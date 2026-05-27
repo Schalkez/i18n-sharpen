@@ -197,36 +197,43 @@ export function validate(
     }
   }
 
-  // Second pass: match any key from locales if it exists as a string literal anywhere in scanned files
-  for (const key of defaultKeys) {
-    if (usedKeys.has(key)) continue
+  // Second pass: opt-in loose match. Only runs when config.looseKeyMatch
+  // is true. The loose pass walks every default-locale key and marks it
+  // as "used" if the quoted literal appears anywhere — which over-matches
+  // (debug logs, JSDoc, unrelated type literals all count). Default-off
+  // to avoid prune keeping stale keys forever and validate hiding
+  // missing-key errors.
+  if (config.looseKeyMatch) {
+    for (const key of defaultKeys) {
+      if (usedKeys.has(key)) continue
 
-    const doubleQuote = `"${key}"`
-    const singleQuote = `'${key}'`
-    const backtickQuote = `\`${key}\``
+      const doubleQuote = `"${key}"`
+      const singleQuote = `'${key}'`
+      const backtickQuote = `\`${key}\``
 
-    for (let i = 0; i < filesToScan.length; i++) {
-      const file = filesToScan[i]
-      const cleanContent = fileContents[i]
-      const relativePath = path.relative(cwd, file)
+      for (let i = 0; i < filesToScan.length; i++) {
+        const file = filesToScan[i]
+        const cleanContent = fileContents[i]
+        const relativePath = path.relative(cwd, file)
 
-      if (
-        cleanContent.includes(doubleQuote) ||
-        cleanContent.includes(singleQuote) ||
-        cleanContent.includes(backtickQuote)
-      ) {
-        usedKeys.add(key)
+        if (
+          cleanContent.includes(doubleQuote) ||
+          cleanContent.includes(singleQuote) ||
+          cleanContent.includes(backtickQuote)
+        ) {
+          usedKeys.add(key)
 
-        if (!keyToFilesMap.has(key)) {
-          keyToFilesMap.set(key, [])
-        }
-        const files = keyToFilesMap.get(key)!
-        if (!files.includes(relativePath)) {
-          files.push(relativePath)
+          if (!keyToFilesMap.has(key)) {
+            keyToFilesMap.set(key, [])
+          }
+          const files = keyToFilesMap.get(key)!
+          if (!files.includes(relativePath)) {
+            files.push(relativePath)
+          }
         }
       }
     }
-  }
+  } // end if (config.looseKeyMatch)
 
   // Plural/Context suffix alignment helper
   const suffixes = config.pluralSuffixes || []

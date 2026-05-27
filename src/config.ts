@@ -63,7 +63,8 @@ export const I18nCopConfigSchema = z.object({
   outputReport: z.string().optional(),
   matchAttributes: z.array(identifierLike).optional(),
   ignoreKeys: z.array(z.string()).optional(),
-  pluralSuffixes: z.array(z.string()).optional()
+  pluralSuffixes: z.array(z.string()).optional(),
+  looseKeyMatch: z.boolean().optional()
 })
 
 export function loadConfig(cwd: string = process.cwd()): I18nCopConfig {
@@ -111,7 +112,9 @@ export function loadConfig(cwd: string = process.cwd()): I18nCopConfig {
     matchAttributes:
       fileConfig.matchAttributes || DEFAULT_CONFIG.matchAttributes,
     ignoreKeys: fileConfig.ignoreKeys || DEFAULT_CONFIG.ignoreKeys,
-    pluralSuffixes: fileConfig.pluralSuffixes || DEFAULT_CONFIG.pluralSuffixes
+    pluralSuffixes: fileConfig.pluralSuffixes || DEFAULT_CONFIG.pluralSuffixes,
+    looseKeyMatch:
+      fileConfig.looseKeyMatch !== undefined ? fileConfig.looseKeyMatch : false
   }
 
   // Zod validation
