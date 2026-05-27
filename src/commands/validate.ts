@@ -106,7 +106,26 @@ export function validate(
 
   // Scan source files for translation keys
   const usedKeys = new Set<string>()
-  const keyToFilesMap = new Map<string, string[]>()
+  // LO-07: track key -> set of relative paths to avoid the O(n²)
+  // includes() check on every match. We convert to Array at display.
+  const keyToFilesSet = new Map<string, Set<string>>()
+  const keyToFilesMap = {
+    has(key: string): boolean {
+      return keyToFilesSet.has(key)
+    },
+    get(key: string): string[] | undefined {
+      const s = keyToFilesSet.get(key)
+      return s ? Array.from(s) : undefined
+    },
+    add(key: string, file: string): void {
+      let s = keyToFilesSet.get(key)
+      if (!s) {
+        s = new Set()
+        keyToFilesSet.set(key, s)
+      }
+      s.add(file)
+    }
+  }
 
   // Regex setup — escape user-supplied config entries to prevent
   // regex injection / ReDoS via matchFunctions / matchAttributes.
@@ -164,13 +183,7 @@ export function validate(
       if (key.endsWith(".")) continue
       usedKeys.add(key)
 
-      if (!keyToFilesMap.has(key)) {
-        keyToFilesMap.set(key, [])
-      }
-      const files = keyToFilesMap.get(key)!
-      if (!files.includes(relativePath)) {
-        files.push(relativePath)
-      }
+      keyToFilesMap.add(key, relativePath)
     }
 
     // Match JSX/HTML attributes
@@ -179,13 +192,7 @@ export function validate(
       if (key.endsWith(".")) continue
       usedKeys.add(key)
 
-      if (!keyToFilesMap.has(key)) {
-        keyToFilesMap.set(key, [])
-      }
-      const files = keyToFilesMap.get(key)!
-      if (!files.includes(relativePath)) {
-        files.push(relativePath)
-      }
+      keyToFilesMap.add(key, relativePath)
     }
 
     // Check for dynamic key warnings. The regex captures the entire
@@ -228,14 +235,7 @@ export function validate(
           cleanContent.includes(backtickQuote)
         ) {
           usedKeys.add(key)
-
-          if (!keyToFilesMap.has(key)) {
-            keyToFilesMap.set(key, [])
-          }
-          const files = keyToFilesMap.get(key)!
-          if (!files.includes(relativePath)) {
-            files.push(relativePath)
-          }
+          keyToFilesMap.add(key, relativePath)
         }
       }
     }
