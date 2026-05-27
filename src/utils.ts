@@ -309,6 +309,12 @@ export function readLocaleFile(filePath: string): Record<string, unknown> {
 
 /**
  * Write a locale object to a file (JSON or YAML format).
+ *
+ * Uses a write-then-rename strategy: data is first written to
+ * `<filePath>.tmp` and then atomically renamed into place. This prevents
+ * truncation of the destination file if the process is killed mid-write
+ * (e.g. Ctrl-C during a large prune). Rename is atomic on POSIX and on
+ * NTFS for the same volume.
  */
 export function writeLocaleFile(
   filePath: string,
@@ -327,7 +333,20 @@ export function writeLocaleFile(
   if (!content.endsWith("\n")) {
     content += "\n"
   }
-  fs.writeFileSync(filePath, content, "utf8")
+
+  const tmpPath = `${filePath}.tmp`
+  fs.writeFileSync(tmpPath, content, "utf8")
+  try {
+    fs.renameSync(tmpPath, filePath)
+  } catch (error) {
+    // Clean up the temp file on rename failure (e.g. cross-device link).
+    try {
+      fs.unlinkSync(tmpPath)
+    } catch {
+      // ignore secondary failure
+    }
+    throw error
+  }
 }
 
 /**

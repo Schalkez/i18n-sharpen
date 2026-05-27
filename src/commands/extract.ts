@@ -90,11 +90,22 @@ export function extract(
     `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
   )
 
-  let totalExtractedCount = 0
+  // Two-phase write: parse every existing locale file up-front and
+  // compute the new flat map. Only after every parse succeeds do we
+  // write anything. Prevents partial extraction when one of several
+  // languages has a corrupt locale file. (HI-08, MD-08 atomic writes
+  // implemented inside writeLocaleFile.)
+  type Plan = {
+    lang: string
+    langPath: string
+    nestedJson: Record<string, unknown>
+    missingKeys: string[]
+  }
+  const writePlans: Plan[] = []
+  const suffixes = config.pluralSuffixes || []
 
   for (const lang of config.supportedLanguages) {
     let langPath = findLocaleFile(localesDirAbs, lang)
-    let langJson: Record<string, unknown> = {}
     let flatJson: Record<string, string> = {}
 
     // If file does not exist, default to .json format
@@ -102,7 +113,7 @@ export function extract(
       langPath = path.join(localesDirAbs, `${lang}.json`)
     } else {
       try {
-        langJson = readLocaleFile(langPath)
+        const langJson = readLocaleFile(langPath)
         flatJson = flattenObject(langJson)
       } catch (error) {
         throw new Error(
@@ -112,7 +123,6 @@ export function extract(
     }
 
     const missingKeys: string[] = []
-    const suffixes = config.pluralSuffixes || []
     for (const key of usedKeys) {
       let exists = flatJson[key] !== undefined
       if (!exists) {
@@ -129,27 +139,33 @@ export function extract(
     }
 
     if (missingKeys.length > 0) {
-      log.info(
-        `📥 Extracting ${pc.green(missingKeys.length)} new keys to ${pc.cyan(path.basename(langPath))}:`
-      )
-      missingKeys.sort().forEach((key) => {
+      missingKeys.sort()
+      for (const key of missingKeys) {
         flatJson[key] = key // default translation is the key path itself
-        console.log(`  + ${pc.green(key)}`)
-      })
-
-      // Unflatten and write back
-      const nestedJson = unflattenObject(flatJson)
-      try {
-        writeLocaleFile(langPath, nestedJson)
-        totalExtractedCount += missingKeys.length
-      } catch (error) {
-        throw new Error(
-          `Failed to write to file '${langPath}': ${(error as Error).message}`
-        )
       }
+      const nestedJson = unflattenObject(flatJson)
+      writePlans.push({ lang, langPath, nestedJson, missingKeys })
     } else {
       log.info(
         `✨ No new keys to extract for ${pc.cyan(path.basename(langPath))}.`
+      )
+    }
+  }
+
+  let totalExtractedCount = 0
+  for (const plan of writePlans) {
+    log.info(
+      `📥 Extracting ${pc.green(plan.missingKeys.length)} new keys to ${pc.cyan(path.basename(plan.langPath))}:`
+    )
+    for (const key of plan.missingKeys) {
+      console.log(`  + ${pc.green(key)}`)
+    }
+    try {
+      writeLocaleFile(plan.langPath, plan.nestedJson)
+      totalExtractedCount += plan.missingKeys.length
+    } catch (error) {
+      throw new Error(
+        `Failed to write to file '${plan.langPath}': ${(error as Error).message}`
       )
     }
   }

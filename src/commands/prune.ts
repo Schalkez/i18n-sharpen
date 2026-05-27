@@ -174,7 +174,16 @@ export function prune(
     `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
   )
 
-  let totalPrunedCount = 0
+  // Two-phase: plan every file in memory, only commit writes after the
+  // entire plan is computed. Each file is then written atomically via
+  // writeLocaleFile (.tmp + rename). Prevents partial prune state when
+  // one language fails mid-loop.
+  type Plan = {
+    langPath: string
+    nestedJson: Record<string, unknown>
+    prunedCount: number
+  }
+  const writePlans: Plan[] = []
 
   for (const lang of config.supportedLanguages) {
     const langPath = localeFilePaths[lang]
@@ -193,21 +202,26 @@ export function prune(
     }
 
     if (prunedCount > 0) {
-      log.info(
-        `🧹 Pruning ${pc.yellow(prunedCount)} unused keys from ${pc.cyan(path.basename(langPath))}`
-      )
       const nestedJson = unflattenObject(newFlatJson)
-      try {
-        writeLocaleFile(langPath, nestedJson)
-        totalPrunedCount += prunedCount
-      } catch (error) {
-        throw new Error(
-          `Failed to write to file '${langPath}': ${(error as Error).message}`
-        )
-      }
+      writePlans.push({ langPath, nestedJson, prunedCount })
     } else {
       log.info(
         `✨ No unused keys to prune in ${pc.cyan(path.basename(langPath))}.`
+      )
+    }
+  }
+
+  let totalPrunedCount = 0
+  for (const plan of writePlans) {
+    log.info(
+      `🧹 Pruning ${pc.yellow(plan.prunedCount)} unused keys from ${pc.cyan(path.basename(plan.langPath))}`
+    )
+    try {
+      writeLocaleFile(plan.langPath, plan.nestedJson)
+      totalPrunedCount += plan.prunedCount
+    } catch (error) {
+      throw new Error(
+        `Failed to write to file '${plan.langPath}': ${(error as Error).message}`
       )
     }
   }
