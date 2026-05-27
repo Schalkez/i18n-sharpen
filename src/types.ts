@@ -6,6 +6,14 @@ export interface I18nCopConfig {
   excludeDirs?: string[]
   fileExtensions?: string[]
   matchFunctions?: string[]
+  /**
+   * Path (relative to cwd) where the markdown coverage report is written.
+   *
+   * - Omit / undefined: use the built-in default ("i18n-coverage.md").
+   * - Non-empty string: write the report to that path.
+   * - Empty string `""`: disable report generation (no file written,
+   *   no warning).
+   */
   outputReport?: string
   matchAttributes?: string[]
   ignoreKeys?: string[]

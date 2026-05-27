@@ -15,6 +15,7 @@ import {
   matchWildcard,
   escapeRegex,
   isStaticStringLiteral,
+  normalizeDisplayPath,
   log
 } from "../utils"
 
@@ -85,7 +86,9 @@ export function validate(
   for (const scanDir of config.scanDirs) {
     const scanDirAbs = path.resolve(cwd, scanDir)
     if (fs.existsSync(scanDirAbs)) {
-      log.info(`Scanning directory: ${pc.cyan(path.relative(cwd, scanDirAbs))}`)
+      log.info(
+        `Scanning directory: ${pc.cyan(normalizeDisplayPath(path.relative(cwd, scanDirAbs)))}`
+      )
       filesToScan.push(
         ...getFiles(
           scanDirAbs,
@@ -148,12 +151,14 @@ export function validate(
   for (let i = 0; i < filesToScan.length; i++) {
     const file = filesToScan[i]
     const cleanContent = fileContents[i]
-    const relativePath = path.relative(cwd, file)
+    const relativePath = normalizeDisplayPath(path.relative(cwd, file))
+
+    // MD-11: use matchAll instead of regex.exec + lastIndex. matchAll
+    // is stateless across iterations so we can't accidentally leak
+    // lastIndex between files.
 
     // Match function calls
-    let match
-    keyRegex.lastIndex = 0
-    while ((match = keyRegex.exec(cleanContent)) !== null) {
+    for (const match of cleanContent.matchAll(keyRegex)) {
       const key = match[2]
       if (key.endsWith(".")) continue
       usedKeys.add(key)
@@ -168,8 +173,7 @@ export function validate(
     }
 
     // Match JSX/HTML attributes
-    attrRegex.lastIndex = 0
-    while ((match = attrRegex.exec(cleanContent)) !== null) {
+    for (const match of cleanContent.matchAll(attrRegex)) {
       const key = match[2]
       if (key.endsWith(".")) continue
       usedKeys.add(key)
@@ -187,8 +191,7 @@ export function validate(
     // parenthesized first-argument span; we classify it in JS to avoid
     // the prior false-negatives where a `"key" + suffix` or
     // `\`pre.${x}\`` call was silently skipped.
-    dynamicCallRegex.lastIndex = 0
-    while ((match = dynamicCallRegex.exec(cleanContent)) !== null) {
+    for (const match of cleanContent.matchAll(dynamicCallRegex)) {
       const arg = match[1].trim()
       if (arg.length === 0) continue
       if (!isStaticStringLiteral(arg)) {
@@ -216,7 +219,7 @@ export function validate(
       for (let i = 0; i < filesToScan.length; i++) {
         const file = filesToScan[i]
         const cleanContent = fileContents[i]
-        const relativePath = path.relative(cwd, file)
+        const relativePath = normalizeDisplayPath(path.relative(cwd, file))
 
         if (
           cleanContent.includes(doubleQuote) ||
@@ -589,7 +592,7 @@ ${unusedPlaceholderKeys
     fs.mkdirSync(path.dirname(reportPath), { recursive: true })
     fs.writeFileSync(reportPath, markdownContent, "utf8")
     log.info(
-      `💾 Markdown report saved to: ${pc.cyan(path.relative(cwd, reportPath))}\n`
+      `💾 Markdown report saved to: ${pc.cyan(normalizeDisplayPath(path.relative(cwd, reportPath)))}\n`
     )
   }
 

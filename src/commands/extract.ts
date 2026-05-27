@@ -60,23 +60,21 @@ export function extract(
     "g"
   )
 
+  // MD-11: use matchAll instead of exec + lastIndex.
   for (const file of filesToScan) {
     try {
       const content = fs.readFileSync(file, "utf8")
       const cleanContent = stripComments(content)
 
       // Match functions
-      let match
-      keyRegex.lastIndex = 0
-      while ((match = keyRegex.exec(cleanContent)) !== null) {
+      for (const match of cleanContent.matchAll(keyRegex)) {
         const key = match[2]
         if (key.endsWith(".")) continue
         usedKeys.add(key)
       }
 
       // Match JSX attributes
-      attrRegex.lastIndex = 0
-      while ((match = attrRegex.exec(cleanContent)) !== null) {
+      for (const match of cleanContent.matchAll(attrRegex)) {
         const key = match[2]
         if (key.endsWith(".")) continue
         usedKeys.add(key)

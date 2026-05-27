@@ -436,6 +436,16 @@ export function isStaticStringLiteral(arg: string): boolean {
 }
 
 /**
+ * Normalize a (possibly platform-specific) path for display in reports
+ * and console output. Converts Windows backslashes to forward slashes
+ * so reports are platform-independent and can be copy/pasted into
+ * shells / browsers / cross-platform CI logs.
+ */
+export function normalizeDisplayPath(p: string): string {
+  return p.split(path.sep).join("/")
+}
+
+/**
  * Escape a string so it can be safely embedded in a regular expression.
  * Used to defend against regex-injection / ReDoS via user-controlled
  * matchFunctions / matchAttributes config entries.

@@ -70,18 +70,16 @@ export function prune(
     }
   })
 
-  // First pass: match exact t("key") or getTranslation("key")
+  // First pass: match exact t("key") or getTranslation("key").
+  // MD-11: use matchAll so we don't depend on shared regex.lastIndex.
   for (const cleanContent of fileContents) {
-    let match
-    keyRegex.lastIndex = 0
-    while ((match = keyRegex.exec(cleanContent)) !== null) {
+    for (const match of cleanContent.matchAll(keyRegex)) {
       const key = match[2]
       if (key.endsWith(".")) continue
       usedKeys.add(key)
     }
 
-    attrRegex.lastIndex = 0
-    while ((match = attrRegex.exec(cleanContent)) !== null) {
+    for (const match of cleanContent.matchAll(attrRegex)) {
       const key = match[2]
       if (key.endsWith(".")) continue
       usedKeys.add(key)
