@@ -296,15 +296,35 @@ export function findLocaleFile(
 
 /**
  * Load and parse a locale file (JSON or YAML).
+ *
+ * Tolerates real-world edge cases that previously crashed the tool:
+ *   - UTF-8 BOM prefix (`\\uFEFF`) — many Windows editors save with BOM
+ *   - whitespace-only content
+ *   - empty content
+ * In all three cases the function returns an empty object instead of
+ * throwing.
  */
 export function readLocaleFile(filePath: string): Record<string, unknown> {
   const ext = path.extname(filePath).toLowerCase()
-  const content = fs.readFileSync(filePath, "utf8")
+  let content = fs.readFileSync(filePath, "utf8")
+  // Strip a UTF-8 BOM if present — JSON.parse rejects it.
+  if (content.charCodeAt(0) === 0xfeff) {
+    content = content.slice(1)
+  }
+  const trimmed = content.trim()
+  if (trimmed.length === 0) {
+    return {}
+  }
 
   if (ext === ".yaml" || ext === ".yml") {
-    return YAML.parse(content) || {}
+    const parsed = YAML.parse(trimmed)
+    // Treat null/undefined (e.g. an empty YAML or a YAML containing
+    // literally `null`) as an empty object.
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {}
   }
-  return JSON.parse(content || "{}")
+  return JSON.parse(trimmed)
 }
 
 /**
