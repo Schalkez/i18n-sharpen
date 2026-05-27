@@ -10,6 +10,12 @@ import YAML from "yaml"
  * Uses readdirSync({ withFileTypes: true }) so each entry's type is
  * known without an extra statSync call (MD-02). Symlinks are skipped to
  * avoid infinite recursion on symlink cycles or junction points (MD-01).
+ *
+ * NOTE (MD-03): `excludeDirs` is matched against the bare directory name
+ * (entry.name), not the full path and not as a glob. Listing
+ * `"coverage"` excludes every directory called `coverage` at any depth;
+ * it does NOT allow excluding `src/legacy` specifically. If you need
+ * path-aware excludes, factor that policy into the caller.
  */
 export function getFiles(
   dir: string,
@@ -163,6 +169,13 @@ export function stripComments(code: string): string {
 
 /**
  * Flatten a nested JSON/YAML object into a flat key-value map using dot notation.
+ *
+ * NOTE (MD-04): `.` is the path separator AND a permitted character in
+ * a key. A locale containing both `{ "user.name": "X", "user": { "name": "Y" } }`
+ * produces the same flat key `user.name`; whichever iteration order
+ * wins overwrites the other and the original shape cannot be recovered
+ * by unflattenObject. When this happens we emit a warning so the user
+ * can rename one of the keys.
  */
 export function flattenObject(
   obj: Record<string, unknown>,
@@ -176,6 +189,11 @@ export function flattenObject(
       if (FORBIDDEN_KEY_SEGMENTS.has(key)) continue
       const value = obj[key]
       const newKey = prefix ? `${prefix}.${key}` : key
+      if (Object.prototype.hasOwnProperty.call(map, newKey)) {
+        log.warn(
+          `Key collision in locale: '${newKey}' is produced both as a flat key and as a nested path. The later definition wins.`
+        )
+      }
       if (
         typeof value === "object" &&
         value !== null &&
