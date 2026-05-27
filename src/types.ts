@@ -24,12 +24,26 @@ export interface I18nCopConfig {
 
 export type FlatTranslationsMap = Record<string, string>
 
+export interface LocaleAlignmentMismatch {
+  /** Source language that has the keys */
+  from: string
+  /** Target language that is missing the keys */
+  to: string
+  /** Keys present in `from` but missing in `to` */
+  keys: string[]
+}
+
 export interface ValidationResults {
   missingKeys: string[]
   activePlaceholderKeys: { key: string; lang: string }[]
   unusedKeys: string[]
   unusedPlaceholderKeys: { key: string; lang: string }[]
-  keysOnlyInLanguages: Record<string, string[]>
+  /**
+   * One entry per (from, to) language pair that has at least one
+   * missing key. Replaces the previous `Record<from_not_to, keys>` map
+   * which collided when a language code contained "_not_" (MD-09).
+   */
+  keysOnlyInLanguages: LocaleAlignmentMismatch[]
   codeKeyCoverage: string
   utilizationPercent: string
   totalDefinedKeys: number

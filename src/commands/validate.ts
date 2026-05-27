@@ -1,7 +1,11 @@
 import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
-import type { I18nCopConfig, ValidationResults } from "../types"
+import type {
+  I18nCopConfig,
+  ValidationResults,
+  LocaleAlignmentMismatch
+} from "../types"
 import {
   getFiles,
   stripComments,
@@ -305,7 +309,9 @@ export function validate(
   }
 
   // Check 3: Locale alignment checks (across all supported languages)
-  const keysOnlyInLanguages: Record<string, string[]> = {}
+  // MD-09: structured object instead of `${from}_not_${to}` string keys
+  // so language codes containing "_not_" no longer ambiguously split.
+  const keysOnlyInLanguages: LocaleAlignmentMismatch[] = []
   for (const lang of config.supportedLanguages) {
     if (lang === config.defaultLanguage) continue
     const langKeySet = localeKeySets[lang]
@@ -316,12 +322,18 @@ export function validate(
     )
 
     if (onlyInDefault.length > 0) {
-      keysOnlyInLanguages[`${config.defaultLanguage}_not_${lang}`] =
-        onlyInDefault
+      keysOnlyInLanguages.push({
+        from: config.defaultLanguage,
+        to: lang,
+        keys: onlyInDefault
+      })
     }
     if (onlyInTarget.length > 0) {
-      keysOnlyInLanguages[`${lang}_not_${config.defaultLanguage}`] =
-        onlyInTarget
+      keysOnlyInLanguages.push({
+        from: lang,
+        to: config.defaultLanguage,
+        keys: onlyInTarget
+      })
     }
   }
 
@@ -398,16 +410,17 @@ export function validate(
   }
 
   // 3. Locale alignment
-  const mismatchLangs = Object.keys(keysOnlyInLanguages)
-  if (mismatchLangs.length > 0) {
+  if (keysOnlyInLanguages.length > 0) {
     hasError = true
     console.log(`\n${pc.bold(pc.red("❌ Locale Alignment Mismatches:"))}`)
-    for (const key of mismatchLangs) {
-      const [from, to] = key.split("_not_")
+    for (const mismatch of keysOnlyInLanguages) {
       console.log(
-        `  ${pc.yellow(`Keys present in ${from} but missing in ${to} (${keysOnlyInLanguages[key].length}):`)}`
+        `  ${pc.yellow(`Keys present in ${mismatch.from} but missing in ${mismatch.to} (${mismatch.keys.length}):`)}`
       )
-      keysOnlyInLanguages[key].sort().forEach((k) => console.log(`    - ${k}`))
+      mismatch.keys
+        .slice()
+        .sort()
+        .forEach((k) => console.log(`    - ${k}`))
     }
   } else {
     log.success("Perfect key alignment across all locale files!")
@@ -472,7 +485,7 @@ Generated on: ${new Date().toISOString()}
 | **Missing Keys** | ${missingKeys.length} | ${missingKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |
 | **Active Placeholders** | ${activePlaceholderKeys.length} | ${activePlaceholderKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |
 | **Unused Keys** | ${unusedKeys.length} | ${unusedKeys.length === 0 ? "🟢 Optimized" : "🟡 Can be pruned"} |
-| **Locale Alignment** | ${mismatchLangs.length === 0 ? "Align'd" : "Mismatch"} | ${mismatchLangs.length === 0 ? "🟢 Perfect" : "🔴 Action Required"} |
+| **Locale Alignment** | ${keysOnlyInLanguages.length === 0 ? "Align'd" : "Mismatch"} | ${keysOnlyInLanguages.length === 0 ? "🟢 Perfect" : "🔴 Action Required"} |
 
 ${
   missingKeys.length > 0
@@ -524,19 +537,19 @@ ${activePlaceholderKeys
 }
 
 ${
-  mismatchLangs.length > 0
+  keysOnlyInLanguages.length > 0
     ? `## ❌ Locale Alignment Mismatches
 
-${mismatchLangs
-  .map((key) => {
-    const [from, to] = key.split("_not_")
-    return `### Keys in ${from} but missing in ${to} (${keysOnlyInLanguages[key].length})
-${keysOnlyInLanguages[key]
+${keysOnlyInLanguages
+  .map(
+    (m) => `### Keys in ${m.from} but missing in ${m.to} (${m.keys.length})
+${m.keys
+  .slice()
   .sort()
   .map((k) => `- \`${k}\``)
   .join("\n")}
 `
-  })
+  )
   .join("\n")}
 `
     : "## ✅ Locale Alignment\n\nPerfect key alignment between all locale files."
@@ -570,6 +583,10 @@ ${unusedPlaceholderKeys
     : ""
 }
 `
+    // MD-07: ensure parent directory exists before writing the report.
+    // Previously `outputReport: "reports/i18n.md"` would throw ENOENT if
+    // `reports/` did not already exist.
+    fs.mkdirSync(path.dirname(reportPath), { recursive: true })
     fs.writeFileSync(reportPath, markdownContent, "utf8")
     log.info(
       `💾 Markdown report saved to: ${pc.cyan(path.relative(cwd, reportPath))}\n`
