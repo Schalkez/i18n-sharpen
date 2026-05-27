@@ -34,10 +34,120 @@ export function getFiles(
 }
 
 /**
- * Remove single-line and multi-line comments from JS/TS code to avoid false positives.
+ * Remove single-line and multi-line comments from JS/TS code without
+ * corrupting string contents.
+ *
+ * Implemented as a small state machine that tracks string contexts
+ * ('...', "...", `...` including ${} interpolation depth) so that:
+ *   - `//` inside a string is preserved
+ *   - `*` `/` inside a string does not terminate a block comment
+ *   - URLs like "https://x" survive intact
+ *   - escapes (`\"`, `\\`, etc.) inside strings are respected
+ *
+ * Comments are replaced with a single space so token boundaries (e.g.
+ * `a/*x*\/b` -> `a b`) are preserved.
  */
 export function stripComments(code: string): string {
-  return code.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, "$1")
+  type StackFrame = {
+    kind: "single" | "double" | "template"
+    templateDepth: number
+  }
+  const out: string[] = []
+  const stack: StackFrame[] = []
+  let i = 0
+  const n = code.length
+
+  while (i < n) {
+    const ch = code[i]
+    const next = i + 1 < n ? code[i + 1] : ""
+    const top = stack.length > 0 ? stack[stack.length - 1] : null
+
+    // Inside a string?
+    if (top) {
+      // Handle template-literal interpolation depth
+      if (top.kind === "template" && ch === "$" && next === "{") {
+        top.templateDepth++
+        out.push("${")
+        i += 2
+        continue
+      }
+      if (top.kind === "template" && top.templateDepth > 0 && ch === "}") {
+        top.templateDepth--
+        out.push("}")
+        i++
+        continue
+      }
+      // While inside an interpolation, treat code as normal code (handled below by re-entering loop with stack still tracking)
+      if (top.kind === "template" && top.templateDepth > 0) {
+        // Fall through to non-string handling below
+      } else {
+        // Inside the literal portion of a string
+        if (ch === "\\" && i + 1 < n) {
+          // Preserve escape sequence verbatim
+          out.push(ch, code[i + 1])
+          i += 2
+          continue
+        }
+        if (
+          (top.kind === "single" && ch === "'") ||
+          (top.kind === "double" && ch === '"') ||
+          (top.kind === "template" && ch === "`")
+        ) {
+          stack.pop()
+          out.push(ch)
+          i++
+          continue
+        }
+        out.push(ch)
+        i++
+        continue
+      }
+    }
+
+    // Not in a (literal) string — check for comment / string start
+    if (ch === "/" && next === "*") {
+      // Block comment — skip until */
+      i += 2
+      while (i < n && !(code[i] === "*" && i + 1 < n && code[i + 1] === "/")) {
+        i++
+      }
+      i += 2 // skip closing */
+      out.push(" ")
+      continue
+    }
+    if (ch === "/" && next === "/") {
+      // Line comment — skip until newline (keep the newline)
+      i += 2
+      while (i < n && code[i] !== "\n") {
+        i++
+      }
+      out.push(" ")
+      continue
+    }
+    if (ch === "'") {
+      stack.push({ kind: "single", templateDepth: 0 })
+      out.push(ch)
+      i++
+      continue
+    }
+    if (ch === '"') {
+      stack.push({ kind: "double", templateDepth: 0 })
+      out.push(ch)
+      i++
+      continue
+    }
+    if (ch === "`") {
+      stack.push({ kind: "template", templateDepth: 0 })
+      out.push(ch)
+      i++
+      continue
+    }
+
+    out.push(ch)
+    i++
+  }
+
+  return out.join("")
 }
 
 /**
