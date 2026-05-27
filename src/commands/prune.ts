@@ -24,8 +24,7 @@ export function prune(
   const localesDirAbs = path.resolve(cwd, config.localesDir)
 
   if (!fs.existsSync(localesDirAbs)) {
-    log.error(`Locales directory not found: ${localesDirAbs}`)
-    process.exit(1)
+    throw new Error(`Locales directory not found: ${localesDirAbs}`)
   }
 
   // Find all source files
@@ -104,10 +103,9 @@ export function prune(
         localesFlat[lang] = flattenObject(localesData[lang])
         Object.keys(localesFlat[lang]).forEach((key) => allLocaleKeys.add(key))
       } catch (error) {
-        log.error(
+        throw new Error(
           `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`
         )
-        process.exit(1)
       }
     }
   }
@@ -203,10 +201,9 @@ export function prune(
         writeLocaleFile(langPath, nestedJson)
         totalPrunedCount += prunedCount
       } catch (error) {
-        log.error(
+        throw new Error(
           `Failed to write to file '${langPath}': ${(error as Error).message}`
         )
-        process.exit(1)
       }
     } else {
       log.info(

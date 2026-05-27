@@ -51,18 +51,16 @@ export function validate(
       localesFlat[lang] = flattenObject(parsed)
       localeKeySets[lang] = new Set(Object.keys(localesFlat[lang]))
     } catch (error) {
-      log.error(
+      throw new Error(
         `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`
       )
-      process.exit(1)
     }
   }
 
   if (!defaultLocalePath) {
-    log.error(
+    throw new Error(
       `Default language '${config.defaultLanguage}' locale file not found.`
     )
-    process.exit(1)
   }
 
   const defaultKeys = Object.keys(localesFlat[config.defaultLanguage])

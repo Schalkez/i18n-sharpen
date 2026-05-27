@@ -23,8 +23,7 @@ export function extract(
   const localesDirAbs = path.resolve(cwd, config.localesDir)
 
   if (!fs.existsSync(localesDirAbs)) {
-    log.error(`Locales directory not found: ${localesDirAbs}`)
-    process.exit(1)
+    throw new Error(`Locales directory not found: ${localesDirAbs}`)
   }
 
   // Find all source files
@@ -106,10 +105,9 @@ export function extract(
         langJson = readLocaleFile(langPath)
         flatJson = flattenObject(langJson)
       } catch (error) {
-        log.error(
+        throw new Error(
           `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`
         )
-        process.exit(1)
       }
     }
 
@@ -145,10 +143,9 @@ export function extract(
         writeLocaleFile(langPath, nestedJson)
         totalExtractedCount += missingKeys.length
       } catch (error) {
-        log.error(
+        throw new Error(
           `Failed to write to file '${langPath}': ${(error as Error).message}`
         )
-        process.exit(1)
       }
     } else {
       log.info(
