@@ -506,8 +506,11 @@ export function escapeRegex(input: string): string {
  */
 export function matchWildcard(pattern: string, key: string): boolean {
   if (pattern === "*") return true
+  // LO-08: include `?` in the literal-escape pass so it isn't
+  // accidentally interpreted as a "zero-or-one" regex quantifier when
+  // it appears in a pattern (treated as a literal `?` character).
   const escaped = pattern
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
     .replace(/\*/g, ".*")
   const regex = new RegExp(`^${escaped}$`)
   return regex.test(key)
@@ -515,7 +518,24 @@ export function matchWildcard(pattern: string, key: string): boolean {
 
 /**
  * Logging helper utilities.
+ *
+ * LO-10: emoji can render as `?` on Windows cmd.exe and on some CI log
+ * viewers. Set the NO_EMOJI environment variable (any truthy value) to
+ * fall back to plain-text glyphs.
  */
+const emojiDisabled =
+  typeof process !== "undefined" &&
+  !!process.env &&
+  !!process.env.NO_EMOJI &&
+  process.env.NO_EMOJI !== "0" &&
+  process.env.NO_EMOJI.toLowerCase() !== "false"
+
+const glyphs = {
+  ok: emojiDisabled ? "[OK]" : "✅",
+  warn: emojiDisabled ? "[WARN]" : "⚠️ ",
+  err: emojiDisabled ? "[ERR]" : "❌"
+}
+
 export const log = {
   header(title: string): void {
     console.log(`\n${pc.bold(pc.cyan(`=== ${title} ===`))}`)
@@ -524,12 +544,12 @@ export const log = {
     console.log(msg)
   },
   success(msg: string): void {
-    console.log(`${pc.green("✅")} ${msg}`)
+    console.log(`${pc.green(glyphs.ok)} ${msg}`)
   },
   warn(msg: string): void {
-    console.log(`${pc.yellow("⚠️  Warning:")} ${msg}`)
+    console.log(`${pc.yellow(`${glyphs.warn} Warning:`)} ${msg}`)
   },
   error(msg: string): void {
-    console.error(`${pc.red("❌ Error:")} ${msg}`)
+    console.error(`${pc.red(`${glyphs.err} Error:`)} ${msg}`)
   }
 }

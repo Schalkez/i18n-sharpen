@@ -1,10 +1,36 @@
 #!/usr/bin/env node
 import { Command } from "commander"
+import * as fs from "fs"
+import * as path from "path"
+import { fileURLToPath } from "url"
 import { loadConfig } from "./config"
 import { validate } from "./commands/validate"
 import { extract } from "./commands/extract"
 import { prune } from "./commands/prune"
 import { log } from "./utils"
+
+// LO-09: read the version dynamically from package.json so it never
+// drifts from `npm version` / release tooling. Falls back to "0.0.0"
+// if the package.json can't be read (e.g. unusual install layouts).
+function readVersion(): string {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url))
+    // dist/cli.js → ../package.json
+    const candidates = [
+      path.resolve(here, "..", "package.json"),
+      path.resolve(here, "..", "..", "package.json")
+    ]
+    for (const c of candidates) {
+      if (fs.existsSync(c)) {
+        const pkg = JSON.parse(fs.readFileSync(c, "utf8"))
+        if (typeof pkg.version === "string") return pkg.version
+      }
+    }
+  } catch {
+    // ignore — fall through to default
+  }
+  return "0.0.0"
+}
 
 const program = new Command()
 
@@ -13,7 +39,7 @@ program
   .description(
     "Type-safe, configuration-driven i18n validator, extractor, and pruner CLI tool."
   )
-  .version("0.1.0")
+  .version(readVersion())
   .option(
     "-c, --config <path>",
     "Path to configuration file (i18n-sharpen.json)"
