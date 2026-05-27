@@ -210,6 +210,15 @@ export function writeLocaleFile(
 }
 
 /**
+ * Escape a string so it can be safely embedded in a regular expression.
+ * Used to defend against regex-injection / ReDoS via user-controlled
+ * matchFunctions / matchAttributes config entries.
+ */
+export function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+/**
  * Test if a string matches a wildcard pattern (e.g. "status.*" matches "status.success").
  */
 export function matchWildcard(pattern: string, key: string): boolean {

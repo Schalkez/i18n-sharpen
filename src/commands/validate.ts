@@ -2,9 +2,21 @@ import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
 import type { I18nCopConfig, ValidationResults } from "../types"
-import { getFiles, stripComments, flattenObject, findLocaleFile, readLocaleFile, matchWildcard, log } from "../utils"
+import {
+  getFiles,
+  stripComments,
+  flattenObject,
+  findLocaleFile,
+  readLocaleFile,
+  matchWildcard,
+  escapeRegex,
+  log
+} from "../utils"
 
-export function validate(config: I18nCopConfig, cwd: string = process.cwd()): ValidationResults {
+export function validate(
+  config: I18nCopConfig,
+  cwd: string = process.cwd()
+): ValidationResults {
   log.header("I18N-SHARPEN VALIDATOR")
 
   const localesDirAbs = path.resolve(cwd, config.localesDir)
@@ -23,7 +35,9 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
     }
 
     if (!langPath) {
-      log.warn(`Locale file not found for language '${lang}' in: ${localesDirAbs}`)
+      log.warn(
+        `Locale file not found for language '${lang}' in: ${localesDirAbs}`
+      )
       locales[lang] = {}
       localesFlat[lang] = {}
       localeKeySets[lang] = new Set()
@@ -36,20 +50,26 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
       localesFlat[lang] = flattenObject(parsed)
       localeKeySets[lang] = new Set(Object.keys(localesFlat[lang]))
     } catch (error) {
-      log.error(`Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`)
+      log.error(
+        `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`
+      )
       process.exit(1)
     }
   }
 
   if (!defaultLocalePath) {
-    log.error(`Default language '${config.defaultLanguage}' locale file not found.`)
+    log.error(
+      `Default language '${config.defaultLanguage}' locale file not found.`
+    )
     process.exit(1)
   }
 
   const defaultKeys = Object.keys(localesFlat[config.defaultLanguage])
   const defaultKeySet = localeKeySets[config.defaultLanguage]
 
-  log.info(`Loaded default language '${config.defaultLanguage}' with ${pc.green(defaultKeys.length)} keys.`)
+  log.info(
+    `Loaded default language '${config.defaultLanguage}' with ${pc.green(defaultKeys.length)} keys.`
+  )
   for (const lang of config.supportedLanguages) {
     if (lang !== config.defaultLanguage) {
       const keysCount = Object.keys(localesFlat[lang]).length
@@ -63,7 +83,13 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
     const scanDirAbs = path.resolve(cwd, scanDir)
     if (fs.existsSync(scanDirAbs)) {
       log.info(`Scanning directory: ${pc.cyan(path.relative(cwd, scanDirAbs))}`)
-      filesToScan.push(...getFiles(scanDirAbs, config.fileExtensions || [], config.excludeDirs || []))
+      filesToScan.push(
+        ...getFiles(
+          scanDirAbs,
+          config.fileExtensions || [],
+          config.excludeDirs || []
+        )
+      )
     } else {
       log.warn(`Scan directory does not exist: ${scanDirAbs}`)
     }
@@ -75,16 +101,30 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
   const usedKeys = new Set<string>()
   const keyToFilesMap = new Map<string, string[]>()
 
-  // Regex setup
-  const functionsJoined = (config.matchFunctions || ["t", "getTranslation"]).join("|")
-  const keyRegex = new RegExp("\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"\\`])([a-zA-Z0-9_\\-.]+)\\1", "g")
+  // Regex setup — escape user-supplied config entries to prevent
+  // regex injection / ReDoS via matchFunctions / matchAttributes.
+  const functionsJoined = (config.matchFunctions || ["t", "getTranslation"])
+    .map(escapeRegex)
+    .join("|")
+  const keyRegex = new RegExp(
+    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
+    "g"
+  )
 
-  const attrsJoined = (config.matchAttributes || ["i18nKey", "id"]).join("|")
-  const attrRegex = new RegExp("\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"\\`])([a-zA-Z0-9_\\-.]+)\\1", "g")
+  const attrsJoined = (config.matchAttributes || ["i18nKey", "id"])
+    .map(escapeRegex)
+    .join("|")
+  const attrRegex = new RegExp(
+    "\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
+    "g"
+  )
 
   // Regex for potential dynamic template references
   // e.g. t('prefix.' + variable) or t(`prefix.${variable}`)
-  const dynamicRegex = new RegExp("\\b(?:" + functionsJoined + ")\\s*\\(\\s*([^'\"\\`\\s][^)]*)\\)", "g")
+  const dynamicRegex = new RegExp(
+    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*([^'\"`\\s][^)]*)\\)",
+    "g"
+  )
 
   const fileContents = filesToScan.map((file) => {
     try {
@@ -145,7 +185,9 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
         (arg.startsWith("`") && arg.endsWith("`") && !arg.includes("${"))
 
       if (!isStaticString) {
-        log.warn(`Potential dynamic translation key reference in ${pc.cyan(relativePath)}: ${pc.yellow(`${match[0]}`)}`)
+        log.warn(
+          `Potential dynamic translation key reference in ${pc.cyan(relativePath)}: ${pc.yellow(`${match[0]}`)}`
+        )
       }
     }
   }
@@ -183,7 +225,7 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
 
   // Plural/Context suffix alignment helper
   const suffixes = config.pluralSuffixes || []
-  
+
   function getBaseKey(key: string): string {
     for (const suffix of suffixes) {
       if (key.endsWith(suffix)) {
@@ -196,7 +238,7 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
   function isKeyUsed(key: string): boolean {
     // Exact match
     if (usedKeys.has(key)) return true
-    
+
     // Whitelisted in ignoreKeys (wildcard match)
     if (config.ignoreKeys) {
       for (const pattern of config.ignoreKeys) {
@@ -215,7 +257,9 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
     return false
   }
 
-  log.info(`Found ${pc.green(usedKeys.size)} unique translation keys used in source code.`)
+  log.info(
+    `Found ${pc.green(usedKeys.size)} unique translation keys used in source code.`
+  )
 
   // Computations
   const missingKeys: string[] = []
@@ -225,7 +269,7 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
   // Check 1: Missing keys (used in code but not in default json)
   for (const key of usedKeys) {
     let exists = defaultKeySet.has(key)
-    
+
     // If not found, check if it has plural suffix versions defined in locales
     if (!exists) {
       for (const suffix of suffixes) {
@@ -257,13 +301,17 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
     const langKeySet = localeKeySets[lang]
 
     const onlyInDefault = defaultKeys.filter((key) => !langKeySet.has(key))
-    const onlyInTarget = Object.keys(localesFlat[lang]).filter((key) => !defaultKeySet.has(key))
+    const onlyInTarget = Object.keys(localesFlat[lang]).filter(
+      (key) => !defaultKeySet.has(key)
+    )
 
     if (onlyInDefault.length > 0) {
-      keysOnlyInLanguages[`${config.defaultLanguage}_not_${lang}`] = onlyInDefault
+      keysOnlyInLanguages[`${config.defaultLanguage}_not_${lang}`] =
+        onlyInDefault
     }
     if (onlyInTarget.length > 0) {
-      keysOnlyInLanguages[`${lang}_not_${config.defaultLanguage}`] = onlyInTarget
+      keysOnlyInLanguages[`${lang}_not_${config.defaultLanguage}`] =
+        onlyInTarget
     }
   }
 
@@ -316,12 +364,19 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
   // 2. Active placeholders
   if (activePlaceholderKeys.length > 0) {
     hasError = true
-    console.log(`\n${pc.bold(pc.red(`❌ Active Placeholder/Untranslated Keys Used in Code (${activePlaceholderKeys.length}):`))}`)
+    console.log(
+      `\n${pc.bold(pc.red(`❌ Active Placeholder/Untranslated Keys Used in Code (${activePlaceholderKeys.length}):`))}`
+    )
     activePlaceholderKeys
       .sort((a, b) => a.key.localeCompare(b.key))
       .forEach(({ key, lang }) => {
-        const files = keyToFilesMap.get(key) || getBaseKey(key) === key ? [] : keyToFilesMap.get(getBaseKey(key)) || []
-        console.log(`  - [${lang.toUpperCase()}] ${pc.red(key)} ${files.length > 0 ? `(referenced in: ${files.join(", ")})` : ""}`)
+        const files =
+          keyToFilesMap.get(key) || getBaseKey(key) === key
+            ? []
+            : keyToFilesMap.get(getBaseKey(key)) || []
+        console.log(
+          `  - [${lang.toUpperCase()}] ${pc.red(key)} ${files.length > 0 ? `(referenced in: ${files.join(", ")})` : ""}`
+        )
       })
   } else {
     log.success("Zero active placeholder keys detected in the source code!")
@@ -334,7 +389,9 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
     console.log(`\n${pc.bold(pc.red("❌ Locale Alignment Mismatches:"))}`)
     for (const key of mismatchLangs) {
       const [from, to] = key.split("_not_")
-      console.log(`  ${pc.yellow(`Keys present in ${from} but missing in ${to} (${keysOnlyInLanguages[key].length}):`)}`)
+      console.log(
+        `  ${pc.yellow(`Keys present in ${from} but missing in ${to} (${keysOnlyInLanguages[key].length}):`)}`
+      )
       keysOnlyInLanguages[key].sort().forEach((k) => console.log(`    - ${k}`))
     }
   } else {
@@ -343,17 +400,23 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
 
   // 4. Unused keys (warning only)
   if (unusedKeys.length > 0) {
-    console.log(`\n${pc.bold(pc.yellow(`⚠️  Unused Keys in locales (${unusedKeys.length}):`))}`)
+    console.log(
+      `\n${pc.bold(pc.yellow(`⚠️  Unused Keys in locales (${unusedKeys.length}):`))}`
+    )
     unusedKeys.sort().forEach((key) => {
       console.log(`  - ${pc.yellow(key)}`)
     })
   } else {
-    log.success("Zero unused keys detected! All defined keys are referenced in code.")
+    log.success(
+      "Zero unused keys detected! All defined keys are referenced in code."
+    )
   }
 
   // 5. Unused placeholders (warning only)
   if (unusedPlaceholderKeys.length > 0) {
-    console.log(`\n${pc.bold(pc.yellow(`⚠️  Unused Placeholder Keys in locales (${unusedPlaceholderKeys.length}):`))}`)
+    console.log(
+      `\n${pc.bold(pc.yellow(`⚠️  Unused Placeholder Keys in locales (${unusedPlaceholderKeys.length}):`))}`
+    )
     unusedPlaceholderKeys
       .sort((a, b) => a.key.localeCompare(b.key))
       .forEach(({ key, lang }) => {
@@ -363,8 +426,12 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
 
   // Quality metrics summary
   log.header("QUALITY METRICS SUMMARY")
-  console.log(`- Translation Key Coverage (Code -> Locales): ${pc.bold(codeKeyCoverage === "100.00" ? pc.green(codeKeyCoverage + "%") : pc.red(codeKeyCoverage + "%"))}`)
-  console.log(`- Translation Key Utilization (Locales -> Code): ${pc.bold(pc.magenta(utilizationPercent + "%"))}`)
+  console.log(
+    `- Translation Key Coverage (Code -> Locales): ${pc.bold(codeKeyCoverage === "100.00" ? pc.green(codeKeyCoverage + "%") : pc.red(codeKeyCoverage + "%"))}`
+  )
+  console.log(
+    `- Translation Key Utilization (Locales -> Code): ${pc.bold(pc.magenta(utilizationPercent + "%"))}`
+  )
   console.log(`- Total Defined Keys: ${pc.bold(totalDefinedKeys)}`)
   console.log(`- Actually Used in Code: ${pc.bold(usedDefinedKeysCount)}`)
   console.log(`- Missing/Undefined: ${pc.bold(missingKeys.length)}`)
@@ -374,7 +441,7 @@ export function validate(config: I18nCopConfig, cwd: string = process.cwd()): Va
   if (config.outputReport) {
     const reportPath = path.resolve(cwd, config.outputReport)
     const defaultBasename = path.basename(defaultLocalePath)
-    
+
     const markdownContent = `# i18n Quality and Coverage Report
 
 Generated on: ${new Date().toISOString()}
@@ -424,10 +491,16 @@ ${activePlaceholderKeys
     ({ key, lang }) =>
       `- **\`${key}\`** [\`${lang.toUpperCase()}\`] ${
         keyToFilesMap.has(key)
-          ? `(referenced in: ${keyToFilesMap.get(key)?.map((f) => `\`${f}\``).join(", ")})`
+          ? `(referenced in: ${keyToFilesMap
+              .get(key)
+              ?.map((f) => `\`${f}\``)
+              .join(", ")})`
           : keyToFilesMap.has(getBaseKey(key))
-          ? `(referenced in: ${keyToFilesMap.get(getBaseKey(key))?.map((f) => `\`${f}\``).join(", ")})`
-          : ""
+            ? `(referenced in: ${keyToFilesMap
+                .get(getBaseKey(key))
+                ?.map((f) => `\`${f}\``)
+                .join(", ")})`
+            : ""
       }`
   )
   .join("\n")}
@@ -483,7 +556,9 @@ ${unusedPlaceholderKeys
 }
 `
     fs.writeFileSync(reportPath, markdownContent, "utf8")
-    log.info(`💾 Markdown report saved to: ${pc.cyan(path.relative(cwd, reportPath))}\n`)
+    log.info(
+      `💾 Markdown report saved to: ${pc.cyan(path.relative(cwd, reportPath))}\n`
+    )
   }
 
   const results: ValidationResults = {
@@ -499,7 +574,9 @@ ${unusedPlaceholderKeys
   }
 
   if (hasError) {
-    log.error("Validation failed. Please fix the missing keys, active placeholders, or locale mismatches.")
+    log.error(
+      "Validation failed. Please fix the missing keys, active placeholders, or locale mismatches."
+    )
   } else {
     log.success("i18n Quality Validation passed successfully!\n")
   }

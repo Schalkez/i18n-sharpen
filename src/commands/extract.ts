@@ -2,13 +2,26 @@ import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
 import type { I18nCopConfig } from "../types"
-import { getFiles, stripComments, flattenObject, unflattenObject, findLocaleFile, readLocaleFile, writeLocaleFile, log } from "../utils"
+import {
+  getFiles,
+  stripComments,
+  flattenObject,
+  unflattenObject,
+  findLocaleFile,
+  readLocaleFile,
+  writeLocaleFile,
+  escapeRegex,
+  log
+} from "../utils"
 
-export function extract(config: I18nCopConfig, cwd: string = process.cwd()): void {
+export function extract(
+  config: I18nCopConfig,
+  cwd: string = process.cwd()
+): void {
   log.header("I18N-SHARPEN EXTRACTOR")
 
   const localesDirAbs = path.resolve(cwd, config.localesDir)
-  
+
   if (!fs.existsSync(localesDirAbs)) {
     log.error(`Locales directory not found: ${localesDirAbs}`)
     process.exit(1)
@@ -19,23 +32,40 @@ export function extract(config: I18nCopConfig, cwd: string = process.cwd()): voi
   for (const scanDir of config.scanDirs) {
     const scanDirAbs = path.resolve(cwd, scanDir)
     if (fs.existsSync(scanDirAbs)) {
-      filesToScan.push(...getFiles(scanDirAbs, config.fileExtensions || [], config.excludeDirs || []))
+      filesToScan.push(
+        ...getFiles(
+          scanDirAbs,
+          config.fileExtensions || [],
+          config.excludeDirs || []
+        )
+      )
     }
   }
 
   // Scan source files for translation keys
   const usedKeys = new Set<string>()
-  const functionsJoined = (config.matchFunctions || ["t", "getTranslation"]).join("|")
-  const keyRegex = new RegExp("\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"\\`])([a-zA-Z0-9_\\-.]+)\\1", "g")
+  // Escape user-supplied config entries to prevent regex injection / ReDoS.
+  const functionsJoined = (config.matchFunctions || ["t", "getTranslation"])
+    .map(escapeRegex)
+    .join("|")
+  const keyRegex = new RegExp(
+    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
+    "g"
+  )
 
-  const attrsJoined = (config.matchAttributes || ["i18nKey", "id"]).join("|")
-  const attrRegex = new RegExp("\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"\\`])([a-zA-Z0-9_\\-.]+)\\1", "g")
+  const attrsJoined = (config.matchAttributes || ["i18nKey", "id"])
+    .map(escapeRegex)
+    .join("|")
+  const attrRegex = new RegExp(
+    "\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
+    "g"
+  )
 
   for (const file of filesToScan) {
     try {
       const content = fs.readFileSync(file, "utf8")
       const cleanContent = stripComments(content)
-      
+
       // Match functions
       let match
       keyRegex.lastIndex = 0
@@ -57,7 +87,9 @@ export function extract(config: I18nCopConfig, cwd: string = process.cwd()): voi
     }
   }
 
-  log.info(`Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`)
+  log.info(
+    `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
+  )
 
   let totalExtractedCount = 0
 
@@ -74,7 +106,9 @@ export function extract(config: I18nCopConfig, cwd: string = process.cwd()): voi
         langJson = readLocaleFile(langPath)
         flatJson = flattenObject(langJson)
       } catch (error) {
-        log.error(`Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`)
+        log.error(
+          `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`
+        )
         process.exit(1)
       }
     }
@@ -97,7 +131,9 @@ export function extract(config: I18nCopConfig, cwd: string = process.cwd()): voi
     }
 
     if (missingKeys.length > 0) {
-      log.info(`📥 Extracting ${pc.green(missingKeys.length)} new keys to ${pc.cyan(path.basename(langPath))}:`)
+      log.info(
+        `📥 Extracting ${pc.green(missingKeys.length)} new keys to ${pc.cyan(path.basename(langPath))}:`
+      )
       missingKeys.sort().forEach((key) => {
         flatJson[key] = key // default translation is the key path itself
         console.log(`  + ${pc.green(key)}`)
@@ -109,17 +145,23 @@ export function extract(config: I18nCopConfig, cwd: string = process.cwd()): voi
         writeLocaleFile(langPath, nestedJson)
         totalExtractedCount += missingKeys.length
       } catch (error) {
-        log.error(`Failed to write to file '${langPath}': ${(error as Error).message}`)
+        log.error(
+          `Failed to write to file '${langPath}': ${(error as Error).message}`
+        )
         process.exit(1)
       }
     } else {
-      log.info(`✨ No new keys to extract for ${pc.cyan(path.basename(langPath))}.`)
+      log.info(
+        `✨ No new keys to extract for ${pc.cyan(path.basename(langPath))}.`
+      )
     }
   }
 
   if (totalExtractedCount > 0) {
     log.success("Locale files updated successfully!\n")
   } else {
-    log.success("All used translation keys are already present in locale files.\n")
+    log.success(
+      "All used translation keys are already present in locale files.\n"
+    )
   }
 }

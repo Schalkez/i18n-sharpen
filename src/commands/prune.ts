@@ -2,9 +2,23 @@ import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
 import type { I18nCopConfig } from "../types"
-import { getFiles, stripComments, flattenObject, unflattenObject, findLocaleFile, readLocaleFile, writeLocaleFile, matchWildcard, log } from "../utils"
+import {
+  getFiles,
+  stripComments,
+  flattenObject,
+  unflattenObject,
+  findLocaleFile,
+  readLocaleFile,
+  writeLocaleFile,
+  matchWildcard,
+  escapeRegex,
+  log
+} from "../utils"
 
-export function prune(config: I18nCopConfig, cwd: string = process.cwd()): void {
+export function prune(
+  config: I18nCopConfig,
+  cwd: string = process.cwd()
+): void {
   log.header("I18N-SHARPEN PRUNER")
 
   const localesDirAbs = path.resolve(cwd, config.localesDir)
@@ -19,17 +33,34 @@ export function prune(config: I18nCopConfig, cwd: string = process.cwd()): void 
   for (const scanDir of config.scanDirs) {
     const scanDirAbs = path.resolve(cwd, scanDir)
     if (fs.existsSync(scanDirAbs)) {
-      filesToScan.push(...getFiles(scanDirAbs, config.fileExtensions || [], config.excludeDirs || []))
+      filesToScan.push(
+        ...getFiles(
+          scanDirAbs,
+          config.fileExtensions || [],
+          config.excludeDirs || []
+        )
+      )
     }
   }
 
   // Scan source files for translation keys
   const usedKeys = new Set<string>()
-  const functionsJoined = (config.matchFunctions || ["t", "getTranslation"]).join("|")
-  const keyRegex = new RegExp("\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"\\`])([a-zA-Z0-9_\\-.]+)\\1", "g")
+  // Escape user-supplied config entries to prevent regex injection / ReDoS.
+  const functionsJoined = (config.matchFunctions || ["t", "getTranslation"])
+    .map(escapeRegex)
+    .join("|")
+  const keyRegex = new RegExp(
+    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
+    "g"
+  )
 
-  const attrsJoined = (config.matchAttributes || ["i18nKey", "id"]).join("|")
-  const attrRegex = new RegExp("\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"\\`])([a-zA-Z0-9_\\-.]+)\\1", "g")
+  const attrsJoined = (config.matchAttributes || ["i18nKey", "id"])
+    .map(escapeRegex)
+    .join("|")
+  const attrRegex = new RegExp(
+    "\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
+    "g"
+  )
 
   const fileContents = filesToScan.map((file) => {
     try {
@@ -73,7 +104,9 @@ export function prune(config: I18nCopConfig, cwd: string = process.cwd()): void 
         localesFlat[lang] = flattenObject(localesData[lang])
         Object.keys(localesFlat[lang]).forEach((key) => allLocaleKeys.add(key))
       } catch (error) {
-        log.error(`Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`)
+        log.error(
+          `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`
+        )
         process.exit(1)
       }
     }
@@ -101,7 +134,7 @@ export function prune(config: I18nCopConfig, cwd: string = process.cwd()): void 
 
   // Plural/Context suffix alignment helper
   const suffixes = config.pluralSuffixes || []
-  
+
   function getBaseKey(key: string): string {
     for (const suffix of suffixes) {
       if (key.endsWith(suffix)) {
@@ -114,7 +147,7 @@ export function prune(config: I18nCopConfig, cwd: string = process.cwd()): void 
   function isKeyUsed(key: string): boolean {
     // Exact match
     if (usedKeys.has(key)) return true
-    
+
     // Whitelisted in ignoreKeys (wildcard match)
     if (config.ignoreKeys) {
       for (const pattern of config.ignoreKeys) {
@@ -133,7 +166,9 @@ export function prune(config: I18nCopConfig, cwd: string = process.cwd()): void 
     return false
   }
 
-  log.info(`Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`)
+  log.info(
+    `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
+  )
 
   let totalPrunedCount = 0
 
@@ -154,22 +189,30 @@ export function prune(config: I18nCopConfig, cwd: string = process.cwd()): void 
     }
 
     if (prunedCount > 0) {
-      log.info(`🧹 Pruning ${pc.yellow(prunedCount)} unused keys from ${pc.cyan(path.basename(langPath))}`)
+      log.info(
+        `🧹 Pruning ${pc.yellow(prunedCount)} unused keys from ${pc.cyan(path.basename(langPath))}`
+      )
       const nestedJson = unflattenObject(newFlatJson)
       try {
         writeLocaleFile(langPath, nestedJson)
         totalPrunedCount += prunedCount
       } catch (error) {
-        log.error(`Failed to write to file '${langPath}': ${(error as Error).message}`)
+        log.error(
+          `Failed to write to file '${langPath}': ${(error as Error).message}`
+        )
         process.exit(1)
       }
     } else {
-      log.info(`✨ No unused keys to prune in ${pc.cyan(path.basename(langPath))}.`)
+      log.info(
+        `✨ No unused keys to prune in ${pc.cyan(path.basename(langPath))}.`
+      )
     }
   }
 
   if (totalPrunedCount > 0) {
-    log.success(`Files have been successfully cleaned! Total pruned: ${totalPrunedCount} keys.\n`)
+    log.success(
+      `Files have been successfully cleaned! Total pruned: ${totalPrunedCount} keys.\n`
+    )
   } else {
     log.success("No unused keys found to prune.\n")
   }
