@@ -267,20 +267,31 @@ export function unflattenObject(
 
 /**
  * Find the path of a locale file for a given language.
- * Checks for .json, .yaml, and .yml extensions.
+ *
+ * Checks for .json, .yaml, and .yml extensions in that order. If
+ * multiple files with the same base name exist (e.g. `en.json` and
+ * `en.yaml`), a warning is emitted and the first match wins — this
+ * surfaces accidental drift during JSON<->YAML migrations.
  */
 export function findLocaleFile(
   localesDir: string,
   lang: string
 ): string | null {
   const extensions = [".json", ".yaml", ".yml"]
-  for (const ext of extensions) {
-    const filePath = path.join(localesDir, `${lang}${ext}`)
-    if (fs.existsSync(filePath)) {
-      return filePath
-    }
+  const found = extensions
+    .map((ext) => path.join(localesDir, `${lang}${ext}`))
+    .filter((p) => fs.existsSync(p))
+  if (found.length === 0) return null
+  if (found.length > 1) {
+    log.warn(
+      `Multiple locale files found for '${lang}' in ${localesDir}: ${found
+        .map((p) => path.basename(p))
+        .join(
+          ", "
+        )}. Using '${path.basename(found[0])}'. Remove the duplicates to silence this warning.`
+    )
   }
-  return null
+  return found[0]
 }
 
 /**
