@@ -375,10 +375,15 @@ export function validate(
     activePlaceholderKeys
       .sort((a, b) => a.key.localeCompare(b.key))
       .forEach(({ key, lang }) => {
-        const files =
-          keyToFilesMap.get(key) || getBaseKey(key) === key
-            ? []
-            : keyToFilesMap.get(getBaseKey(key)) || []
+        // Prefer direct map lookup; fall back to the plural-base key.
+        // Previous expression had an operator-precedence bug that
+        // parsed as `(get(key) || (base === key)) ? [] : ...` so any
+        // direct hit was wiped to `[]`.
+        const direct = keyToFilesMap.get(key)
+        const baseKey = getBaseKey(key)
+        const baseFiles =
+          baseKey !== key ? keyToFilesMap.get(baseKey) : undefined
+        const files = direct ?? baseFiles ?? []
         console.log(
           `  - [${lang.toUpperCase()}] ${pc.red(key)} ${files.length > 0 ? `(referenced in: ${files.join(", ")})` : ""}`
         )
