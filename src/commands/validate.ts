@@ -10,6 +10,7 @@ import {
   readLocaleFile,
   matchWildcard,
   escapeRegex,
+  isStaticStringLiteral,
   log
 } from "../utils"
 
@@ -119,10 +120,16 @@ export function validate(
     "g"
   )
 
-  // Regex for potential dynamic template references
-  // e.g. t('prefix.' + variable) or t(`prefix.${variable}`)
-  const dynamicRegex = new RegExp(
-    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*([^'\"`\\s][^)]*)\\)",
+  // Regex to capture the first argument of every <fn>(...) call, regardless
+  // of whether it starts with a quote. We then post-classify the argument
+  // as static-literal vs dynamic in JS. Compared to the prior regex which
+  // excluded quote-leading args, this correctly flags:
+  //   t("k" + suffix)          — concatenation
+  //   t(`pre.${x}`)            — template with placeholder
+  //   t(getKey())              — function call
+  // and still skips pure static literals.
+  const dynamicCallRegex = new RegExp(
+    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*([^)]*)\\)",
     "g"
   )
 
@@ -174,17 +181,15 @@ export function validate(
       }
     }
 
-    // Check for dynamic key warnings
-    dynamicRegex.lastIndex = 0
-    while ((match = dynamicRegex.exec(cleanContent)) !== null) {
+    // Check for dynamic key warnings. The regex captures the entire
+    // parenthesized first-argument span; we classify it in JS to avoid
+    // the prior false-negatives where a `"key" + suffix` or
+    // `\`pre.${x}\`` call was silently skipped.
+    dynamicCallRegex.lastIndex = 0
+    while ((match = dynamicCallRegex.exec(cleanContent)) !== null) {
       const arg = match[1].trim()
-      // If it doesn't start with quote or backtick, or if it is a template literal with placeholders
-      const isStaticString =
-        (arg.startsWith("'") && arg.endsWith("'")) ||
-        (arg.startsWith('"') && arg.endsWith('"')) ||
-        (arg.startsWith("`") && arg.endsWith("`") && !arg.includes("${"))
-
-      if (!isStaticString) {
+      if (arg.length === 0) continue
+      if (!isStaticStringLiteral(arg)) {
         log.warn(
           `Potential dynamic translation key reference in ${pc.cyan(relativePath)}: ${pc.yellow(`${match[0]}`)}`
         )

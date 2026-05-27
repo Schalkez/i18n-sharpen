@@ -320,6 +320,43 @@ export function writeLocaleFile(
 }
 
 /**
+ * Return true if `arg` is a single static string literal — i.e. a quoted
+ * literal that consumes the whole argument with no concatenation, no
+ * template interpolation, and no trailing tokens.
+ *
+ * Used by validate.ts to decide whether a `t(...)` call is statically
+ * resolvable or should be flagged as dynamic.
+ */
+export function isStaticStringLiteral(arg: string): boolean {
+  const trimmed = arg.trim()
+  if (trimmed.length < 2) return false
+  const quote = trimmed[0]
+  if (quote !== "'" && quote !== '"' && quote !== "`") return false
+  // Walk the literal respecting escapes; if it terminates before the end
+  // of `trimmed`, the argument has trailing tokens (concatenation, etc.)
+  // and is not a single static literal.
+  let i = 1
+  while (i < trimmed.length) {
+    const ch = trimmed[i]
+    if (ch === "\\" && i + 1 < trimmed.length) {
+      i += 2
+      continue
+    }
+    if (quote === "`" && ch === "$" && trimmed[i + 1] === "{") {
+      // Template literal with placeholder — dynamic by definition.
+      return false
+    }
+    if (ch === quote) {
+      // Literal closes here; if there is anything after it, it's dynamic.
+      return i === trimmed.length - 1
+    }
+    i++
+  }
+  // Unterminated literal — treat as not-static so the user is warned.
+  return false
+}
+
+/**
  * Escape a string so it can be safely embedded in a regular expression.
  * Used to defend against regex-injection / ReDoS via user-controlled
  * matchFunctions / matchAttributes config entries.
