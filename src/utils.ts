@@ -436,6 +436,53 @@ export function isStaticStringLiteral(arg: string): boolean {
 }
 
 /**
+ * Strip the first matching plural / context suffix off `key` (e.g.
+ * `"count_one"` -> `"count"` when `_one` is in `suffixes`). Returns
+ * `key` unchanged when no suffix matches. Shared by validate and
+ * prune so the rules stay in lock-step (LO-06).
+ */
+export function getBaseKey(key: string, suffixes: string[]): string {
+  for (const suffix of suffixes) {
+    if (key.endsWith(suffix)) {
+      return key.slice(0, -suffix.length)
+    }
+  }
+  return key
+}
+
+/**
+ * Test whether `key` should be considered used given the set of keys
+ * found in source, the user's ignoreKeys wildcards, and the configured
+ * plural suffixes. Shared by validate and prune (LO-06).
+ */
+export function isKeyUsed(
+  key: string,
+  usedKeys: Set<string>,
+  ignoreKeys: string[] | undefined,
+  pluralSuffixes: string[]
+): boolean {
+  // Exact match
+  if (usedKeys.has(key)) return true
+
+  // Whitelisted in ignoreKeys (wildcard match)
+  if (ignoreKeys) {
+    for (const pattern of ignoreKeys) {
+      if (matchWildcard(pattern, key)) {
+        return true
+      }
+    }
+  }
+
+  // Check if key is a plural-suffix variant of a used key
+  const baseKey = getBaseKey(key, pluralSuffixes)
+  if (baseKey !== key && usedKeys.has(baseKey)) {
+    return true
+  }
+
+  return false
+}
+
+/**
  * Normalize a (possibly platform-specific) path for display in reports
  * and console output. Converts Windows backslashes to forward slashes
  * so reports are platform-independent and can be copy/pasted into

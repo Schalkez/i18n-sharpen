@@ -10,8 +10,8 @@ import {
   findLocaleFile,
   readLocaleFile,
   writeLocaleFile,
-  matchWildcard,
   escapeRegex,
+  isKeyUsed as sharedIsKeyUsed,
   log
 } from "../utils"
 
@@ -86,9 +86,10 @@ export function prune(
     }
   }
 
-  // Load locale files and get all keys
+  // Load locale files and get all keys.
+  // LO-05: drop the unused `localesData` accumulator — we only need the
+  // flattened map for prune's purposes.
   const allLocaleKeys = new Set<string>()
-  const localesData: Record<string, Record<string, unknown>> = {}
   const localesFlat: Record<string, Record<string, string>> = {}
   const localeFilePaths: Record<string, string> = {}
 
@@ -97,8 +98,8 @@ export function prune(
     if (langPath) {
       localeFilePaths[lang] = langPath
       try {
-        localesData[lang] = readLocaleFile(langPath)
-        localesFlat[lang] = flattenObject(localesData[lang])
+        const parsed = readLocaleFile(langPath)
+        localesFlat[lang] = flattenObject(parsed)
         Object.keys(localesFlat[lang]).forEach((key) => allLocaleKeys.add(key))
       } catch (error) {
         throw new Error(
@@ -134,39 +135,11 @@ export function prune(
     }
   }
 
-  // Plural/Context suffix alignment helper
+  // Plural/Context suffix alignment helper — shared with validate.ts
+  // through utils.isKeyUsed (LO-06).
   const suffixes = config.pluralSuffixes || []
-
-  function getBaseKey(key: string): string {
-    for (const suffix of suffixes) {
-      if (key.endsWith(suffix)) {
-        return key.slice(0, -suffix.length)
-      }
-    }
-    return key
-  }
-
-  function isKeyUsed(key: string): boolean {
-    // Exact match
-    if (usedKeys.has(key)) return true
-
-    // Whitelisted in ignoreKeys (wildcard match)
-    if (config.ignoreKeys) {
-      for (const pattern of config.ignoreKeys) {
-        if (matchWildcard(pattern, key)) {
-          return true
-        }
-      }
-    }
-
-    // Check if key is a plural suffix variant of a used key
-    const baseKey = getBaseKey(key)
-    if (baseKey !== key && usedKeys.has(baseKey)) {
-      return true
-    }
-
-    return false
-  }
+  const isKeyUsed = (key: string): boolean =>
+    sharedIsKeyUsed(key, usedKeys, config.ignoreKeys, suffixes)
 
   log.info(
     `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`

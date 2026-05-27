@@ -12,10 +12,11 @@ import {
   flattenObject,
   findLocaleFile,
   readLocaleFile,
-  matchWildcard,
   escapeRegex,
   isStaticStringLiteral,
   normalizeDisplayPath,
+  getBaseKey as sharedGetBaseKey,
+  isKeyUsed as sharedIsKeyUsed,
   log
 } from "../utils"
 
@@ -240,39 +241,12 @@ export function validate(
     }
   } // end if (config.looseKeyMatch)
 
-  // Plural/Context suffix alignment helper
+  // Plural/Context suffix alignment helpers — delegate to shared
+  // implementations in utils.ts (LO-06).
   const suffixes = config.pluralSuffixes || []
-
-  function getBaseKey(key: string): string {
-    for (const suffix of suffixes) {
-      if (key.endsWith(suffix)) {
-        return key.slice(0, -suffix.length)
-      }
-    }
-    return key
-  }
-
-  function isKeyUsed(key: string): boolean {
-    // Exact match
-    if (usedKeys.has(key)) return true
-
-    // Whitelisted in ignoreKeys (wildcard match)
-    if (config.ignoreKeys) {
-      for (const pattern of config.ignoreKeys) {
-        if (matchWildcard(pattern, key)) {
-          return true
-        }
-      }
-    }
-
-    // Check if key is a plural suffix variant of a used key
-    const baseKey = getBaseKey(key)
-    if (baseKey !== key && usedKeys.has(baseKey)) {
-      return true
-    }
-
-    return false
-  }
+  const getBaseKey = (key: string): string => sharedGetBaseKey(key, suffixes)
+  const isKeyUsed = (key: string): boolean =>
+    sharedIsKeyUsed(key, usedKeys, config.ignoreKeys, suffixes)
 
   log.info(
     `Found ${pc.green(usedKeys.size)} unique translation keys used in source code.`

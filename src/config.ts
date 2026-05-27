@@ -3,7 +3,18 @@ import * as path from "path"
 import { z } from "zod"
 import type { I18nCopConfig } from "./types"
 
+/**
+ * Single source of truth for every default value used by the CLI.
+ *
+ * LO-04: this object intentionally consolidates what would otherwise be
+ * scattered magic strings (`"i18n-coverage.md"`, `"src"`, plural
+ * suffixes, etc.). When adding a new tunable, add it here and reference
+ * `DEFAULT_CONFIG.<field>` from other modules rather than re-stating
+ * the literal.
+ */
 export const DEFAULT_CONFIG: Partial<I18nCopConfig> = {
+  scanDirs: ["src"],
+  localesDir: "src/locales",
   excludeDirs: [
     "node_modules",
     "dist",
@@ -119,8 +130,8 @@ export function loadConfig(cwd: string = process.cwd()): I18nCopConfig {
 
   // Merge with defaults
   const rawConfig = {
-    scanDirs: fileConfig.scanDirs || ["src"],
-    localesDir: fileConfig.localesDir || "src/locales",
+    scanDirs: fileConfig.scanDirs || DEFAULT_CONFIG.scanDirs!,
+    localesDir: fileConfig.localesDir || DEFAULT_CONFIG.localesDir!,
     defaultLanguage:
       fileConfig.defaultLanguage || DEFAULT_CONFIG.defaultLanguage!,
     supportedLanguages:
