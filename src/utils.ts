@@ -6,26 +6,37 @@ import YAML from "yaml"
 /**
  * Recursively find all source files in a directory matching specific extensions,
  * ignoring specified directories.
+ *
+ * Uses readdirSync({ withFileTypes: true }) so each entry's type is
+ * known without an extra statSync call (MD-02). Symlinks are skipped to
+ * avoid infinite recursion on symlink cycles or junction points (MD-01).
  */
 export function getFiles(
   dir: string,
   extensions: string[],
   excludeDirs: string[]
 ): string[] {
-  let results: string[] = []
+  const results: string[] = []
   if (!fs.existsSync(dir)) return results
 
-  const list = fs.readdirSync(dir)
-  for (const file of list) {
-    const filePath = path.join(dir, file)
-    const stat = fs.statSync(filePath)
+  let entries: fs.Dirent[]
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return results
+  }
+  for (const entry of entries) {
+    // Skip symlinks entirely — they can point back into an ancestor
+    // directory (cycle) or to anywhere outside the scan root.
+    if (entry.isSymbolicLink()) continue
 
-    if (stat && stat.isDirectory()) {
-      if (!excludeDirs.includes(file)) {
-        results = results.concat(getFiles(filePath, extensions, excludeDirs))
+    const filePath = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      if (!excludeDirs.includes(entry.name)) {
+        results.push(...getFiles(filePath, extensions, excludeDirs))
       }
-    } else {
-      if (extensions.includes(path.extname(file))) {
+    } else if (entry.isFile()) {
+      if (extensions.includes(path.extname(entry.name))) {
         results.push(filePath)
       }
     }
