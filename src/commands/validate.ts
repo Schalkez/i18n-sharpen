@@ -352,10 +352,10 @@ export function validate(
   // 1. Missing keys
   if (missingKeys.length > 0) {
     hasError = true
-    console.log(pc.bold(pc.red(`❌ Missing Keys (${missingKeys.length}):`)))
+    log.info(pc.bold(pc.red(`❌ Missing Keys (${missingKeys.length}):`)))
     missingKeys.sort().forEach((key) => {
       const files = keyToFilesMap.get(key) || []
-      console.log(`  - ${pc.red(key)} (referenced in: ${files.join(", ")})`)
+      log.info(`  - ${pc.red(key)} (referenced in: ${files.join(", ")})`)
     })
   } else {
     log.success("Zero missing keys detected in the source code!")
@@ -364,7 +364,7 @@ export function validate(
   // 2. Active placeholders
   if (activePlaceholderKeys.length > 0) {
     hasError = true
-    console.log(
+    log.info(
       `\n${pc.bold(pc.red(`❌ Active Placeholder/Untranslated Keys Used in Code (${activePlaceholderKeys.length}):`))}`
     )
     activePlaceholderKeys
@@ -379,7 +379,7 @@ export function validate(
         const baseFiles =
           baseKey !== key ? keyToFilesMap.get(baseKey) : undefined
         const files = direct ?? baseFiles ?? []
-        console.log(
+        log.info(
           `  - [${lang.toUpperCase()}] ${pc.red(key)} ${files.length > 0 ? `(referenced in: ${files.join(", ")})` : ""}`
         )
       })
@@ -390,15 +390,15 @@ export function validate(
   // 3. Locale alignment
   if (keysOnlyInLanguages.length > 0) {
     hasError = true
-    console.log(`\n${pc.bold(pc.red("❌ Locale Alignment Mismatches:"))}`)
+    log.info(`\n${pc.bold(pc.red("❌ Locale Alignment Mismatches:"))}`)
     for (const mismatch of keysOnlyInLanguages) {
-      console.log(
+      log.info(
         `  ${pc.yellow(`Keys present in ${mismatch.from} but missing in ${mismatch.to} (${mismatch.keys.length}):`)}`
       )
       mismatch.keys
         .slice()
         .sort()
-        .forEach((k) => console.log(`    - ${k}`))
+        .forEach((k) => log.info(`    - ${k}`))
     }
   } else {
     log.success("Perfect key alignment across all locale files!")
@@ -406,11 +406,11 @@ export function validate(
 
   // 4. Unused keys (warning only)
   if (unusedKeys.length > 0) {
-    console.log(
+    log.info(
       `\n${pc.bold(pc.yellow(`⚠️  Unused Keys in locales (${unusedKeys.length}):`))}`
     )
     unusedKeys.sort().forEach((key) => {
-      console.log(`  - ${pc.yellow(key)}`)
+      log.info(`  - ${pc.yellow(key)}`)
     })
   } else {
     log.success(
@@ -420,28 +420,28 @@ export function validate(
 
   // 5. Unused placeholders (warning only)
   if (unusedPlaceholderKeys.length > 0) {
-    console.log(
+    log.info(
       `\n${pc.bold(pc.yellow(`⚠️  Unused Placeholder Keys in locales (${unusedPlaceholderKeys.length}):`))}`
     )
     unusedPlaceholderKeys
       .sort((a, b) => a.key.localeCompare(b.key))
       .forEach(({ key, lang }) => {
-        console.log(`  - [${lang.toUpperCase()}] ${pc.yellow(key)}`)
+        log.info(`  - [${lang.toUpperCase()}] ${pc.yellow(key)}`)
       })
   }
 
   // Quality metrics summary
   log.header("QUALITY METRICS SUMMARY")
-  console.log(
+  log.info(
     `- Translation Key Coverage (Code -> Locales): ${pc.bold(codeKeyCoverage === "100.00" ? pc.green(codeKeyCoverage + "%") : pc.red(codeKeyCoverage + "%"))}`
   )
-  console.log(
+  log.info(
     `- Translation Key Utilization (Locales -> Code): ${pc.bold(pc.magenta(utilizationPercent + "%"))}`
   )
-  console.log(`- Total Defined Keys: ${pc.bold(totalDefinedKeys)}`)
-  console.log(`- Actually Used in Code: ${pc.bold(usedDefinedKeysCount)}`)
-  console.log(`- Missing/Undefined: ${pc.bold(missingKeys.length)}`)
-  console.log(`- Unused/Stale: ${pc.bold(unusedKeys.length)}`)
+  log.info(`- Total Defined Keys: ${pc.bold(totalDefinedKeys)}`)
+  log.info(`- Actually Used in Code: ${pc.bold(usedDefinedKeysCount)}`)
+  log.info(`- Missing/Undefined: ${pc.bold(missingKeys.length)}`)
+  log.info(`- Unused/Stale: ${pc.bold(unusedKeys.length)}`)
 
   const results: ValidationResults = {
     missingKeys,
