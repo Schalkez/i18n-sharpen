@@ -1,21 +1,36 @@
 import * as fs from "fs"
+import { createRequire } from "module"
 import * as path from "path"
 import YAML from "yaml"
 import { log } from "@/utils"
 import { flattenObject } from "./transform"
 
+const _require = createRequire(import.meta.url)
+
+/** All locale file extensions supported for reading. */
+export const LOCALE_EXTENSIONS = [
+  ".json",
+  ".yaml",
+  ".yml",
+  ".js",
+  ".cjs",
+  ".mjs",
+  ".ts",
+  ".tsx"
+]
+
 /**
  * Find the path of a locale file for a given language.
  *
- * Checks for .json, .yaml, .yml in that order. If multiple files with
- * the same base name exist (e.g. `en.json` and `en.yaml`), a warning
- * is emitted and the first match wins.
+ * Checks for .json, .yaml, .yml, .js, .cjs, .mjs, .ts, .tsx in that order.
+ * If multiple files with the same base name exist, a warning is emitted and
+ * the first match wins.
  */
 export function findLocaleFile(
   localesDir: string,
   lang: string
 ): string | null {
-  const extensions = [".json", ".yaml", ".yml"]
+  const extensions = LOCALE_EXTENSIONS
   const found = extensions
     .map((ext) => path.join(localesDir, `${lang}${ext}`))
     .filter((p) => fs.existsSync(p))
@@ -33,16 +48,66 @@ export function findLocaleFile(
 }
 
 /**
- * Load and parse a locale file (JSON or YAML).
+ * Load and parse a locale file (JSON, YAML, or JS/TS module).
  *
- * Tolerates real-world edge cases that previously crashed the tool:
- *   - UTF-8 BOM prefix (\\uFEFF)
- *   - whitespace-only content
- *   - empty content
- * Returns an empty object instead of throwing in those cases.
+ * Tolerates real-world edge cases:
+ *   - UTF-8 BOM prefix (U+FEFF)
+ *   - whitespace-only / empty JSON/YAML
+ *
+ * JS/TS locale files:
+ *   - `.js` / `.cjs`: loaded via `createRequire` (sync, no extra deps).
+ *     Must use `module.exports = { ... }` or `exports.default = { ... }`.
+ *   - `.mjs` / `.ts` / `.tsx`: loaded via `jiti` (must be installed as a
+ *     dev-dependency: `pnpm add -D jiti`). Supports `export default { ... }`.
+ *     Throws a helpful error if jiti is not available.
  */
 export function readLocaleFile(filePath: string): Record<string, unknown> {
   const ext = path.extname(filePath).toLowerCase()
+
+  // ── JS / CJS ─────────────────────────────────────────────────────────────
+  if (ext === ".js" || ext === ".cjs") {
+    const mod = _require(filePath) as unknown
+    const result =
+      mod !== null && typeof mod === "object" && "default" in mod
+        ? mod.default
+        : mod
+    return result && typeof result === "object" && !Array.isArray(result)
+      ? (result as Record<string, unknown>)
+      : {}
+  }
+
+  // ── ESM / TypeScript (requires jiti) ─────────────────────────────────────
+  if (ext === ".mjs" || ext === ".ts" || ext === ".tsx") {
+    let jiti: ((id: string) => unknown) | undefined
+    try {
+      // jiti v2: import is ESM-only; v1: has CJS entry — try both
+      const jitiMod = _require("jiti") as
+        | { default?: (base: string) => (id: string) => unknown }
+        | ((base: string) => (id: string) => unknown)
+      const factory = typeof jitiMod === "function" ? jitiMod : jitiMod.default
+      if (typeof factory === "function") {
+        jiti = factory(import.meta.url)
+      }
+    } catch {
+      // jiti not installed
+    }
+    if (!jiti) {
+      throw new Error(
+        `TypeScript/ESM locale file '${path.basename(filePath)}' requires the 'jiti' package.\n` +
+          `Install it as a dev-dependency: pnpm add -D jiti`
+      )
+    }
+    const mod = jiti(filePath)
+    const result =
+      mod !== null && typeof mod === "object" && "default" in mod
+        ? mod.default
+        : mod
+    return result && typeof result === "object" && !Array.isArray(result)
+      ? (result as Record<string, unknown>)
+      : {}
+  }
+
+  // ── JSON / YAML ───────────────────────────────────────────────────────────
   let content = fs.readFileSync(filePath, "utf8")
   if (content.charCodeAt(0) === 0xfeff) {
     content = content.slice(1)
@@ -201,7 +266,7 @@ export function loadNamespacedLocales(
     for (const entry of entries) {
       if (!entry.isFile()) continue
       const ext = path.extname(entry.name).toLowerCase()
-      if (ext !== ".json" && ext !== ".yaml" && ext !== ".yml") continue
+      if (!LOCALE_EXTENSIONS.includes(ext)) continue
       const ns = path.basename(entry.name, ext)
       const filePath = path.join(langDir, entry.name)
       localeNamespaces[lang][ns] = filePath
