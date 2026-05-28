@@ -3,19 +3,16 @@ import * as path from "path"
 import pc from "picocolors"
 import type { I18nSharpenConfig } from "../types"
 import { I18nSharpenError } from "../core/errors"
+import { scanSourceFiles, detectUsedKeys } from "../core/scanner"
 import {
-  getFiles,
-  stripComments,
   flattenObject,
   unflattenObject,
   findLocaleFile,
   readLocaleFile,
   writeLocaleFile,
-  escapeRegex,
-  log
-} from "../utils"
-import { loadNamespacedLocales } from "../core/locale-io"
-import { buildAttrRegex } from "../core/scanner"
+  loadNamespacedLocales
+} from "../core/locale-io"
+import { log } from "../utils"
 
 export function extract(
   config: I18nSharpenConfig,
@@ -33,57 +30,11 @@ export function extract(
     })
   }
 
-  // Find all source files
-  const filesToScan: string[] = []
-  for (const scanDir of config.scanDirs) {
-    const scanDirAbs = path.resolve(cwd, scanDir)
-    if (fs.existsSync(scanDirAbs)) {
-      filesToScan.push(
-        ...getFiles(
-          scanDirAbs,
-          config.fileExtensions || [],
-          config.excludeDirs || []
-        )
-      )
-    }
-  }
-
-  // Scan source files for translation keys
-  const usedKeys = new Set<string>()
-  // Escape user-supplied config entries to prevent regex injection / ReDoS.
-  const functionsJoined = (config.matchFunctions || ["t", "getTranslation"])
-    .map(escapeRegex)
-    .join("|")
-  const keyRegex = new RegExp(
-    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"`])([a-zA-Z0-9_\\-.:]+)\\1",
-    "g"
-  )
-
-  const attrRegex = buildAttrRegex(config.matchAttributes || ["i18nKey", "id"])
-
-  // MD-11: use matchAll instead of exec + lastIndex.
-  for (const file of filesToScan) {
-    try {
-      const content = fs.readFileSync(file, "utf8")
-      const cleanContent = stripComments(content)
-
-      // Match functions
-      for (const match of cleanContent.matchAll(keyRegex)) {
-        const key = match[2]
-        if (key.endsWith(".")) continue
-        usedKeys.add(key)
-      }
-
-      // Match JSX attributes
-      for (const match of cleanContent.matchAll(attrRegex)) {
-        const key = match[2]
-        if (key.endsWith(".")) continue
-        usedKeys.add(key)
-      }
-    } catch {
-      // Ignore read errors
-    }
-  }
+  // Scan source files and detect used keys
+  const files = scanSourceFiles(config, cwd)
+  const matchFunctions = config.matchFunctions || ["t", "getTranslation"]
+  const matchAttributes = config.matchAttributes || ["i18nKey", "id"]
+  const { usedKeys } = detectUsedKeys(files, matchFunctions, matchAttributes)
 
   log.info(
     `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
@@ -108,8 +59,7 @@ function extractFlat(
   // Two-phase write: parse every existing locale file up-front and
   // compute the new flat map. Only after every parse succeeds do we
   // write anything. Prevents partial extraction when one of several
-  // languages has a corrupt locale file. (HI-08, MD-08 atomic writes
-  // implemented inside writeLocaleFile.)
+  // languages has a corrupt locale file.
   type Plan = {
     lang: string
     langPath: string
@@ -123,7 +73,6 @@ function extractFlat(
     let langPath = findLocaleFile(localesDirAbs, lang)
     let flatJson: Record<string, string> = {}
 
-    // If file does not exist, default to .json format
     if (!langPath) {
       langPath = path.join(localesDirAbs, `${lang}.json`)
     } else {
@@ -158,7 +107,7 @@ function extractFlat(
     if (missingKeys.length > 0) {
       missingKeys.sort()
       for (const key of missingKeys) {
-        flatJson[key] = key // default translation is the key path itself
+        flatJson[key] = key
       }
       const nestedJson = unflattenObject(flatJson)
       writePlans.push({ lang, langPath, nestedJson, missingKeys })
@@ -212,7 +161,6 @@ function extractNamespaced(
 ): void {
   const suffixes = config.pluralSuffixes || []
 
-  // Load existing namespaced locales so we know what's already present.
   const { localesFlat, localeNamespaces } = loadNamespacedLocales(
     localesDirAbs,
     config.supportedLanguages
@@ -222,7 +170,6 @@ function extractNamespaced(
     lang: string
     ns: string
     filePath: string
-    /** Flat key paths WITHIN the namespace (no `ns:` prefix) */
     missingKeys: string[]
   }
   const writePlans: NsPlan[] = []
@@ -231,11 +178,9 @@ function extractNamespaced(
     const existingFlat = localesFlat[lang] ?? {}
     const nsFilePaths = localeNamespaces[lang] ?? {}
 
-    // Group missing keys by namespace
     const missingByNs = new Map<string, string[]>()
 
     for (const fullKey of usedKeys) {
-      // fullKey may be "ns:key.path" or "key.path" (no namespace)
       const colonIdx = fullKey.indexOf(":")
       const ns = colonIdx >= 0 ? fullKey.slice(0, colonIdx) : "default"
       const keyPath = colonIdx >= 0 ? fullKey.slice(colonIdx + 1) : fullKey
@@ -268,7 +213,6 @@ function extractNamespaced(
     }
   }
 
-  // Two-phase: read existing namespace files, merge new keys, then write.
   type WriteItem = {
     filePath: string
     nestedJson: Record<string, unknown>
@@ -292,12 +236,11 @@ function extractNamespaced(
         })
       }
     } else {
-      // Ensure the language directory exists before writing.
       fs.mkdirSync(langDir, { recursive: true })
     }
 
     for (const keyPath of plan.missingKeys) {
-      existingFlat[keyPath] = keyPath // default: key path as value
+      existingFlat[keyPath] = keyPath
     }
 
     const nestedJson = unflattenObject(existingFlat)
