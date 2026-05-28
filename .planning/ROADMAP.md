@@ -33,7 +33,11 @@
   5. Namespace files are preserved even when emptied by prune — only deleted when `--clean-empty` is passed explicitly.
   6. If a single namespace write fails during prune, the user's locale set is not left in a mixed pruned-and-unpruned state (strategy decided during discuss-phase: two-phase commit or in-memory staging).
   7. Test coverage expanded: multi-language namespaced extract/prune, plural suffixes, error paths, atomic failure recovery.
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 01-01-PLAN.md — Sort utility (sortLocaleObject) + sortKeys config + --sort CLI flag + getFiles determinism fix (SORT-01..06)
+- [ ] 01-02-PLAN.md — defaultNamespace config + replace hardcoded "default" + D-08 migration warning (NSWRITE-03)
+- [ ] 01-03-PLAN.md — --clean-empty flag + cleanEmptyNamespaceFiles helper (NSWRITE-04)
+- [ ] 01-04-PLAN.md — writeLocaleFilesAtomic two-phase commit + wire into extract/prune (NSWRITE-05)
 **UI hint**: no
 
 ### Phase 2: Dynamic Key Warnings
@@ -91,7 +95,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Auto-Sorting Keys + Namespace Hardening | 0/? | In discussion | - |
+| 1. Auto-Sorting Keys + Namespace Hardening | 0/4 | Planned | - |
 | 2. Dynamic Key Warnings | 0/? | Not started | - |
 | 3. Interactive Pruning | 0/? | Not started | - |
 | 4. Hardcoded String Detection | 0/? | Not started | - |
