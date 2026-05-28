@@ -1,5 +1,5 @@
 import { z } from "zod"
-import type { I18nSharpenConfig } from "../types"
+import type { I18nSharpenConfig } from "@/types"
 
 /**
  * Single source of truth for every default value used by the CLI.
@@ -8,7 +8,7 @@ import type { I18nSharpenConfig } from "../types"
  * magic strings. When adding a new tunable, add it here and reference
  * `DEFAULT_CONFIG.<field>` from other modules.
  */
-export const DEFAULT_CONFIG: Partial<I18nSharpenConfig> = {
+export const DEFAULT_CONFIG = {
   scanDirs: ["src"],
   localesDir: "src/locales",
   excludeDirs: [
@@ -39,7 +39,7 @@ export const DEFAULT_CONFIG: Partial<I18nSharpenConfig> = {
     "_female"
   ],
   localesLayout: "flat"
-}
+} satisfies Partial<I18nSharpenConfig>
 
 // Restrict matchFunctions / matchAttributes to plain identifier-like tokens
 // so they are safe to splice into a generated regex.

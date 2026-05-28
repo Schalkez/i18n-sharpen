@@ -1,7 +1,7 @@
 import pc from "picocolors"
-import type { ValidationResults } from "../../types"
-import { log } from "../../utils"
-import { getBaseKey } from "../../core/scanner"
+import { getBaseKey } from "@/core/scanner"
+import type { ValidationResults } from "@/types"
+import { log } from "@/utils"
 
 export interface KeyToFilesLookup {
   has(key: string): boolean
@@ -33,7 +33,7 @@ export function printValidationResults(
   if (missingKeys.length > 0) {
     log.info(pc.bold(pc.red(`❌ Missing Keys (${missingKeys.length}):`)))
     missingKeys.sort().forEach((key) => {
-      const files = keyToFilesMap.get(key) || []
+      const files = keyToFilesMap.get(key) ?? []
       log.info(`  - ${pc.red(key)} (referenced in: ${files.join(", ")})`)
     })
   } else {
@@ -71,7 +71,9 @@ export function printValidationResults(
       mismatch.keys
         .slice()
         .sort()
-        .forEach((k) => log.info(`    - ${k}`))
+        .forEach((k) => {
+          log.info(`    - ${k}`)
+        })
     }
   } else {
     log.success("Perfect key alignment across all locale files!")

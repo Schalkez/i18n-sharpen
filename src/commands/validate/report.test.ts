@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
+import type { ValidationResults } from "@/types"
 import { renderMarkdownReport, type KeyToFilesLookup } from "./report"
-import type { ValidationResults } from "../../types"
 
 const emptyLookup: KeyToFilesLookup = {
   has: () => false,

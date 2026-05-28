@@ -1,5 +1,5 @@
-import type { I18nSharpenConfig, LocaleAlignmentMismatch } from "../../types"
-import { isKeyUsed, getBaseKey } from "../../core/scanner"
+import { isKeyUsed, getBaseKey } from "@/core/scanner"
+import type { I18nSharpenConfig, LocaleAlignmentMismatch } from "@/types"
 
 /**
  * Find keys used in source code that are absent from the default locale.
@@ -11,7 +11,7 @@ export function findMissingKeys(
   defaultKeySet: Set<string>,
   config: Pick<I18nSharpenConfig, "pluralSuffixes">
 ): string[] {
-  const suffixes = config.pluralSuffixes || []
+  const suffixes = config.pluralSuffixes ?? []
   const missing: string[] = []
 
   for (const key of usedKeys) {
@@ -41,7 +41,7 @@ export function findUnusedKeys(
   usedKeys: Set<string>,
   config: Pick<I18nSharpenConfig, "pluralSuffixes" | "ignoreKeys">
 ): string[] {
-  const suffixes = config.pluralSuffixes || []
+  const suffixes = config.pluralSuffixes ?? []
   const unused: string[] = []
 
   for (const key of defaultKeys) {
@@ -110,7 +110,7 @@ export function findPlaceholderKeys(
   activePlaceholderKeys: { key: string; lang: string }[]
   unusedPlaceholderKeys: { key: string; lang: string }[]
 } {
-  const suffixes = config.pluralSuffixes || []
+  const suffixes = config.pluralSuffixes ?? []
   const activePlaceholderKeys: { key: string; lang: string }[] = []
   const unusedPlaceholderKeys: { key: string; lang: string }[] = []
 

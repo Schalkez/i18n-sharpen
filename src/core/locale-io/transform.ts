@@ -1,5 +1,5 @@
 import * as path from "path"
-import { log } from "../../utils"
+import { log } from "@/utils"
 
 /**
  * Forbidden path segments that could lead to prototype pollution

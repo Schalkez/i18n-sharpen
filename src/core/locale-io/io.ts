@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import YAML from "yaml"
-import { log } from "../../utils"
+import { log } from "@/utils"
 import { flattenObject } from "./transform"
 
 /**
@@ -53,12 +53,17 @@ export function readLocaleFile(filePath: string): Record<string, unknown> {
   }
 
   if (ext === ".yaml" || ext === ".yml") {
-    const parsed = YAML.parse(trimmed)
+    const parsed = YAML.parse(trimmed) as unknown
     return parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : {}
   }
-  return JSON.parse(trimmed)
+  const parsedJson = JSON.parse(trimmed) as unknown
+  return parsedJson &&
+    typeof parsedJson === "object" &&
+    !Array.isArray(parsedJson)
+    ? (parsedJson as Record<string, unknown>)
+    : {}
 }
 
 /**
@@ -114,7 +119,9 @@ export function writeLocaleFile(
 export function loadAllLocales(
   localesDir: string,
   supportedLanguages: string[],
-  onMissing: (lang: string, localesDir: string) => void = () => {}
+  onMissing: (lang: string, localesDir: string) => void = () => {
+    /* no-op */
+  }
 ): {
   locales: Record<string, Record<string, unknown>>
   localesFlat: Record<string, Record<string, string>>
@@ -162,7 +169,9 @@ export function loadAllLocales(
 export function loadNamespacedLocales(
   localesDir: string,
   supportedLanguages: string[],
-  onMissing: (lang: string, localesDir: string) => void = () => {}
+  onMissing: (lang: string, localesDir: string) => void = () => {
+    /* no-op */
+  }
 ): {
   locales: Record<string, Record<string, unknown>>
   localesFlat: Record<string, Record<string, string>>

@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest"
-import { loadConfig } from "../config"
-import * as path from "path"
 import * as fs from "fs"
+import * as path from "path"
+import { describe, it, expect } from "vitest"
+import { loadConfig } from "@/config"
 
 describe("config: loadConfig", () => {
   it("should load configuration with default fallbacks", () => {

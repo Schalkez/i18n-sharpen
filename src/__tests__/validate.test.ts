@@ -1,3 +1,5 @@
+import * as fs from "fs"
+import * as path from "path"
 import {
   describe,
   it,
@@ -7,11 +9,9 @@ import {
   vi,
   type MockInstance
 } from "vitest"
-import { validate } from "../commands/validate"
-import { extract } from "../commands/extract"
-import { readLocaleFile, flattenObject } from "../utils"
-import * as path from "path"
-import * as fs from "fs"
+import { extract } from "@/commands/extract"
+import { validate } from "@/commands/validate"
+import { readLocaleFile, flattenObject } from "@/core/locale-io"
 
 describe("validate: integration", () => {
   let tempDir: string
@@ -39,9 +39,15 @@ describe("validate: integration", () => {
 
   beforeEach(() => {
     tempDir = getTempDir()
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => {})
-    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
-    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => {
+      /* mock */
+    })
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+      /* mock */
+    })
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+      /* mock */
+    })
   })
 
   afterEach(() => {

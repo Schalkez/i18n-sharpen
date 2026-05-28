@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **i18n** (241 symbols, 307 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **i18n-sharpen** (465 symbols, 668 relationships, 9 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -24,10 +24,10 @@ This project is indexed by GitNexus as **i18n** (241 symbols, 307 relationships,
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/i18n/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/i18n/clusters` | All functional areas |
-| `gitnexus://repo/i18n/processes` | All execution flows |
-| `gitnexus://repo/i18n/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/i18n-sharpen/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/i18n-sharpen/clusters` | All functional areas |
+| `gitnexus://repo/i18n-sharpen/processes` | All execution flows |
+| `gitnexus://repo/i18n-sharpen/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 

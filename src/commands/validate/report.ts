@@ -1,9 +1,9 @@
 import * as fs from "fs"
 import * as path from "path"
-import type { ValidationResults, LocaleAlignmentMismatch } from "../../types"
-import { normalizeDisplayPath } from "../../core/locale-io"
-import { log } from "../../utils"
 import pc from "picocolors"
+import { normalizeDisplayPath } from "@/core/locale-io"
+import type { ValidationResults, LocaleAlignmentMismatch } from "@/types"
+import { log } from "@/utils"
 
 /**
  * A lookup interface that the validator builds during scanning and the

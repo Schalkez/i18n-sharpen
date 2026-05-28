@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-import { Command } from "commander"
 import * as fs from "fs"
 import * as path from "path"
 import { fileURLToPath } from "url"
-import { loadConfig } from "./config/index"
-import { validate } from "./commands/validate"
+import { Command } from "commander"
 import { extract } from "./commands/extract"
 import { prune } from "./commands/prune"
-import { log } from "./utils"
+import { validate } from "./commands/validate"
+import { loadConfig } from "./config/index"
 import { I18nSharpenError } from "./core/errors"
+import { log } from "./utils"
 
 /**
  * Translate a thrown error into a CLI-friendly message. Structured
@@ -36,7 +36,9 @@ function readVersion(): string {
     ]
     for (const c of candidates) {
       if (fs.existsSync(c)) {
-        const pkg = JSON.parse(fs.readFileSync(c, "utf8"))
+        const pkg = JSON.parse(fs.readFileSync(c, "utf8")) as {
+          version?: unknown
+        }
         if (typeof pkg.version === "string") return pkg.version
       }
     }
@@ -67,9 +69,11 @@ program
   )
   .action(() => {
     const opts = program.opts()
+    const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
+    const configPath = typeof opts.config === "string" ? opts.config : undefined
     try {
-      const config = loadConfig(opts.cwd, opts.config)
-      const results = validate(config, opts.cwd)
+      const config = loadConfig(cwd, configPath)
+      const results = validate(config, cwd)
       const hasErrors =
         results.missingKeys.length > 0 ||
         results.activePlaceholderKeys.length > 0 ||
@@ -91,9 +95,11 @@ program
   )
   .action(() => {
     const opts = program.opts()
+    const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
+    const configPath = typeof opts.config === "string" ? opts.config : undefined
     try {
-      const config = loadConfig(opts.cwd, opts.config)
-      extract(config, opts.cwd)
+      const config = loadConfig(cwd, configPath)
+      extract(config, cwd)
       process.exitCode = 0
     } catch (error) {
       reportError(error)
@@ -114,9 +120,11 @@ program
   .option("--force", "Actually write the pruned locale files to disk.", false)
   .action((cmdOpts: { dryRun?: boolean; force?: boolean }) => {
     const opts = program.opts()
+    const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
+    const configPath = typeof opts.config === "string" ? opts.config : undefined
     try {
-      const config = loadConfig(opts.cwd, opts.config)
-      prune(config, opts.cwd, {
+      const config = loadConfig(cwd, configPath)
+      prune(config, cwd, {
         force: cmdOpts.force === true,
         dryRun: cmdOpts.dryRun === true
       })

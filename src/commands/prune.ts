@@ -1,10 +1,10 @@
 import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
-import type { I18nSharpenConfig, PruneOptions, PruneResult } from "../types"
-import { I18nSharpenError } from "../core/errors"
-import { scanSourceFiles, detectUsedKeys } from "../core/scanner"
-import { log } from "../utils"
+import { I18nSharpenError } from "@/core/errors"
+import { scanSourceFiles, detectUsedKeys } from "@/core/scanner"
+import type { I18nSharpenConfig, PruneOptions, PruneResult } from "@/types"
+import { log } from "@/utils"
 import { pruneFlat, pruneNamespaced } from "./prune/plans"
 
 /**
@@ -38,8 +38,8 @@ export function prune(
 
   // Scan source files and detect used keys
   const files = scanSourceFiles(config, cwd)
-  const matchFunctions = config.matchFunctions || ["t", "getTranslation"]
-  const matchAttributes = config.matchAttributes || ["i18nKey", "id"]
+  const matchFunctions = config.matchFunctions ?? ["t", "getTranslation"]
+  const matchAttributes = config.matchAttributes ?? ["i18nKey", "id"]
   const { usedKeys, fileContents } = detectUsedKeys(
     files,
     matchFunctions,

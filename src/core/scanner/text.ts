@@ -12,7 +12,7 @@
  * Comments are replaced with a single space so token boundaries are preserved.
  */
 export function stripComments(code: string): string {
-  type StackFrame = {
+  interface StackFrame {
     kind: "single" | "double" | "template"
     templateDepth: number
   }

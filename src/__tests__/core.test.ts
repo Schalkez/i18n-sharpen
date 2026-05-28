@@ -1,3 +1,5 @@
+import * as fs from "fs"
+import * as path from "path"
 import { describe, it, expect } from "vitest"
 import {
   flattenObject,
@@ -6,10 +8,8 @@ import {
   setNestedValue,
   writeLocaleFile,
   readLocaleFile
-} from "../utils"
-import { stripComments, matchWildcard } from "../core/scanner"
-import * as path from "path"
-import * as fs from "fs"
+} from "@/core/locale-io"
+import { stripComments, matchWildcard } from "@/core/scanner"
 
 describe("core: object transforms", () => {
   it("should flatten a nested object using dot notation", () => {

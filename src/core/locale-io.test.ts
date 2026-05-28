@@ -1,6 +1,6 @@
-import { describe, it, expect, afterEach } from "vitest"
 import * as fs from "fs"
 import * as path from "path"
+import { describe, it, expect, afterEach } from "vitest"
 import {
   flattenObject,
   buildNestedObject,
@@ -33,7 +33,7 @@ describe("locale-io: prototype-pollution guards", () => {
     const flat = flattenObject({
       __proto__: { evil: "yes" },
       good: "ok"
-    } as Record<string, unknown>)
+    })
     expect(Object.keys(flat)).toEqual(["good"])
   })
 
@@ -105,7 +105,9 @@ describe("locale-io: writeLocaleFile atomicity", () => {
     // Windows with ENOTEMPTY/EPERM — exercises the cleanup branch.
     fs.mkdirSync(target)
     fs.writeFileSync(path.join(target, "blocker.txt"), "x")
-    expect(() => writeLocaleFile(target, { a: 1 })).toThrow()
+    expect(() => {
+      writeLocaleFile(target, { a: 1 })
+    }).toThrow()
     expect(fs.existsSync(target + ".tmp")).toBe(false)
   })
 })

@@ -1,8 +1,8 @@
 import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
-import type { I18nSharpenConfig, ValidationResults } from "../types"
-import { I18nSharpenError } from "../core/errors"
+import { I18nSharpenError } from "@/core/errors"
+import { loadAllLocales, normalizeDisplayPath } from "@/core/locale-io"
 import {
   scanSourceFiles,
   detectUsedKeys,
@@ -11,9 +11,9 @@ import {
   buildDynamicCallRegex,
   isStaticStringLiteral,
   getBaseKey
-} from "../core/scanner"
-import { loadAllLocales, normalizeDisplayPath } from "../core/locale-io"
-import { log } from "../utils"
+} from "@/core/scanner"
+import type { I18nSharpenConfig, ValidationResults } from "@/types"
+import { log } from "@/utils"
 import {
   findMissingKeys,
   findUnusedKeys,
@@ -82,8 +82,8 @@ export function validate(
   log.info(`Found ${pc.green(files.length)} source files to check.`)
 
   // --- Detect used keys ---
-  const matchFunctions = config.matchFunctions || ["t", "getTranslation"]
-  const matchAttributes = config.matchAttributes || ["i18nKey", "id"]
+  const matchFunctions = config.matchFunctions ?? ["t", "getTranslation"]
+  const matchAttributes = config.matchAttributes ?? ["i18nKey", "id"]
 
   const { usedKeys, fileContents } = detectUsedKeys(
     files,
@@ -135,7 +135,7 @@ export function validate(
       if (arg.length === 0) continue
       if (!isStaticStringLiteral(arg)) {
         log.warn(
-          `Potential dynamic translation key reference in ${pc.cyan(relativePath)}: ${pc.yellow(`${match[0]}`)}`
+          `Potential dynamic translation key reference in ${pc.cyan(relativePath)}: ${pc.yellow(match[0])}`
         )
       }
     }
@@ -170,7 +170,7 @@ export function validate(
   )
 
   // --- Pure checks ---
-  const suffixes = config.pluralSuffixes || []
+  const suffixes = config.pluralSuffixes ?? []
   const missingKeys = findMissingKeys(usedKeys, defaultKeySet, config)
   const unusedKeys = findUnusedKeys(defaultKeys, usedKeys, config)
   const keysOnlyInLanguages = findAlignmentMismatches(

@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
-import type { I18nSharpenConfig } from "../types"
-import { I18nSharpenError } from "../core/errors"
+import { I18nSharpenError } from "@/core/errors"
+import type { I18nSharpenConfig } from "@/types"
 import { DEFAULT_CONFIG, I18nSharpenConfigSchema } from "./schema"
 
 /**
@@ -61,7 +61,7 @@ export function loadConfig(
     }
     try {
       const content = fs.readFileSync(resolved, "utf8")
-      fileConfig = JSON.parse(content)
+      fileConfig = JSON.parse(content) as Partial<I18nSharpenConfig>
     } catch (error) {
       throw new I18nSharpenError({
         kind: "parse",
@@ -72,7 +72,7 @@ export function loadConfig(
   } else if (fs.existsSync(configPathJson)) {
     try {
       const content = fs.readFileSync(configPathJson, "utf8")
-      fileConfig = JSON.parse(content)
+      fileConfig = JSON.parse(content) as Partial<I18nSharpenConfig>
     } catch (error) {
       console.warn(
         `⚠️ Failed to parse i18n-sharpen.json: ${(error as Error).message}`
@@ -81,7 +81,9 @@ export function loadConfig(
   } else if (fs.existsSync(packageJsonPath)) {
     try {
       const content = fs.readFileSync(packageJsonPath, "utf8")
-      const pkg = JSON.parse(content)
+      const pkg = JSON.parse(content) as {
+        i18nSharpen?: Partial<I18nSharpenConfig>
+      }
       if (pkg.i18nSharpen) {
         fileConfig = pkg.i18nSharpen
       }
@@ -94,27 +96,23 @@ export function loadConfig(
 
   // Merge with defaults
   const rawConfig = {
-    scanDirs: fileConfig.scanDirs || DEFAULT_CONFIG.scanDirs!,
-    localesDir: fileConfig.localesDir || DEFAULT_CONFIG.localesDir!,
+    scanDirs: fileConfig.scanDirs ?? DEFAULT_CONFIG.scanDirs,
+    localesDir: fileConfig.localesDir ?? DEFAULT_CONFIG.localesDir,
     defaultLanguage:
-      fileConfig.defaultLanguage || DEFAULT_CONFIG.defaultLanguage!,
+      fileConfig.defaultLanguage ?? DEFAULT_CONFIG.defaultLanguage,
     supportedLanguages:
-      fileConfig.supportedLanguages || DEFAULT_CONFIG.supportedLanguages!,
-    excludeDirs: fileConfig.excludeDirs || DEFAULT_CONFIG.excludeDirs,
-    fileExtensions: fileConfig.fileExtensions || DEFAULT_CONFIG.fileExtensions,
-    matchFunctions: fileConfig.matchFunctions || DEFAULT_CONFIG.matchFunctions,
-    outputReport:
-      fileConfig.outputReport !== undefined
-        ? fileConfig.outputReport
-        : DEFAULT_CONFIG.outputReport,
+      fileConfig.supportedLanguages ?? DEFAULT_CONFIG.supportedLanguages,
+    excludeDirs: fileConfig.excludeDirs ?? DEFAULT_CONFIG.excludeDirs,
+    fileExtensions: fileConfig.fileExtensions ?? DEFAULT_CONFIG.fileExtensions,
+    matchFunctions: fileConfig.matchFunctions ?? DEFAULT_CONFIG.matchFunctions,
+    outputReport: fileConfig.outputReport ?? DEFAULT_CONFIG.outputReport,
     matchAttributes:
-      fileConfig.matchAttributes || DEFAULT_CONFIG.matchAttributes,
-    ignoreKeys: fileConfig.ignoreKeys || DEFAULT_CONFIG.ignoreKeys,
-    pluralSuffixes: fileConfig.pluralSuffixes || DEFAULT_CONFIG.pluralSuffixes,
-    looseKeyMatch:
-      fileConfig.looseKeyMatch !== undefined ? fileConfig.looseKeyMatch : false,
-    localesLayout: fileConfig.localesLayout || DEFAULT_CONFIG.localesLayout,
-    prune: fileConfig.prune || { force: false }
+      fileConfig.matchAttributes ?? DEFAULT_CONFIG.matchAttributes,
+    ignoreKeys: fileConfig.ignoreKeys ?? DEFAULT_CONFIG.ignoreKeys,
+    pluralSuffixes: fileConfig.pluralSuffixes ?? DEFAULT_CONFIG.pluralSuffixes,
+    looseKeyMatch: fileConfig.looseKeyMatch ?? false,
+    localesLayout: fileConfig.localesLayout ?? DEFAULT_CONFIG.localesLayout,
+    prune: fileConfig.prune ?? { force: false }
   }
 
   // Zod validation

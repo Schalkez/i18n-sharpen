@@ -49,3 +49,4 @@ vendor/
 coverage/
 .cache/
 tmp/
+.gitnexus

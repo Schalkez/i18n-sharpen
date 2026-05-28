@@ -1,3 +1,5 @@
+import * as fs from "fs"
+import * as path from "path"
 import { describe, it, expect } from "vitest"
 import {
   stripComments,
@@ -9,8 +11,6 @@ import {
   buildAttrRegex,
   detectUsedKeys
 } from "./scanner"
-import * as fs from "fs"
-import * as path from "path"
 
 describe("scanner: stripComments edge cases", () => {
   it("preserves // inside a double-quoted URL", () => {

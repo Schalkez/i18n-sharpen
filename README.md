@@ -74,14 +74,16 @@ Alternatively, you can add an `"i18nSharpen"` field to your `package.json`:
 | `localesDir` | `string` | `"src/locales"` | Directory containing your locale `.json` files. |
 | `defaultLanguage` | `string` | `"en"` | The default/fallback locale language. |
 | `supportedLanguages` | `string[]` | `["en"]` | List of supported languages. |
-| `excludeDirs` | `string[]` | `["node_modules", "dist", ...]` | Directories to ignore during source scan. |
-| `fileExtensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx", ".vue", ".svelte", ".astro"]` | File extensions to scan. |
+| `excludeDirs` | `string[]` | `["node_modules", ...]` | Directories to ignore during source scan. |
+| `fileExtensions` | `string[]` | `[".ts", ".tsx", ...]` | File extensions to scan. |
 | `matchFunctions` | `string[]` | `["t", "getTranslation"]` | Function names used for translation in code. |
-| `matchAttributes` | `string[]` | `["i18nKey", "id", "i18n", ":label", "v-t", "t:"]` | HTML/JSX/Vue/Astro attribute names that carry translation keys. |
+| `matchAttributes` | `string[]` | `["i18nKey", "id", ...]` | HTML/JSX/Vue/Astro attribute names that carry translation keys. |
 | `outputReport` | `string \| null` | `"i18n-coverage.md"` | Path to save quality report (`""` to disable). |
 | `localesLayout` | `"flat" \| "namespaced"` | `"flat"` | Locale file layout — see [Locale Layouts](#locale-layouts). |
 | `prune.force` | `boolean` | `false` | Make `prune` write by default. CLI `--force` overrides per invocation. |
 | `looseKeyMatch` | `boolean` | `false` | Opt-in fuzzy match: any quoted occurrence of a locale key counts as "used". |
+| `ignoreKeys` | `string[]` | `[]` | Key patterns (supports wildcards like `status.*`) to ignore during checks and pruning. |
+| `pluralSuffixes` | `string[]` | `["_zero", "_one", ...]` | Custom suffixes used for plural keys (which are automatically resolved). |
 
 ---
 
@@ -148,9 +150,7 @@ src/locales/
 { "localesLayout": "namespaced" }
 ```
 
-Note for 0.2.x: `validate` works end-to-end on both layouts;
-`extract`/`prune` write back to flat files only. Full namespaced
-write-routing lands in 0.3.x.
+Note for 0.2.x: `validate`, `extract`, and `prune` fully support both flat and namespaced layouts end-to-end.
 
 ---
 
@@ -215,6 +215,53 @@ try {
   still works.
 
 See [CHANGELOG.md](./CHANGELOG.md) for the full breakdown.
+
+---
+
+## CLI Exit Codes
+
+`i18n-sharpen` respects standard exit codes to seamlessly integrate into CI/CD pipelines:
+- **`0`**: Success. For `validate`, this means 0 missing keys, 0 active placeholders, and perfect key alignment across all languages.
+- **`1`**: Failure. Occurs when there are filesystem/parse/configuration errors, or when a quality check in `validate` fails.
+
+---
+
+## GitHub Actions CI Integration
+
+You can easily run quality checks on every Pull Request and automatically comment the generated markdown report on the PR:
+
+```yaml
+name: i18n Quality Check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  i18n-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run i18n Validation
+        run: npx i18n-sharpen validate
+
+      - name: Post Quality Report to PR
+        if: always() && hashFiles('i18n-coverage.md') != ''
+        uses: tholene/pr-comment-by-file-recreated@v1
+        with:
+          filePath: i18n-coverage.md
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
 
 ---
 

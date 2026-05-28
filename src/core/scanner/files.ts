@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-import type { I18nSharpenConfig } from "../../types"
+import type { I18nSharpenConfig } from "@/types"
 
 /**
  * Recursively find all source files in a directory matching specific
@@ -60,8 +60,8 @@ export function scanSourceFiles(
       filesToScan.push(
         ...getFiles(
           scanDirAbs,
-          config.fileExtensions || [],
-          config.excludeDirs || []
+          config.fileExtensions ?? [],
+          config.excludeDirs ?? []
         )
       )
     }

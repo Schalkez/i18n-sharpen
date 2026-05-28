@@ -85,11 +85,11 @@ export interface PruneResult {
   /** Whether prune ran in dry-run mode (no writes). */
   dryRun: boolean
   /** Per-language summary keyed by language code. */
-  perLocale: Array<{
+  perLocale: {
     lang: string
     file: string
     prunedKeys: string[]
-  }>
+  }[]
   /** Total number of keys removed across all locales. */
   totalPruned: number
 }

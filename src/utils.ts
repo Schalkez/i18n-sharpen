@@ -49,7 +49,6 @@ export {
  */
 const emojiDisabled =
   typeof process !== "undefined" &&
-  !!process.env &&
   !!process.env.NO_EMOJI &&
   process.env.NO_EMOJI !== "0" &&
   process.env.NO_EMOJI.toLowerCase() !== "false"

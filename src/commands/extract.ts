@@ -1,9 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
-import type { I18nSharpenConfig } from "../types"
-import { I18nSharpenError } from "../core/errors"
-import { scanSourceFiles, detectUsedKeys } from "../core/scanner"
+import { I18nSharpenError } from "@/core/errors"
 import {
   flattenObject,
   unflattenObject,
@@ -11,8 +9,10 @@ import {
   readLocaleFile,
   writeLocaleFile,
   loadNamespacedLocales
-} from "../core/locale-io"
-import { log } from "../utils"
+} from "@/core/locale-io"
+import { scanSourceFiles, detectUsedKeys } from "@/core/scanner"
+import type { I18nSharpenConfig } from "@/types"
+import { log } from "@/utils"
 
 export function extract(
   config: I18nSharpenConfig,
@@ -32,8 +32,8 @@ export function extract(
 
   // Scan source files and detect used keys
   const files = scanSourceFiles(config, cwd)
-  const matchFunctions = config.matchFunctions || ["t", "getTranslation"]
-  const matchAttributes = config.matchAttributes || ["i18nKey", "id"]
+  const matchFunctions = config.matchFunctions ?? ["t", "getTranslation"]
+  const matchAttributes = config.matchAttributes ?? ["i18nKey", "id"]
   const { usedKeys } = detectUsedKeys(files, matchFunctions, matchAttributes)
 
   log.info(
@@ -60,14 +60,14 @@ function extractFlat(
   // compute the new flat map. Only after every parse succeeds do we
   // write anything. Prevents partial extraction when one of several
   // languages has a corrupt locale file.
-  type Plan = {
+  interface Plan {
     lang: string
     langPath: string
     nestedJson: Record<string, unknown>
     missingKeys: string[]
   }
   const writePlans: Plan[] = []
-  const suffixes = config.pluralSuffixes || []
+  const suffixes = config.pluralSuffixes ?? []
 
   for (const lang of config.supportedLanguages) {
     let langPath = findLocaleFile(localesDirAbs, lang)
@@ -90,10 +90,10 @@ function extractFlat(
 
     const missingKeys: string[] = []
     for (const key of usedKeys) {
-      let exists = flatJson[key] !== undefined
+      let exists = key in flatJson
       if (!exists) {
         for (const suffix of suffixes) {
-          if (flatJson[key + suffix] !== undefined) {
+          if (key + suffix in flatJson) {
             exists = true
             break
           }
@@ -159,14 +159,14 @@ function extractNamespaced(
   localesDirAbs: string,
   usedKeys: Set<string>
 ): void {
-  const suffixes = config.pluralSuffixes || []
+  const suffixes = config.pluralSuffixes ?? []
 
   const { localesFlat, localeNamespaces } = loadNamespacedLocales(
     localesDirAbs,
     config.supportedLanguages
   )
 
-  type NsPlan = {
+  interface NsPlan {
     lang: string
     ns: string
     filePath: string
@@ -186,18 +186,22 @@ function extractNamespaced(
       const keyPath = colonIdx >= 0 ? fullKey.slice(colonIdx + 1) : fullKey
       const namespacedKey = `${ns}:${keyPath}`
 
-      let exists = existingFlat[namespacedKey] !== undefined
+      let exists = namespacedKey in existingFlat
       if (!exists) {
         for (const suffix of suffixes) {
-          if (existingFlat[`${ns}:${keyPath}${suffix}`] !== undefined) {
+          if (`${ns}:${keyPath}${suffix}` in existingFlat) {
             exists = true
             break
           }
         }
       }
       if (!exists) {
-        if (!missingByNs.has(ns)) missingByNs.set(ns, [])
-        missingByNs.get(ns)!.push(keyPath)
+        let arr = missingByNs.get(ns)
+        if (!arr) {
+          arr = []
+          missingByNs.set(ns, arr)
+        }
+        arr.push(keyPath)
       }
     }
 
@@ -213,7 +217,7 @@ function extractNamespaced(
     }
   }
 
-  type WriteItem = {
+  interface WriteItem {
     filePath: string
     nestedJson: Record<string, unknown>
     missingKeys: string[]

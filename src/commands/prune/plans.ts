@@ -1,8 +1,6 @@
 import * as path from "path"
 import pc from "picocolors"
-import type { I18nSharpenConfig, PruneResult } from "../../types"
-import { I18nSharpenError } from "../../core/errors"
-import { isKeyUsed } from "../../core/scanner"
+import { I18nSharpenError } from "@/core/errors"
 import {
   flattenObject,
   unflattenObject,
@@ -10,10 +8,12 @@ import {
   readLocaleFile,
   writeLocaleFile,
   loadNamespacedLocales
-} from "../../core/locale-io"
-import { log } from "../../utils"
+} from "@/core/locale-io"
+import { isKeyUsed } from "@/core/scanner"
+import type { I18nSharpenConfig, PruneResult } from "@/types"
+import { log } from "@/utils"
 
-type WritePlan = {
+interface WritePlan {
   lang: string
   langPath: string
   nestedJson: Record<string, unknown>
@@ -147,11 +147,11 @@ export function pruneFlat(
     }
   }
 
-  const suffixes = config.pluralSuffixes || []
+  const suffixes = config.pluralSuffixes ?? []
   const isUsed = (key: string): boolean =>
     isKeyUsed(key, usedKeys, config.ignoreKeys, suffixes)
 
-  type Plan = {
+  interface Plan {
     lang: string
     langPath: string
     nestedJson: Record<string, unknown>
@@ -201,7 +201,7 @@ export function pruneNamespaced(
   fileContents: string[],
   dryRun: boolean
 ): PruneResult {
-  const suffixes = config.pluralSuffixes || []
+  const suffixes = config.pluralSuffixes ?? []
 
   const { localesFlat, localeNamespaces } = loadNamespacedLocales(
     localesDirAbs,
@@ -237,7 +237,7 @@ export function pruneNamespaced(
   const isUsed = (namespacedKey: string): boolean =>
     isKeyUsed(namespacedKey, usedKeys, config.ignoreKeys, suffixes)
 
-  type NsPlan = {
+  interface NsPlan {
     lang: string
     ns: string
     filePath: string
@@ -257,8 +257,12 @@ export function pruneNamespaced(
       const ns = colonIdx >= 0 ? namespacedKey.slice(0, colonIdx) : "default"
       const keyPath =
         colonIdx >= 0 ? namespacedKey.slice(colonIdx + 1) : namespacedKey
-      if (!keysByNs.has(ns)) keysByNs.set(ns, {})
-      keysByNs.get(ns)![keyPath] = value
+      let nsObj = keysByNs.get(ns)
+      if (!nsObj) {
+        nsObj = {}
+        keysByNs.set(ns, nsObj)
+      }
+      nsObj[keyPath] = value
     }
 
     for (const [ns, nsFlatKeys] of keysByNs) {
