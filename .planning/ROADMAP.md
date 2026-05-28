@@ -11,7 +11,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Auto-Sorting Keys + Namespace Hardening** — users can control key ordering on every locale write; configurable `defaultNamespace`; `--clean-empty` flag; cross-file atomicity for prune
+- [x] **Phase 1: Auto-Sorting Keys + Namespace Hardening** — users can control key ordering on every locale write; configurable `defaultNamespace`; `--clean-empty` flag; cross-file atomicity for prune (completed 2026-05-28)
 - [ ] **Phase 2: Dynamic Key Warnings** — validator distinguishes fully-dynamic vs structured-concat keys and reports them separately
 - [ ] **Phase 3: Interactive Pruning** — `prune --interactive` lets users pick which unused keys to delete via TUI
 - [ ] **Phase 4: Hardcoded String Detection** — `validate --check-hardcoded` finds un-translated text nodes across all supported file extensions
@@ -34,10 +34,10 @@
   6. If a single namespace write fails during prune, the user's locale set is not left in a mixed pruned-and-unpruned state (strategy decided during discuss-phase: two-phase commit or in-memory staging).
   7. Test coverage expanded: multi-language namespaced extract/prune, plural suffixes, error paths, atomic failure recovery.
 **Plans**: 4 plans
-- [ ] 01-01-PLAN.md — Sort utility (sortLocaleObject) + sortKeys config + --sort CLI flag + getFiles determinism fix (SORT-01..06)
-- [ ] 01-02-PLAN.md — defaultNamespace config + replace hardcoded "default" + D-08 migration warning (NSWRITE-03)
-- [ ] 01-03-PLAN.md — --clean-empty flag + cleanEmptyNamespaceFiles helper (NSWRITE-04)
-- [ ] 01-04-PLAN.md — writeLocaleFilesAtomic two-phase commit + wire into extract/prune (NSWRITE-05)
+- [x] 01-01-PLAN.md — Sort utility (sortLocaleObject) + sortKeys config + --sort CLI flag + getFiles determinism fix (SORT-01..06)
+- [x] 01-02-PLAN.md — defaultNamespace config + replace hardcoded "default" + D-08 migration warning (NSWRITE-03)
+- [x] 01-03-PLAN.md — --clean-empty flag + cleanEmptyNamespaceFiles helper (NSWRITE-04)
+- [x] 01-04-PLAN.md — writeLocaleFilesAtomic two-phase commit + wire into extract/prune (NSWRITE-05)
 **UI hint**: no
 
 ### Phase 2: Dynamic Key Warnings
@@ -95,7 +95,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Auto-Sorting Keys + Namespace Hardening | 0/4 | Planned | - |
+| 1. Auto-Sorting Keys + Namespace Hardening | 4/4 | Complete    | 2026-05-28 |
 | 2. Dynamic Key Warnings | 0/? | Not started | - |
 | 3. Interactive Pruning | 0/? | Not started | - |
 | 4. Hardcoded String Detection | 0/? | Not started | - |
