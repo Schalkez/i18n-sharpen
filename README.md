@@ -75,9 +75,13 @@ Alternatively, you can add an `"i18nSharpen"` field to your `package.json`:
 | `defaultLanguage` | `string` | `"en"` | The default/fallback locale language. |
 | `supportedLanguages` | `string[]` | `["en"]` | List of supported languages. |
 | `excludeDirs` | `string[]` | `["node_modules", "dist", ...]` | Directories to ignore during source scan. |
-| `fileExtensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx"]` | File extensions to scan. |
+| `fileExtensions` | `string[]` | `[".ts", ".tsx", ".js", ".jsx", ".vue", ".svelte", ".astro"]` | File extensions to scan. |
 | `matchFunctions` | `string[]` | `["t", "getTranslation"]` | Function names used for translation in code. |
-| `outputReport` | `string \| null` | `"i18n-coverage.md"` | Path to save quality report (null to disable). |
+| `matchAttributes` | `string[]` | `["i18nKey", "id", "i18n", ":label", "v-t", "t:"]` | HTML/JSX/Vue/Astro attribute names that carry translation keys. |
+| `outputReport` | `string \| null` | `"i18n-coverage.md"` | Path to save quality report (`""` to disable). |
+| `localesLayout` | `"flat" \| "namespaced"` | `"flat"` | Locale file layout — see [Locale Layouts](#locale-layouts). |
+| `prune.force` | `boolean` | `false` | Make `prune` write by default. CLI `--force` overrides per invocation. |
+| `looseKeyMatch` | `boolean` | `false` | Opt-in fuzzy match: any quoted occurrence of a locale key counts as "used". |
 
 ---
 
@@ -98,12 +102,64 @@ npx i18n-sharpen prune
 
 ### Options
 
-*   `-c, --config <path>`: Specify a custom path to your configuration file.
+*   `-c, --config <path>`: Specify a custom path to your configuration file (Phase 5).
 *   `-d, --cwd <path>`: Set custom working directory (defaults to `process.cwd()`).
+
+`prune` accepts two additional flags:
+
+*   `--dry-run`: Preview only — never write. The default behavior; the
+    flag exists for explicit CI scripts.
+*   `--force`: Actually write the pruned locale files to disk.
 
 ```bash
 npx i18n-sharpen validate --config configs/i18n.json --cwd ./packages/app
+npx i18n-sharpen prune --force
 ```
+
+---
+
+## Locale Layouts
+
+Two layouts are supported under `localesDir`:
+
+**Flat (default)** — one file per language:
+
+```
+src/locales/
+├── en.json
+├── ja.json
+└── vi.json
+```
+
+**Namespaced** — one directory per language, one file per namespace, with
+keys referenced as `t("namespace:key.path")`:
+
+```
+src/locales/
+├── en/
+│   ├── common.json    // → keys load as "common:greeting" etc
+│   └── auth.json      // → keys load as "auth:login.title" etc
+└── ja/
+    ├── common.json
+    └── auth.json
+```
+
+```json
+{ "localesLayout": "namespaced" }
+```
+
+Note for 0.2.x: `validate` works end-to-end on both layouts;
+`extract`/`prune` write back to flat files only. Full namespaced
+write-routing lands in 0.3.x.
+
+---
+
+## Framework Coverage
+
+Out of the box, `i18n-sharpen` scans `.ts`, `.tsx`, `.js`, `.jsx`,
+`.vue`, `.svelte`, and `.astro`. The default `matchAttributes` covers
+`i18nKey`, `id`, `i18n`, `:label`, `v-t`, and `t:`. Override either list
+in your config to suit framework-specific conventions.
 
 ---
 
@@ -112,21 +168,53 @@ npx i18n-sharpen validate --config configs/i18n.json --cwd ./packages/app
 You can import `i18n-sharpen` to run tasks programmatically:
 
 ```typescript
-import { loadConfig, validate, extract, prune } from "i18n-sharpen"
+import {
+  loadConfig,
+  validate,
+  extract,
+  prune,
+  I18nSharpenError,
+  type I18nSharpenConfig,
+  type PruneResult
+} from "i18n-sharpen"
 
-// Load and validate configuration
-const config = loadConfig(process.cwd())
+const config: I18nSharpenConfig = loadConfig(process.cwd())
 
-// Run validation
 const results = validate(config, process.cwd())
 console.log(`Coverage: ${results.codeKeyCoverage}%`)
 
-// Run extractor
 extract(config, process.cwd())
 
-// Run pruner
-prune(config, process.cwd())
+// prune is dry-run by default — pass { force: true } to actually write.
+const result: PruneResult = prune(config, process.cwd(), { force: true })
+console.log(`Pruned ${result.totalPruned} keys`)
+
+// Structured error handling
+try {
+  prune(config)
+} catch (err) {
+  if (err instanceof I18nSharpenError) {
+    if (err.error.kind === "parse") {
+      console.error(`Locale file ${err.error.path} is malformed`)
+    }
+  }
+}
 ```
+
+---
+
+## Migration from 0.0.x / 0.1.x
+
+* Rename `I18nCopConfig` → `I18nSharpenConfig` (the old name is a
+  deprecated alias, removal scheduled for 0.3.0).
+* `prune()` is now dry-run by default. Pass `{ force: true }` or set
+  `config.prune.force: true` to write.
+* `looseKeyMatch` is opt-in. Add `"looseKeyMatch": true` if you relied on
+  the previous default-on behaviour.
+* All thrown errors are `I18nSharpenError` instances — `instanceof Error`
+  still works.
+
+See [CHANGELOG.md](./CHANGELOG.md) for the full breakdown.
 
 ---
 
