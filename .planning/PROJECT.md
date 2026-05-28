@@ -13,14 +13,13 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 **Goal:** Sharpen the day-to-day developer loop around prune/extract/validate — ordering, interactivity, smarter warnings, and catching un-translated hardcoded text.
 
 **Target features:**
-- Auto-sorting keys (A-Z or order-of-appearance on extract/prune writes)
-- Interactive Pruning CLI (arrow-key + space selection per key)
+- Auto-sorting keys (A-Z or order-of-appearance on extract/prune writes) + finish NSWRITE hardening (configurable `defaultNamespace`, `--clean-empty`, cross-file atomicity)
 - Improved dynamic-key warnings (distinguish fully-dynamic vs structured concat keys)
+- Interactive Pruning CLI (arrow-key + space selection per key)
 - Hardcoded string detection (text nodes between HTML/JSX/Vue/Svelte/Astro tags not wrapped in `t()`)
-- Namespaced extract/prune write-routing (finishes Phase 7 of 0.2.0)
 - Remove `I18nCopConfig` deprecated alias (per 0.2.0 announcement)
 
-**Phase numbering:** Reset to Phase 1 for this milestone (clean slate).
+**Phase numbering:** Reset to Phase 1 for this milestone (clean slate). Originally 6 phases; reduced to 5 after scoping (NSWRITE-01/02 were already shipped in v0.2.x via commit `54712ab`, remaining NSWRITE-03/04/05 folded into Phase 1 with SORT).
 
 ## Requirements
 
@@ -35,6 +34,7 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 - ✓ `--config <path>` CLI flag — v0.2.0
 - ✓ Vue / Svelte / Astro file coverage — v0.2.0
 - ✓ Namespaced locales foundation (read + validate end-to-end) — v0.2.0
+- ✓ Namespaced `extract` / `prune` write-routing (per-namespace file routing, no cross-namespace bleed) — v0.2.x post-release (commit `54712ab`, covers NSWRITE-01 + NSWRITE-02)
 - ✓ JS/TS/ESM locale **reading** (`.js`, `.cjs`, `.mjs`, `.ts`, `.tsx` via `jiti`) — v0.2.2
 - ✓ Refuse to write JS/TS locale files (safety) — v0.2.3
 - ✓ Scanner returns match-nothing regex on empty matchFunctions/matchAttributes — v0.2.4

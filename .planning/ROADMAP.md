@@ -2,53 +2,44 @@
 
 **Milestone:** v0.3.0 — Developer Experience
 **Phase numbering:** Reset to 1 (clean slate for this milestone)
-**Granularity:** Standard (6 phases, requirement-driven)
-**Coverage:** 31/31 v0.3.0 requirements mapped
+**Granularity:** Standard (5 phases, requirement-driven)
+**Coverage:** 29/29 v0.3.0 requirements mapped (NSWRITE-01/02 shipped pre-milestone)
+
+> **Restructuring note (2026-05-28):** Original roadmap had 6 phases. Phase 1 scout discovered NSWRITE-01/02 were already shipped in commit `54712ab` (post v0.2.0 release). The standalone "Namespace Write-Routing" phase was therefore merged into the SORT phase (now Phase 1) since the remaining NSWRITE-03/04/05 work is small and touches the same locale write path. All subsequent phases renumbered down by one.
 
 ---
 
 ## Phases
 
-- [ ] **Phase 1: Namespace Write-Routing** — `extract` and `prune` route keys to the correct per-namespace file in `namespaced` layout
-- [ ] **Phase 2: Auto-Sorting Keys** — users can control key ordering on every locale file write
-- [ ] **Phase 3: Dynamic Key Warnings** — validator distinguishes fully-dynamic vs structured-concat keys and reports them separately
-- [ ] **Phase 4: Interactive Pruning** — `prune --interactive` lets users pick which unused keys to delete via TUI
-- [ ] **Phase 5: Hardcoded String Detection** — `validate --check-hardcoded` finds un-translated text nodes across all supported file extensions
-- [ ] **Phase 6: Deprecation Cleanup** — `I18nCopConfig` removed; clean breaking-change release prep
+- [ ] **Phase 1: Auto-Sorting Keys + Namespace Hardening** — users can control key ordering on every locale write; configurable `defaultNamespace`; `--clean-empty` flag; cross-file atomicity for prune
+- [ ] **Phase 2: Dynamic Key Warnings** — validator distinguishes fully-dynamic vs structured-concat keys and reports them separately
+- [ ] **Phase 3: Interactive Pruning** — `prune --interactive` lets users pick which unused keys to delete via TUI
+- [ ] **Phase 4: Hardcoded String Detection** — `validate --check-hardcoded` finds un-translated text nodes across all supported file extensions
+- [ ] **Phase 5: Deprecation Cleanup** — `I18nCopConfig` removed; clean breaking-change release prep
 
 ---
 
 ## Phase Details
 
-### Phase 1: Namespace Write-Routing
-**Goal**: Users running `extract` or `prune` on a `namespaced` layout project see keys written to and removed from the correct per-namespace locale file.
-**Depends on**: Nothing (carries over accepted foundation from v0.2.0 Phase 7)
-**Requirements**: NSWRITE-01, NSWRITE-02, NSWRITE-03, NSWRITE-04, NSWRITE-05
+### Phase 1: Auto-Sorting Keys + Namespace Hardening
+**Goal**: Users can opt in to deterministic key ordering on every locale file write performed by `extract` or `prune`, and the namespaced write-path is hardened (configurable default namespace, `--clean-empty` semantics, cross-file atomicity for prune).
+**Depends on**: Nothing (NSWRITE-01/02 already shipped, this phase composes on top)
+**Requirements**: SORT-01..06, NSWRITE-03..05
 **Success Criteria** (what must be TRUE):
-  1. Running `extract` on a project with `localesLayout: "namespaced"` writes new `ns:key` entries into `<localesDir>/<lang>/<ns>.json` — not into a flat file.
-  2. Running `prune` on the same project removes stale keys only from the namespace file they belong to; no keys bleed across namespace files.
-  3. A key referenced without a namespace prefix falls into the configured `defaultNamespace` (default `"common"`) without error.
-  4. An individual namespace file that becomes empty is preserved on disk unless `--clean-empty` is explicitly passed.
-  5. If a write to one namespace file fails mid-run, other namespace files are not corrupted (atomic `.tmp`+rename per file).
-**Plans**: TBD
-
-### Phase 2: Auto-Sorting Keys
-**Goal**: Users can opt in to deterministic key ordering (alphabetical or source-order) on every locale file write performed by `extract` or `prune`.
-**Depends on**: Phase 1 (SORT must compose correctly with per-namespace writes)
-**Requirements**: SORT-01, SORT-02, SORT-03, SORT-04, SORT-05, SORT-06
-**Success Criteria** (what must be TRUE):
-  1. With `sortKeys: "alpha"` in config (or `--sort=alpha` flag), every locale file written by `extract`/`prune` has its top-level and nested keys in A-Z order.
+  1. With `sortKeys: "alpha"` in config (or `--sort=alpha` flag), every locale file written by `extract`/`prune` has its top-level and nested keys in A-Z order — across both `flat` and `namespaced` layouts.
   2. With `sortKeys: "source"`, keys appear in the order they were first encountered during the source scan — stable across reruns when source order is stable.
   3. With no `sortKeys` set (or `"preserve"`), file output is identical to current 0.2.x behavior — existing users see zero diff.
-  4. Alpha sort produces identical key order in `en.json`, `ja.json`, and every other locale file for the same keyspace (no per-language drift).
-  5. Nested objects retain their hierarchy after sorting — dotted key paths are never collapsed into a flat map.
+  4. A key referenced without a namespace prefix in `namespaced` layout falls into the configured `defaultNamespace` (default value decided during discuss-phase; current code uses hardcoded `"default"`).
+  5. Namespace files are preserved even when emptied by prune — only deleted when `--clean-empty` is passed explicitly.
+  6. If a single namespace write fails during prune, the user's locale set is not left in a mixed pruned-and-unpruned state (strategy decided during discuss-phase: two-phase commit or in-memory staging).
+  7. Test coverage expanded: multi-language namespaced extract/prune, plural suffixes, error paths, atomic failure recovery.
 **Plans**: TBD
 **UI hint**: no
 
-### Phase 3: Dynamic Key Warnings
+### Phase 2: Dynamic Key Warnings
 **Goal**: Developers see clearly separated, actionable warnings for structured-concat dynamic keys (with static prefix shown) vs fully-dynamic keys that cannot be analyzed — neither class pollutes the missing-key failure count.
-**Depends on**: Nothing (purely additive to scanner + validator; independent of Phases 1-2)
-**Requirements**: DKEY-01, DKEY-02, DKEY-03, DKEY-04, DKEY-05
+**Depends on**: Nothing (purely additive to scanner + validator; independent of Phase 1)
+**Requirements**: DKEY-01..05
 **Success Criteria** (what must be TRUE):
   1. `validate` output groups dynamic keys into two labeled sections: "Fully-dynamic keys" and "Structured-concat keys" — each section lists affected files and key expressions.
   2. A structured-concat key like `` t(`error.${code}`) `` shows its static prefix (`error.`) in the report so the user knows which namespace/section is affected.
@@ -57,10 +48,10 @@
   5. The markdown coverage report generated by `validate` includes a "Dynamic keys" row with counts for fully-dynamic and structured-concat variants.
 **Plans**: TBD
 
-### Phase 4: Interactive Pruning
+### Phase 3: Interactive Pruning
 **Goal**: Developers running `prune` in a terminal can select exactly which unused keys to delete via an arrow-key TUI instead of accepting or rejecting all candidates at once.
-**Depends on**: Nothing (additive flag on the existing `prune` command; independent of Phases 1-3)
-**Requirements**: IPRUNE-01, IPRUNE-02, IPRUNE-03, IPRUNE-04, IPRUNE-05, IPRUNE-06
+**Depends on**: Nothing (additive flag on the existing `prune` command; independent of Phases 1-2)
+**Requirements**: IPRUNE-01..06
 **Success Criteria** (what must be TRUE):
   1. Running `prune --interactive` in a TTY presents a list of candidate unused keys with arrow-key navigation and Space to toggle each key for deletion.
   2. Pressing Enter confirms the selection — only the toggled keys are pruned; untoggled keys remain in the locale files.
@@ -70,10 +61,10 @@
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 5: Hardcoded String Detection
+### Phase 4: Hardcoded String Detection
 **Goal**: Developers can run `validate --check-hardcoded` to get a per-file report of raw text nodes inside HTML/JSX/Vue/Svelte/Astro tags that are not wrapped in a translation call, enabling them to catch un-translated strings before they ship.
-**Depends on**: Phase 3 (shares scanner internals and validation report structure; DKEY should settle scanner changes before HSTR layers the text-node detection engine on top)
-**Requirements**: HSTR-01, HSTR-02, HSTR-03, HSTR-04, HSTR-05, HSTR-06
+**Depends on**: Phase 2 (shares scanner internals and validation report structure; DKEY should settle scanner changes before HSTR layers the text-node detection engine on top)
+**Requirements**: HSTR-01..06
 **Success Criteria** (what must be TRUE):
   1. Running `validate --check-hardcoded` on a project containing `<div>Hello</div>` reports that file, the line number, and the text snippet `Hello`.
   2. Text nodes that are already wrapped in a translation call (e.g., `<div>{t("greeting")}</div>`) do not appear in the report.
@@ -84,10 +75,10 @@
 **Plans**: TBD
 **UI hint**: no
 
-### Phase 6: Deprecation Cleanup
+### Phase 5: Deprecation Cleanup
 **Goal**: The `I18nCopConfig` deprecated alias is fully removed from the public API and all internal references, completing the migration announced in v0.2.0 and preparing the codebase for a clean v0.3.0 release.
-**Depends on**: Phases 1-5 (breaking change goes in final release prep after all features are stable)
-**Requirements**: CLEANUP-01, CLEANUP-02, CLEANUP-03
+**Depends on**: Phases 1-4 (breaking change goes in final release prep after all features are stable)
+**Requirements**: CLEANUP-01..03
 **Success Criteria** (what must be TRUE):
   1. Importing `I18nCopConfig` from `i18n-sharpen` causes a TypeScript compile error — the symbol no longer exists in the package exports.
   2. No reference to `I18nCopConfig` remains anywhere in `src/`, tests, or documentation files.
@@ -100,12 +91,11 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Namespace Write-Routing | 0/? | Not started | - |
-| 2. Auto-Sorting Keys | 0/? | Not started | - |
-| 3. Dynamic Key Warnings | 0/? | Not started | - |
-| 4. Interactive Pruning | 0/? | Not started | - |
-| 5. Hardcoded String Detection | 0/? | Not started | - |
-| 6. Deprecation Cleanup | 0/? | Not started | - |
+| 1. Auto-Sorting Keys + Namespace Hardening | 0/? | In discussion | - |
+| 2. Dynamic Key Warnings | 0/? | Not started | - |
+| 3. Interactive Pruning | 0/? | Not started | - |
+| 4. Hardcoded String Detection | 0/? | Not started | - |
+| 5. Deprecation Cleanup | 0/? | Not started | - |
 
 ---
 
@@ -113,41 +103,19 @@
 
 | Requirement | Phase |
 |-------------|-------|
-| NSWRITE-01 | Phase 1 |
-| NSWRITE-02 | Phase 1 |
-| NSWRITE-03 | Phase 1 |
-| NSWRITE-04 | Phase 1 |
-| NSWRITE-05 | Phase 1 |
-| SORT-01 | Phase 2 |
-| SORT-02 | Phase 2 |
-| SORT-03 | Phase 2 |
-| SORT-04 | Phase 2 |
-| SORT-05 | Phase 2 |
-| SORT-06 | Phase 2 |
-| DKEY-01 | Phase 3 |
-| DKEY-02 | Phase 3 |
-| DKEY-03 | Phase 3 |
-| DKEY-04 | Phase 3 |
-| DKEY-05 | Phase 3 |
-| IPRUNE-01 | Phase 4 |
-| IPRUNE-02 | Phase 4 |
-| IPRUNE-03 | Phase 4 |
-| IPRUNE-04 | Phase 4 |
-| IPRUNE-05 | Phase 4 |
-| IPRUNE-06 | Phase 4 |
-| HSTR-01 | Phase 5 |
-| HSTR-02 | Phase 5 |
-| HSTR-03 | Phase 5 |
-| HSTR-04 | Phase 5 |
-| HSTR-05 | Phase 5 |
-| HSTR-06 | Phase 5 |
-| CLEANUP-01 | Phase 6 |
-| CLEANUP-02 | Phase 6 |
-| CLEANUP-03 | Phase 6 |
+| NSWRITE-01 | — (✅ shipped pre-milestone, commit `54712ab`) |
+| NSWRITE-02 | — (✅ shipped pre-milestone, commit `54712ab`) |
+| SORT-01..06 | Phase 1 |
+| NSWRITE-03..05 | Phase 1 |
+| DKEY-01..05 | Phase 2 |
+| IPRUNE-01..06 | Phase 3 |
+| HSTR-01..06 | Phase 4 |
+| CLEANUP-01..03 | Phase 5 |
 
-**Coverage: 31/31 ✓**
+**Coverage: 29/29 active requirements mapped ✓**
 
 ---
 
 *Roadmap created: 2026-05-28*
+*Restructured: 2026-05-28 after Phase 1 scout (NSWRITE-01/02 already shipped)*
 *Milestone: v0.3.0 — Developer Experience*
