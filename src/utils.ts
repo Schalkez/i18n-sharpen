@@ -3,169 +3,22 @@ import * as path from "path"
 import pc from "picocolors"
 import YAML from "yaml"
 
-/**
- * Recursively find all source files in a directory matching specific extensions,
- * ignoring specified directories.
- *
- * Uses readdirSync({ withFileTypes: true }) so each entry's type is
- * known without an extra statSync call (MD-02). Symlinks are skipped to
- * avoid infinite recursion on symlink cycles or junction points (MD-01).
- *
- * NOTE (MD-03): `excludeDirs` is matched against the bare directory name
- * (entry.name), not the full path and not as a glob. Listing
- * `"coverage"` excludes every directory called `coverage` at any depth;
- * it does NOT allow excluding `src/legacy` specifically. If you need
- * path-aware excludes, factor that policy into the caller.
- */
-export function getFiles(
-  dir: string,
-  extensions: string[],
-  excludeDirs: string[]
-): string[] {
-  const results: string[] = []
-  if (!fs.existsSync(dir)) return results
-
-  let entries: fs.Dirent[]
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true })
-  } catch {
-    return results
-  }
-  for (const entry of entries) {
-    // Skip symlinks entirely — they can point back into an ancestor
-    // directory (cycle) or to anywhere outside the scan root.
-    if (entry.isSymbolicLink()) continue
-
-    const filePath = path.join(dir, entry.name)
-    if (entry.isDirectory()) {
-      if (!excludeDirs.includes(entry.name)) {
-        results.push(...getFiles(filePath, extensions, excludeDirs))
-      }
-    } else if (entry.isFile()) {
-      if (extensions.includes(path.extname(entry.name))) {
-        results.push(filePath)
-      }
-    }
-  }
-  return results
-}
-
-/**
- * Remove single-line and multi-line comments from JS/TS code without
- * corrupting string contents.
- *
- * Implemented as a small state machine that tracks string contexts
- * ('...', "...", `...` including ${} interpolation depth) so that:
- *   - `//` inside a string is preserved
- *   - `*` `/` inside a string does not terminate a block comment
- *   - URLs like "https://x" survive intact
- *   - escapes (`\"`, `\\`, etc.) inside strings are respected
- *
- * Comments are replaced with a single space so token boundaries (e.g.
- * `a/*x*\/b` -> `a b`) are preserved.
- */
-export function stripComments(code: string): string {
-  type StackFrame = {
-    kind: "single" | "double" | "template"
-    templateDepth: number
-  }
-  const out: string[] = []
-  const stack: StackFrame[] = []
-  let i = 0
-  const n = code.length
-
-  while (i < n) {
-    const ch = code[i]
-    const next = i + 1 < n ? code[i + 1] : ""
-    const top = stack.length > 0 ? stack[stack.length - 1] : null
-
-    // Inside a string?
-    if (top) {
-      // Handle template-literal interpolation depth
-      if (top.kind === "template" && ch === "$" && next === "{") {
-        top.templateDepth++
-        out.push("${")
-        i += 2
-        continue
-      }
-      if (top.kind === "template" && top.templateDepth > 0 && ch === "}") {
-        top.templateDepth--
-        out.push("}")
-        i++
-        continue
-      }
-      // While inside an interpolation, treat code as normal code (handled below by re-entering loop with stack still tracking)
-      if (top.kind === "template" && top.templateDepth > 0) {
-        // Fall through to non-string handling below
-      } else {
-        // Inside the literal portion of a string
-        if (ch === "\\" && i + 1 < n) {
-          // Preserve escape sequence verbatim
-          out.push(ch, code[i + 1])
-          i += 2
-          continue
-        }
-        if (
-          (top.kind === "single" && ch === "'") ||
-          (top.kind === "double" && ch === '"') ||
-          (top.kind === "template" && ch === "`")
-        ) {
-          stack.pop()
-          out.push(ch)
-          i++
-          continue
-        }
-        out.push(ch)
-        i++
-        continue
-      }
-    }
-
-    // Not in a (literal) string — check for comment / string start
-    if (ch === "/" && next === "*") {
-      // Block comment — skip until */
-      i += 2
-      while (i < n && !(code[i] === "*" && i + 1 < n && code[i + 1] === "/")) {
-        i++
-      }
-      i += 2 // skip closing */
-      out.push(" ")
-      continue
-    }
-    if (ch === "/" && next === "/") {
-      // Line comment — skip until newline (keep the newline)
-      i += 2
-      while (i < n && code[i] !== "\n") {
-        i++
-      }
-      out.push(" ")
-      continue
-    }
-    if (ch === "'") {
-      stack.push({ kind: "single", templateDepth: 0 })
-      out.push(ch)
-      i++
-      continue
-    }
-    if (ch === '"') {
-      stack.push({ kind: "double", templateDepth: 0 })
-      out.push(ch)
-      i++
-      continue
-    }
-    if (ch === "`") {
-      stack.push({ kind: "template", templateDepth: 0 })
-      out.push(ch)
-      i++
-      continue
-    }
-
-    out.push(ch)
-    i++
-  }
-
-  return out.join("")
-}
+// Re-export scanner primitives from core/scanner for back-compat. New
+// code should import from `./core/scanner` directly.
+export {
+  /** @deprecated Import from `./core/scanner` instead. */
+  getFiles,
+  /** @deprecated Import from `./core/scanner` instead. */
+  stripComments,
+  /** @deprecated Import from `./core/scanner` instead. */
+  isStaticStringLiteral,
+  /** @deprecated Import from `./core/scanner` instead. */
+  getBaseKey,
+  /** @deprecated Import from `./core/scanner` instead. */
+  isKeyUsed,
+  /** @deprecated Import from `./core/scanner` instead. */
+  matchWildcard
+} from "./core/scanner"
 
 /**
  * Flatten a nested JSON/YAML object into a flat key-value map using dot notation.
@@ -399,90 +252,6 @@ export function writeLocaleFile(
 }
 
 /**
- * Return true if `arg` is a single static string literal — i.e. a quoted
- * literal that consumes the whole argument with no concatenation, no
- * template interpolation, and no trailing tokens.
- *
- * Used by validate.ts to decide whether a `t(...)` call is statically
- * resolvable or should be flagged as dynamic.
- */
-export function isStaticStringLiteral(arg: string): boolean {
-  const trimmed = arg.trim()
-  if (trimmed.length < 2) return false
-  const quote = trimmed[0]
-  if (quote !== "'" && quote !== '"' && quote !== "`") return false
-  // Walk the literal respecting escapes; if it terminates before the end
-  // of `trimmed`, the argument has trailing tokens (concatenation, etc.)
-  // and is not a single static literal.
-  let i = 1
-  while (i < trimmed.length) {
-    const ch = trimmed[i]
-    if (ch === "\\" && i + 1 < trimmed.length) {
-      i += 2
-      continue
-    }
-    if (quote === "`" && ch === "$" && trimmed[i + 1] === "{") {
-      // Template literal with placeholder — dynamic by definition.
-      return false
-    }
-    if (ch === quote) {
-      // Literal closes here; if there is anything after it, it's dynamic.
-      return i === trimmed.length - 1
-    }
-    i++
-  }
-  // Unterminated literal — treat as not-static so the user is warned.
-  return false
-}
-
-/**
- * Strip the first matching plural / context suffix off `key` (e.g.
- * `"count_one"` -> `"count"` when `_one` is in `suffixes`). Returns
- * `key` unchanged when no suffix matches. Shared by validate and
- * prune so the rules stay in lock-step (LO-06).
- */
-export function getBaseKey(key: string, suffixes: string[]): string {
-  for (const suffix of suffixes) {
-    if (key.endsWith(suffix)) {
-      return key.slice(0, -suffix.length)
-    }
-  }
-  return key
-}
-
-/**
- * Test whether `key` should be considered used given the set of keys
- * found in source, the user's ignoreKeys wildcards, and the configured
- * plural suffixes. Shared by validate and prune (LO-06).
- */
-export function isKeyUsed(
-  key: string,
-  usedKeys: Set<string>,
-  ignoreKeys: string[] | undefined,
-  pluralSuffixes: string[]
-): boolean {
-  // Exact match
-  if (usedKeys.has(key)) return true
-
-  // Whitelisted in ignoreKeys (wildcard match)
-  if (ignoreKeys) {
-    for (const pattern of ignoreKeys) {
-      if (matchWildcard(pattern, key)) {
-        return true
-      }
-    }
-  }
-
-  // Check if key is a plural-suffix variant of a used key
-  const baseKey = getBaseKey(key, pluralSuffixes)
-  if (baseKey !== key && usedKeys.has(baseKey)) {
-    return true
-  }
-
-  return false
-}
-
-/**
  * Normalize a (possibly platform-specific) path for display in reports
  * and console output. Converts Windows backslashes to forward slashes
  * so reports are platform-independent and can be copy/pasted into
@@ -499,21 +268,6 @@ export function normalizeDisplayPath(p: string): string {
  */
 export function escapeRegex(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
-
-/**
- * Test if a string matches a wildcard pattern (e.g. "status.*" matches "status.success").
- */
-export function matchWildcard(pattern: string, key: string): boolean {
-  if (pattern === "*") return true
-  // LO-08: include `?` in the literal-escape pass so it isn't
-  // accidentally interpreted as a "zero-or-one" regex quantifier when
-  // it appears in a pattern (treated as a literal `?` character).
-  const escaped = pattern
-    .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*")
-  const regex = new RegExp(`^${escaped}$`)
-  return regex.test(key)
 }
 
 /**
