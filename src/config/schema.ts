@@ -88,9 +88,15 @@ export const I18nSharpenConfigSchema = z.object({
   pluralSuffixes: z.array(z.string()).optional(),
   looseKeyMatch: z.boolean().optional(),
   localesLayout: z.enum(["flat", "namespaced"]).optional(),
+  sortKeys: z.enum(["alpha", "source", "preserve"]).optional(),
+  defaultNamespace: z
+    .string()
+    .nonempty("defaultNamespace must be a non-empty string")
+    .optional(),
   prune: z
     .object({
-      force: z.boolean().optional()
+      force: z.boolean().optional(),
+      cleanEmpty: z.boolean().optional()
     })
     .optional()
 })

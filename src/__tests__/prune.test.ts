@@ -274,4 +274,179 @@ describe("prune: integration", () => {
     expect(fileNames).toContain("common.json")
     expect(fileNames).toContain("auth.json")
   })
+
+  it("deletes empty namespace file when cleanEmpty is true and force is true (namespaced)", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        t('common:greeting')
+      `,
+      "locales/en/common.json": JSON.stringify({
+        greeting: "Hello"
+      }),
+      "locales/en/auth.json": JSON.stringify({
+        stale: "stale value"
+      })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const,
+      prune: { force: true, cleanEmpty: true }
+    }
+
+    const result = prune(config, tempDir)
+    expect(result.written).toBe(true)
+
+    expect(fs.existsSync(path.join(tempDir, "locales/en/common.json"))).toBe(
+      true
+    )
+    expect(fs.existsSync(path.join(tempDir, "locales/en/auth.json"))).toBe(
+      false
+    )
+  })
+
+  it("logs Would delete but does not physically delete empty namespace file when cleanEmpty is true and dryRun is true", () => {
+    const authPath = path.join(tempDir, "locales/en/auth.json")
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        t('common:greeting')
+      `,
+      "locales/en/common.json": JSON.stringify({
+        greeting: "Hello"
+      }),
+      "locales/en/auth.json": JSON.stringify({
+        stale: "stale value"
+      })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const,
+      prune: { force: false, cleanEmpty: true }
+    }
+
+    const result = prune(config, tempDir)
+    expect(result.written).toBe(false)
+    expect(fs.existsSync(authPath)).toBe(true)
+
+    const hasDeleteLog = logSpy.mock.calls.some(
+      (call) =>
+        typeof call[0] === "string" &&
+        call[0].includes("Would delete") &&
+        call[0].includes("auth.json")
+    )
+    expect(hasDeleteLog).toBe(true)
+  })
+
+  it("keeps empty namespace file with empty object when cleanEmpty is false", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        t('common:greeting')
+      `,
+      "locales/en/common.json": JSON.stringify({
+        greeting: "Hello"
+      }),
+      "locales/en/auth.json": JSON.stringify({
+        stale: "stale value"
+      })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const,
+      prune: { force: true, cleanEmpty: false }
+    }
+
+    const result = prune(config, tempDir)
+    expect(result.written).toBe(true)
+
+    const authFile = path.join(tempDir, "locales/en/auth.json")
+    expect(fs.existsSync(authFile)).toBe(true)
+    const content = JSON.parse(fs.readFileSync(authFile, "utf8")) as unknown
+    expect(content).toEqual({})
+  })
+
+  it("never deletes main lang file in flat layout even when cleanEmpty is true", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        // no keys
+      `,
+      "locales/en.json": JSON.stringify({
+        stale: "stale value"
+      })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      prune: { force: true, cleanEmpty: true }
+    }
+
+    const result = prune(config, tempDir)
+    expect(result.written).toBe(true)
+
+    const flatFile = path.join(tempDir, "locales/en.json")
+    expect(fs.existsSync(flatFile)).toBe(true)
+    const content = JSON.parse(fs.readFileSync(flatFile, "utf8")) as unknown
+    expect(content).toEqual({})
+  })
+
+  it("sorts remaining keys alphabetically on disk when sortKeys is alpha in prune", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        t('z_key')
+        t('a_key')
+        t('m_key')
+      `,
+      "locales/en.json": JSON.stringify({
+        z_key: "z",
+        stale_key: "stale",
+        m_key: "m",
+        a_key: "a"
+      })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      sortKeys: "alpha" as const,
+      prune: { force: true }
+    }
+
+    prune(config, tempDir)
+
+    const rawFileContent = fs.readFileSync(
+      path.join(tempDir, "locales/en.json"),
+      "utf8"
+    )
+    const idxA = rawFileContent.indexOf("a_key")
+    const idxM = rawFileContent.indexOf("m_key")
+    const idxZ = rawFileContent.indexOf("z_key")
+    expect(idxA).toBeLessThan(idxM)
+    expect(idxM).toBeLessThan(idxZ)
+    expect(rawFileContent).not.toContain("stale_key")
+  })
 })

@@ -1,13 +1,16 @@
+import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
+import { warnLegacyDefaultNamespace } from "@/commands/_shared/migration-warnings"
 import { I18nSharpenError } from "@/core/errors"
 import {
   flattenObject,
   unflattenObject,
   findLocaleFile,
   readLocaleFile,
-  writeLocaleFile,
-  loadNamespacedLocales
+  writeLocaleFilesAtomic,
+  loadNamespacedLocales,
+  sortLocaleObject
 } from "@/core/locale-io"
 import { isKeyUsed } from "@/core/scanner"
 import type { I18nSharpenConfig, PruneResult } from "@/types"
@@ -42,6 +45,7 @@ export function executePrunePlans(
     )
   }
 
+  // Phase 1: log what will be (or would be) pruned
   for (const plan of writePlans) {
     const displayName = plan.displayName ?? path.basename(plan.langPath)
     const verb = dryRun ? "Would prune" : "Pruning"
@@ -57,23 +61,18 @@ export function executePrunePlans(
         `  ... and ${plan.prunedKeys.length - sample.length} more (run with verbose flag to see all)`
       )
     }
+    totalPrunedCount += plan.prunedKeys.length
+  }
 
-    if (!dryRun) {
-      try {
-        writeLocaleFile(plan.langPath, plan.nestedJson)
-        totalPrunedCount += plan.prunedKeys.length
-        written = true
-      } catch (error) {
-        throw new I18nSharpenError({
-          kind: "filesystem",
-          message: `Failed to write to file '${plan.langPath}': ${(error as Error).message}`,
-          path: plan.langPath,
-          cause: error
-        })
-      }
-    } else {
-      totalPrunedCount += plan.prunedKeys.length
-    }
+  // Phase 2: atomic cross-file write (skipped in dry-run)
+  if (!dryRun && writePlans.length > 0) {
+    writeLocaleFilesAtomic(
+      writePlans.map((plan) => ({
+        filePath: plan.langPath,
+        nestedJson: plan.nestedJson
+      }))
+    )
+    written = true
   }
 
   if (dryRun) {
@@ -93,6 +92,57 @@ export function executePrunePlans(
   }
 
   return { written, dryRun, perLocale, totalPruned: totalPrunedCount }
+}
+
+/**
+ * D-09: Delete (or in dry-run, log) namespace files that ended up with
+ * zero keys after pruning. Operates on the SAME write plans that
+ * `executePrunePlans` processed.
+ *
+ * Flat layout is exempt: callers MUST only invoke this for
+ * `localesLayout: "namespaced"`. Never deletes the parent `<lang>/`
+ * directory.
+ *
+ * @param emptyPlans  Subset of namespaced WritePlans whose `nestedJson`
+ *                    has zero own-keys after prune.
+ * @param dryRun      When true, log "Would delete" but do not touch disk.
+ */
+export function cleanEmptyNamespaceFiles(
+  emptyPlans: { langPath: string; displayName?: string }[],
+  dryRun: boolean
+): void {
+  if (emptyPlans.length === 0) return
+
+  const labels = emptyPlans.map(
+    (p) => p.displayName ?? path.basename(p.langPath)
+  )
+
+  if (dryRun) {
+    log.info(
+      `Would delete ${pc.yellow(emptyPlans.length)} empty namespace file(s): ${labels.map((l) => pc.cyan(l)).join(", ")}`
+    )
+    return
+  }
+
+  let deletedCount = 0
+  for (const plan of emptyPlans) {
+    try {
+      fs.unlinkSync(plan.langPath)
+      deletedCount++
+    } catch (error) {
+      log.warn(
+        `Failed to delete empty namespace file ${pc.cyan(plan.langPath)}: ${(error as Error).message}`
+      )
+    }
+  }
+  if (deletedCount > 0) {
+    log.success(
+      `Deleted ${pc.yellow(deletedCount)} empty namespace file(s): ${labels
+        .slice(0, deletedCount)
+        .map((l) => pc.cyan(l))
+        .join(", ")}`
+    )
+  }
 }
 
 /**
@@ -178,7 +228,17 @@ export function pruneFlat(
 
     if (prunedKeys.length > 0) {
       const nestedJson = unflattenObject(newFlatJson)
-      writePlans.push({ lang, langPath, nestedJson, prunedKeys })
+      const sortedNestedJson = sortLocaleObject(
+        nestedJson,
+        config.sortKeys ?? "preserve",
+        usedKeys
+      )
+      writePlans.push({
+        lang,
+        langPath,
+        nestedJson: sortedNestedJson,
+        prunedKeys
+      })
     } else {
       log.info(
         `✨ No unused keys to prune in ${pc.cyan(path.basename(langPath))}.`
@@ -207,6 +267,8 @@ export function pruneNamespaced(
     localesDirAbs,
     config.supportedLanguages
   )
+
+  warnLegacyDefaultNamespace(config, localeNamespaces)
 
   const allLocaleKeys = new Set<string>()
   for (const lang of config.supportedLanguages) {
@@ -254,7 +316,10 @@ export function pruneNamespaced(
     const keysByNs = new Map<string, Record<string, string>>()
     for (const [namespacedKey, value] of Object.entries(langFlat)) {
       const colonIdx = namespacedKey.indexOf(":")
-      const ns = colonIdx >= 0 ? namespacedKey.slice(0, colonIdx) : "default"
+      const ns =
+        colonIdx >= 0
+          ? namespacedKey.slice(0, colonIdx)
+          : (config.defaultNamespace ?? "common")
       const keyPath =
         colonIdx >= 0 ? namespacedKey.slice(colonIdx + 1) : namespacedKey
       let nsObj = keysByNs.get(ns)
@@ -283,7 +348,31 @@ export function pruneNamespaced(
 
       if (prunedKeys.length > 0) {
         const nestedJson = unflattenObject(newFlatJson)
-        writePlans.push({ lang, ns, filePath, nestedJson, prunedKeys })
+        const nsKeyOrder = new Set<string>()
+        for (const fullKey of usedKeys) {
+          const colonIdx = fullKey.indexOf(":")
+          const keyNs =
+            colonIdx >= 0
+              ? fullKey.slice(0, colonIdx)
+              : (config.defaultNamespace ?? "common")
+          if (keyNs === ns) {
+            const keyPath =
+              colonIdx >= 0 ? fullKey.slice(colonIdx + 1) : fullKey
+            nsKeyOrder.add(keyPath)
+          }
+        }
+        const sortedNestedJson = sortLocaleObject(
+          nestedJson,
+          config.sortKeys ?? "preserve",
+          nsKeyOrder
+        )
+        writePlans.push({
+          lang,
+          ns,
+          filePath,
+          nestedJson: sortedNestedJson,
+          prunedKeys
+        })
       } else {
         log.info(
           `✨ No unused keys to prune in ${pc.cyan(`${lang}/${ns}.json`)}.`
@@ -306,5 +395,14 @@ export function pruneNamespaced(
     displayName: `${p.lang}/${p.ns}.json`
   }))
 
-  return executePrunePlans(flatPlans, perLocale, dryRun)
+  const result = executePrunePlans(flatPlans, perLocale, dryRun)
+
+  if (config.prune?.cleanEmpty === true) {
+    const emptyPlans = flatPlans.filter(
+      (p) => Object.keys(p.nestedJson).length === 0
+    )
+    cleanEmptyNamespaceFiles(emptyPlans, dryRun)
+  }
+
+  return result
 }

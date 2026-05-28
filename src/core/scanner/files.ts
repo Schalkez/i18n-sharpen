@@ -27,6 +27,11 @@ export function getFiles(
   } catch {
     return results
   }
+  // Sort entries by name for cross-platform deterministic traversal order.
+  // Required for SortMode "source" to produce stable key ordering on Linux
+  // (where readdirSync returns hash-bucket order on ext4) and Windows
+  // (which returns allocation order on NTFS).
+  entries.sort((a, b) => a.name.localeCompare(b.name))
   for (const entry of entries) {
     if (entry.isSymbolicLink()) continue
 

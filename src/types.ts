@@ -44,6 +44,18 @@ export interface I18nSharpenConfig {
    */
   localesLayout?: "flat" | "namespaced"
   /**
+   * Locale key ordering mode.
+   * - "alpha": case-insensitive, numeric-aware Unicode sort
+   * - "source": order keys by first-appearance in source code
+   * - "preserve": return unchanged
+   */
+  sortKeys?: "alpha" | "source" | "preserve"
+  /**
+   * Namespace used for keys without a `ns:` prefix when `localesLayout === "namespaced"`.
+   * Defaults to `"common"`.
+   */
+  defaultNamespace?: string
+  /**
    * Prune-only knobs. When `prune.force` is false (the default), `prune`
    * runs in dry-run mode: it prints a summary of which keys WOULD be
    * removed but does not modify any locale file. Set `prune.force: true`
@@ -52,6 +64,11 @@ export interface I18nSharpenConfig {
   prune?: {
     /** If true, prune writes the cleaned locale files to disk. */
     force?: boolean
+    /**
+     * If true, namespace files left with zero keys after pruning are
+     * deleted from disk (namespaced layout only).
+     */
+    cleanEmpty?: boolean
   }
 }
 

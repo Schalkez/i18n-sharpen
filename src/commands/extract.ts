@@ -8,11 +8,14 @@ import {
   findLocaleFile,
   readLocaleFile,
   writeLocaleFile,
-  loadNamespacedLocales
+  writeLocaleFilesAtomic,
+  loadNamespacedLocales,
+  sortLocaleObject
 } from "@/core/locale-io"
 import { scanSourceFiles, detectUsedKeys } from "@/core/scanner"
 import type { I18nSharpenConfig } from "@/types"
 import { log } from "@/utils"
+import { warnLegacyDefaultNamespace } from "./_shared/migration-warnings"
 
 export function extract(
   config: I18nSharpenConfig,
@@ -110,7 +113,17 @@ function extractFlat(
         flatJson[key] = key
       }
       const nestedJson = unflattenObject(flatJson)
-      writePlans.push({ lang, langPath, nestedJson, missingKeys })
+      const sortedNestedJson = sortLocaleObject(
+        nestedJson,
+        config.sortKeys ?? "preserve",
+        usedKeys
+      )
+      writePlans.push({
+        lang,
+        langPath,
+        nestedJson: sortedNestedJson,
+        missingKeys
+      })
     } else {
       log.info(
         `✨ No new keys to extract for ${pc.cyan(path.basename(langPath))}.`
@@ -166,6 +179,8 @@ function extractNamespaced(
     config.supportedLanguages
   )
 
+  warnLegacyDefaultNamespace(config, localeNamespaces)
+
   interface NsPlan {
     lang: string
     ns: string
@@ -182,7 +197,10 @@ function extractNamespaced(
 
     for (const fullKey of usedKeys) {
       const colonIdx = fullKey.indexOf(":")
-      const ns = colonIdx >= 0 ? fullKey.slice(0, colonIdx) : "default"
+      const ns =
+        colonIdx >= 0
+          ? fullKey.slice(0, colonIdx)
+          : (config.defaultNamespace ?? "common")
       const keyPath = colonIdx >= 0 ? fullKey.slice(colonIdx + 1) : fullKey
       const namespacedKey = `${ns}:${keyPath}`
 
@@ -248,34 +266,54 @@ function extractNamespaced(
     }
 
     const nestedJson = unflattenObject(existingFlat)
+    const nsKeyOrder = new Set<string>()
+    for (const fullKey of usedKeys) {
+      const colonIdx = fullKey.indexOf(":")
+      const keyNs =
+        colonIdx >= 0
+          ? fullKey.slice(0, colonIdx)
+          : (config.defaultNamespace ?? "common")
+      if (keyNs === plan.ns) {
+        const keyPath = colonIdx >= 0 ? fullKey.slice(colonIdx + 1) : fullKey
+        nsKeyOrder.add(keyPath)
+      }
+    }
+    const sortedNestedJson = sortLocaleObject(
+      nestedJson,
+      config.sortKeys ?? "preserve",
+      nsKeyOrder
+    )
     const displayLabel = `${plan.lang}/${plan.ns}.json`
     writeItems.push({
       filePath: plan.filePath,
-      nestedJson,
+      nestedJson: sortedNestedJson,
       missingKeys: plan.missingKeys,
       displayLabel
     })
   }
 
   let totalExtractedCount = 0
+
+  // Phase 1: log what will be written (preserves existing UX)
   for (const item of writeItems) {
     log.info(
-      `📥 Extracting ${pc.green(item.missingKeys.length)} new keys to ${pc.cyan(item.displayLabel)}:`
+      `📥 Preparing to extract ${pc.green(item.missingKeys.length)} new keys to ${pc.cyan(item.displayLabel)}:`
     )
     for (const key of item.missingKeys) {
       log.info(`  + ${pc.green(key)}`)
     }
-    try {
-      writeLocaleFile(item.filePath, item.nestedJson)
-      totalExtractedCount += item.missingKeys.length
-    } catch (error) {
-      throw new I18nSharpenError({
-        kind: "filesystem",
-        message: `Failed to write to file '${item.filePath}': ${(error as Error).message}`,
-        path: item.filePath,
-        cause: error
-      })
-    }
+  }
+
+  // Phase 2: atomic write across all namespace files
+  writeLocaleFilesAtomic(
+    writeItems.map((item) => ({
+      filePath: item.filePath,
+      nestedJson: item.nestedJson
+    }))
+  )
+
+  for (const item of writeItems) {
+    totalExtractedCount += item.missingKeys.length
   }
 
   if (totalExtractedCount > 0) {

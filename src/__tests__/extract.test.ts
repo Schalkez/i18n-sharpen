@@ -86,7 +86,8 @@ describe("extract: integration", () => {
     )
     expect(flattenObject(commonLocale)).toMatchObject({
       greeting: "Hello",
-      farewell: "farewell"
+      farewell: "farewell",
+      "noprefix.key": "noprefix.key"
     })
 
     const authLocale = readLocaleFile(
@@ -95,6 +96,57 @@ describe("extract: integration", () => {
     expect(flattenObject(authLocale)).toMatchObject({
       "login.title": "login.title"
     })
+  })
+
+  it("extract with custom defaultNamespace writes un-prefixed keys to custom namespace", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        t('noprefix.key')
+      `,
+      "locales/en/auth.json": JSON.stringify({})
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const,
+      defaultNamespace: "auth"
+    }
+
+    extract(config, tempDir)
+
+    const authLocale = readLocaleFile(
+      path.join(tempDir, "locales/en/auth.json")
+    )
+    expect(flattenObject(authLocale)).toMatchObject({
+      "noprefix.key": "noprefix.key"
+    })
+  })
+
+  it("extract with legacy defaultNamespace: 'default' writes un-prefixed keys to default.json", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        t('noprefix.key')
+      `,
+      "locales/en/default.json": JSON.stringify({})
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const,
+      defaultNamespace: "default"
+    }
+
+    extract(config, tempDir)
 
     const defaultLocale = readLocaleFile(
       path.join(tempDir, "locales/en/default.json")
@@ -102,6 +154,106 @@ describe("extract: integration", () => {
     expect(flattenObject(defaultLocale)).toMatchObject({
       "noprefix.key": "noprefix.key"
     })
+  })
+
+  it("warns about legacy default namespace when default.json exists, common.json is absent, and defaultNamespace is unset", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": "t('noprefix.key')",
+      "locales/en/default.json": JSON.stringify({ old: "val" })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const
+    }
+
+    extract(config, tempDir)
+
+    // Filter logSpy calls to find the one containing the warning message
+    const warningCall = logSpy.mock.calls.find(
+      (call) => typeof call[0] === "string" && call[0].includes("legacy")
+    )
+    expect(warningCall).toBeDefined()
+    if (!warningCall) throw new Error("Expected warningCall to be defined")
+    const warningMessage = warningCall[0] as string
+    expect(warningMessage).toContain("default")
+    expect(warningMessage).toContain("common")
+    expect(warningMessage).toContain("defaultNamespace")
+  })
+
+  it("does not warn if common.json exists alongside default.json", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": "t('noprefix.key')",
+      "locales/en/default.json": JSON.stringify({ old: "val" }),
+      "locales/en/common.json": JSON.stringify({ greeting: "Hello" })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const
+    }
+
+    extract(config, tempDir)
+    const hasLegacyWarning = logSpy.mock.calls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("legacy")
+    )
+    expect(hasLegacyWarning).toBe(false)
+  })
+
+  it("does not warn if defaultNamespace is explicitly set to default", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": "t('noprefix.key')",
+      "locales/en/default.json": JSON.stringify({ old: "val" })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const,
+      defaultNamespace: "default"
+    }
+
+    extract(config, tempDir)
+    const hasLegacyWarning = logSpy.mock.calls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("legacy")
+    )
+    expect(hasLegacyWarning).toBe(false)
+  })
+
+  it("does not warn if layout is flat", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": "t('noprefix.key')",
+      "locales/en.json": JSON.stringify({ old: "val" })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"]
+    }
+
+    extract(config, tempDir)
+    const hasLegacyWarning = logSpy.mock.calls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("legacy")
+    )
+    expect(hasLegacyWarning).toBe(false)
   })
 
   it("should ignore translation keys ending with a dot in extract", () => {
@@ -126,5 +278,38 @@ describe("extract: integration", () => {
     const extracted = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(extracted)).toEqual({ "normal.key": "Normal Key" })
     expect(extracted["dynamic.prefix."]).toBeUndefined()
+  })
+
+  it("sorts extracted keys alphabetically on disk when sortKeys is alpha", () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        t('z_key')
+        t('a_key')
+        t('m_key')
+      `,
+      "locales/en.json": JSON.stringify({})
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      sortKeys: "alpha" as const
+    }
+
+    extract(config, tempDir)
+
+    const rawFileContent = fs.readFileSync(
+      path.join(tempDir, "locales/en.json"),
+      "utf8"
+    )
+    const idxA = rawFileContent.indexOf("a_key")
+    const idxM = rawFileContent.indexOf("m_key")
+    const idxZ = rawFileContent.indexOf("z_key")
+    expect(idxA).toBeLessThan(idxM)
+    expect(idxM).toBeLessThan(idxZ)
   })
 })

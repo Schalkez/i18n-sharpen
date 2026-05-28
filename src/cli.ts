@@ -93,12 +93,28 @@ program
   .description(
     "Extract new translation keys referenced in code and inject them into JSON files."
   )
-  .action(() => {
+  .option(
+    "--sort <mode>",
+    "Override key sorting mode (alpha | source | preserve)"
+  )
+  .action((cmdOpts: { sort?: string }) => {
     const opts = program.opts()
     const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
     const configPath = typeof opts.config === "string" ? opts.config : undefined
     try {
       const config = loadConfig(cwd, configPath)
+      if (cmdOpts.sort) {
+        if (
+          cmdOpts.sort !== "alpha" &&
+          cmdOpts.sort !== "source" &&
+          cmdOpts.sort !== "preserve"
+        ) {
+          throw new Error(
+            "Invalid sort mode. Choose from: alpha, source, preserve"
+          )
+        }
+        config.sortKeys = cmdOpts.sort
+      }
       extract(config, cwd)
       process.exitCode = 0
     } catch (error) {
@@ -118,21 +134,53 @@ program
     false
   )
   .option("--force", "Actually write the pruned locale files to disk.", false)
-  .action((cmdOpts: { dryRun?: boolean; force?: boolean }) => {
-    const opts = program.opts()
-    const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
-    const configPath = typeof opts.config === "string" ? opts.config : undefined
-    try {
-      const config = loadConfig(cwd, configPath)
-      prune(config, cwd, {
-        force: cmdOpts.force === true,
-        dryRun: cmdOpts.dryRun === true
-      })
-      process.exitCode = 0
-    } catch (error) {
-      reportError(error)
-      process.exitCode = 1
+  .option(
+    "--sort <mode>",
+    "Override key sorting mode (alpha | source | preserve)"
+  )
+  .option(
+    "--clean-empty",
+    "After pruning (namespaced layout only), delete namespace files that have zero keys. Flat layout files are never deleted.",
+    false
+  )
+  .action(
+    (cmdOpts: {
+      dryRun?: boolean
+      force?: boolean
+      sort?: string
+      cleanEmpty?: boolean
+    }) => {
+      const opts = program.opts()
+      const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
+      const configPath =
+        typeof opts.config === "string" ? opts.config : undefined
+      try {
+        const config = loadConfig(cwd, configPath)
+        if (cmdOpts.sort) {
+          if (
+            cmdOpts.sort !== "alpha" &&
+            cmdOpts.sort !== "source" &&
+            cmdOpts.sort !== "preserve"
+          ) {
+            throw new Error(
+              "Invalid sort mode. Choose from: alpha, source, preserve"
+            )
+          }
+          config.sortKeys = cmdOpts.sort
+        }
+        if (cmdOpts.cleanEmpty === true) {
+          config.prune = { ...(config.prune ?? {}), cleanEmpty: true }
+        }
+        prune(config, cwd, {
+          force: cmdOpts.force === true,
+          dryRun: cmdOpts.dryRun === true
+        })
+        process.exitCode = 0
+      } catch (error) {
+        reportError(error)
+        process.exitCode = 1
+      }
     }
-  })
+  )
 
 program.parse(process.argv)

@@ -2,6 +2,7 @@ import * as fs from "fs"
 import { createRequire } from "module"
 import * as path from "path"
 import YAML from "yaml"
+import { I18nSharpenError } from "@/core/errors"
 import { log } from "@/utils"
 import { flattenObject } from "./transform"
 
@@ -213,6 +214,123 @@ export function writeLocaleFile(
       // ignore secondary failure
     }
     throw error
+  }
+}
+
+/**
+ * Minimal write-plan used by `writeLocaleFilesAtomic`. Decouples the core
+ * locale-io layer from prune/extract-specific plan shapes.
+ */
+export interface WriteLocalePlan {
+  /** Absolute path to the final locale file (.json or .yaml/.yml). */
+  filePath: string
+  /** Nested object to serialize. Must NOT be a JS/TS locale file path. */
+  nestedJson: Record<string, unknown>
+}
+
+/**
+ * Write multiple locale files atomically using a two-phase commit.
+ *
+ * **Phase A (write all .tmp files):** every plan's serialized content is
+ * written to `<filePath>.tmp`. If any single write fails (ENOENT,
+ * ENOSPC, EACCES, ...), every `.tmp` file created so far is best-effort
+ * deleted and the function throws `I18nSharpenError({ kind: "filesystem" })`.
+ * On Phase A failure NONE of the original files are touched — the
+ * caller's locale set is guaranteed consistent with pre-call state.
+ *
+ * **Phase B (rename .tmp → final, in order):** once every `.tmp` is on
+ * disk, each `.tmp` is renamed to its final path. If a rename fails
+ * mid-loop, the function:
+ *   - throws an error detailing which files were committed (files 0..N-1)
+ *     and which remain as `.tmp` (files N..M-1)
+ *   - leaves the remaining `.tmp` files on disk for user inspection
+ *   - does NOT roll back already-renamed files (rollback would itself
+ *     be error-prone — D-10 documents this trade-off)
+ *   - throws `I18nSharpenError({ kind: "filesystem" })`
+ *
+ * **JS/TS guard:** writing to .js/.cjs/.mjs/.ts/.tsx files is refused
+ * via the same path-extension check as `writeLocaleFile` (delegated to
+ * the per-plan content-formatting helper).
+ *
+ * @param plans  Ordered list of plans. Empty array is a no-op.
+ */
+export function writeLocaleFilesAtomic(plans: WriteLocalePlan[]): void {
+  if (plans.length === 0) return
+
+  // Phase A: serialize content + write all .tmp files
+  const tmpPaths: string[] = []
+
+  for (const plan of plans) {
+    const ext = path.extname(plan.filePath).toLowerCase()
+    if (JS_TS_EXTENSIONS.has(ext)) {
+      // Cleanup any .tmp files written so far, then surface the same
+      // refusal as writeLocaleFile would.
+      for (const t of tmpPaths) {
+        try {
+          fs.unlinkSync(t)
+        } catch {
+          /* ignore secondary failure */
+        }
+      }
+      throw new Error(
+        `Refusing to write JS/TS locale file '${path.basename(plan.filePath)}'.\n` +
+          `i18n-sharpen can read .js/.cjs/.mjs/.ts/.tsx locale files but will not overwrite them.`
+      )
+    }
+
+    let content = ""
+    if (ext === ".yaml" || ext === ".yml") {
+      content = YAML.stringify(plan.nestedJson, { indent: 2 })
+    } else {
+      content = JSON.stringify(plan.nestedJson, null, 2)
+    }
+    if (!content.endsWith("\n")) content += "\n"
+
+    const tmpPath = `${plan.filePath}.tmp`
+    try {
+      fs.writeFileSync(tmpPath, content, "utf8")
+      tmpPaths.push(tmpPath)
+    } catch (error) {
+      // Phase A failure — clean up all .tmp files created so far.
+      for (const t of tmpPaths) {
+        try {
+          fs.unlinkSync(t)
+        } catch {
+          /* ignore secondary failure */
+        }
+      }
+      throw new I18nSharpenError({
+        kind: "filesystem",
+        message: `Atomic write failed during Phase A (.tmp write) for '${plan.filePath}': ${(error as Error).message}. No original files were modified.`,
+        path: plan.filePath,
+        cause: error
+      })
+    }
+  }
+
+  // Phase B: rename .tmp → final path, in order
+  for (let i = 0; i < plans.length; i++) {
+    const plan = plans[i]
+    const tmpPath = tmpPaths[i]
+    try {
+      fs.renameSync(tmpPath, plan.filePath)
+    } catch (error) {
+      // Phase B failure — partial commit. Log clearly, leave the
+      // remaining .tmp files on disk, do NOT roll back already-renamed
+      // files.
+      const committed = plans.slice(0, i).map((p) => p.filePath)
+      const pending = plans.slice(i).map((p) => `${p.filePath}.tmp`)
+      throw new I18nSharpenError({
+        kind: "filesystem",
+        message:
+          `Atomic write failed during Phase B (rename) for '${plan.filePath}': ${(error as Error).message}.\n` +
+          `Committed files (already renamed): ${committed.length === 0 ? "(none)" : committed.join(", ")}\n` +
+          `Pending .tmp files remaining on disk: ${pending.join(", ")}\n` +
+          `Inspect the .tmp files manually and either rename them or delete them.`,
+        path: plan.filePath,
+        cause: error
+      })
+    }
   }
 }
 
