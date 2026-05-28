@@ -48,6 +48,45 @@ export function findLocaleFile(
 }
 
 /**
+ * Dynamic ESM/TypeScript module loader using jiti.
+ */
+function loadWithJiti(filePath: string): Record<string, unknown> {
+  let jiti: ((id: string) => unknown) | undefined
+  try {
+    // jiti v2: import is ESM-only; v1: has CJS entry — try both
+    const jitiMod = _require("jiti") as
+      | { default?: (base: string) => (id: string) => unknown }
+      | ((base: string) => (id: string) => unknown)
+    const factory = typeof jitiMod === "function" ? jitiMod : jitiMod.default
+    if (typeof factory === "function") {
+      jiti = factory(import.meta.url)
+    }
+  } catch {
+    // jiti not installed
+  }
+  if (!jiti) {
+    throw new Error(
+      `TypeScript/ESM locale file '${path.basename(filePath)}' requires the 'jiti' package.\n` +
+        `Install it as a dev-dependency: pnpm add -D jiti`
+    )
+  }
+  try {
+    const mod = jiti(filePath)
+    const result =
+      mod !== null && typeof mod === "object" && "default" in mod
+        ? mod.default
+        : mod
+    return result && typeof result === "object" && !Array.isArray(result)
+      ? (result as Record<string, unknown>)
+      : {}
+  } catch (err) {
+    throw new Error(
+      `Failed to parse TypeScript/ESM locale file '${path.basename(filePath)}': ${(err as Error).message}`
+    )
+  }
+}
+
+/**
  * Load and parse a locale file (JSON, YAML, or JS/TS module).
  *
  * Tolerates real-world edge cases:
@@ -66,45 +105,35 @@ export function readLocaleFile(filePath: string): Record<string, unknown> {
 
   // ── JS / CJS ─────────────────────────────────────────────────────────────
   if (ext === ".js" || ext === ".cjs") {
-    const mod = _require(filePath) as unknown
-    const result =
-      mod !== null && typeof mod === "object" && "default" in mod
-        ? mod.default
-        : mod
-    return result && typeof result === "object" && !Array.isArray(result)
-      ? (result as Record<string, unknown>)
-      : {}
+    try {
+      const resolved = _require.resolve(filePath)
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete _require.cache[resolved]
+    } catch {
+      // ignore cache resolution failure
+    }
+    try {
+      const mod = _require(filePath) as unknown
+      const result =
+        mod !== null && typeof mod === "object" && "default" in mod
+          ? mod.default
+          : mod
+      return result && typeof result === "object" && !Array.isArray(result)
+        ? (result as Record<string, unknown>)
+        : {}
+    } catch (err) {
+      if (ext === ".js") {
+        return loadWithJiti(filePath)
+      }
+      throw new Error(
+        `Failed to parse JS/CJS locale file '${path.basename(filePath)}': ${(err as Error).message}`
+      )
+    }
   }
 
   // ── ESM / TypeScript (requires jiti) ─────────────────────────────────────
   if (ext === ".mjs" || ext === ".ts" || ext === ".tsx") {
-    let jiti: ((id: string) => unknown) | undefined
-    try {
-      // jiti v2: import is ESM-only; v1: has CJS entry — try both
-      const jitiMod = _require("jiti") as
-        | { default?: (base: string) => (id: string) => unknown }
-        | ((base: string) => (id: string) => unknown)
-      const factory = typeof jitiMod === "function" ? jitiMod : jitiMod.default
-      if (typeof factory === "function") {
-        jiti = factory(import.meta.url)
-      }
-    } catch {
-      // jiti not installed
-    }
-    if (!jiti) {
-      throw new Error(
-        `TypeScript/ESM locale file '${path.basename(filePath)}' requires the 'jiti' package.\n` +
-          `Install it as a dev-dependency: pnpm add -D jiti`
-      )
-    }
-    const mod = jiti(filePath)
-    const result =
-      mod !== null && typeof mod === "object" && "default" in mod
-        ? mod.default
-        : mod
-    return result && typeof result === "object" && !Array.isArray(result)
-      ? (result as Record<string, unknown>)
-      : {}
+    return loadWithJiti(filePath)
   }
 
   // ── JSON / YAML ───────────────────────────────────────────────────────────

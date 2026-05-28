@@ -82,6 +82,45 @@ describe("locale-io: write/read roundtrip", () => {
     fs.writeFileSync(f, "   \n  ", "utf8")
     expect(readLocaleFile(f)).toEqual({})
   })
+
+  it("reads .cjs files correctly and evicts require cache", () => {
+    fs.mkdirSync(dir, { recursive: true })
+    const f1 = path.join(dir, "en.cjs")
+    fs.writeFileSync(f1, "module.exports = { val: 1 };", "utf8")
+    expect(readLocaleFile(f1)).toEqual({ val: 1 })
+
+    // Verify cache eviction by overwriting the same file path and reading again
+    fs.writeFileSync(f1, "module.exports = { val: 2 };", "utf8")
+    expect(readLocaleFile(f1)).toEqual({ val: 2 })
+  })
+
+  it("throws clear parse error for syntax error in .cjs files", () => {
+    fs.mkdirSync(dir, { recursive: true })
+    const f = path.join(dir, "invalid.cjs")
+    fs.writeFileSync(f, "module.exports = { val: ", "utf8")
+    expect(() => readLocaleFile(f)).toThrow(
+      /Failed to parse JS\/CJS locale file/
+    )
+  })
+
+  it("falls back to jiti for ESM .js files and throws when jiti is missing", () => {
+    fs.mkdirSync(dir, { recursive: true })
+    const f = path.join(dir, "en.js")
+    fs.writeFileSync(f, "export default { val: 1 };", "utf8")
+    try {
+      const res = readLocaleFile(f)
+      expect(res).toEqual({ val: 1 })
+    } catch (err) {
+      expect((err as Error).message).toMatch(/requires the 'jiti' package/)
+    }
+  })
+
+  it("throws helpful error for .ts files when jiti is missing", () => {
+    fs.mkdirSync(dir, { recursive: true })
+    const f = path.join(dir, "en.ts")
+    fs.writeFileSync(f, "export default { val: 1 };", "utf8")
+    expect(() => readLocaleFile(f)).toThrow(/requires the 'jiti' package/)
+  })
 })
 
 describe("locale-io: writeLocaleFile atomicity", () => {
