@@ -1,4 +1,4 @@
-export interface I18nCopConfig {
+export interface I18nSharpenConfig {
   scanDirs: string[]
   localesDir: string
   defaultLanguage: string
@@ -39,6 +39,13 @@ export interface I18nCopConfig {
     force?: boolean
   }
 }
+
+/**
+ * @deprecated Use `I18nSharpenConfig`. This alias is kept for backwards
+ * compatibility with v0.0.x / v0.1.x consumers and will be removed in
+ * a future major version.
+ */
+export type I18nCopConfig = I18nSharpenConfig
 
 /**
  * Per-invocation options for the programmatic `prune()` API.

@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
-import type { I18nCopConfig, PruneOptions, PruneResult } from "../types"
+import type { I18nSharpenConfig, PruneOptions, PruneResult } from "../types"
 import {
   getFiles,
   stripComments,
@@ -30,7 +30,7 @@ import {
  * preview-in-CI scripts robust.
  */
 export function prune(
-  config: I18nCopConfig,
+  config: I18nSharpenConfig,
   cwd: string = process.cwd(),
   options: PruneOptions = {}
 ): PruneResult {

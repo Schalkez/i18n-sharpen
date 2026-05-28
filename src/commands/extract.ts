@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
-import type { I18nCopConfig } from "../types"
+import type { I18nSharpenConfig } from "../types"
 import {
   getFiles,
   stripComments,
@@ -15,7 +15,7 @@ import {
 } from "../utils"
 
 export function extract(
-  config: I18nCopConfig,
+  config: I18nSharpenConfig,
   cwd: string = process.cwd()
 ): void {
   log.header("I18N-SHARPEN EXTRACTOR")

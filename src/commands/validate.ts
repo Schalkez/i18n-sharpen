@@ -2,7 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
 import type {
-  I18nCopConfig,
+  I18nSharpenConfig,
   ValidationResults,
   LocaleAlignmentMismatch
 } from "../types"
@@ -21,7 +21,7 @@ import {
 } from "../utils"
 
 export function validate(
-  config: I18nCopConfig,
+  config: I18nSharpenConfig,
   cwd: string = process.cwd()
 ): ValidationResults {
   log.header("I18N-SHARPEN VALIDATOR")

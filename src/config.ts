@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { z } from "zod"
-import type { I18nCopConfig } from "./types"
+import type { I18nSharpenConfig } from "./types"
 
 /**
  * Single source of truth for every default value used by the CLI.
@@ -12,7 +12,7 @@ import type { I18nCopConfig } from "./types"
  * `DEFAULT_CONFIG.<field>` from other modules rather than re-stating
  * the literal.
  */
-export const DEFAULT_CONFIG: Partial<I18nCopConfig> = {
+export const DEFAULT_CONFIG: Partial<I18nSharpenConfig> = {
   scanDirs: ["src"],
   localesDir: "src/locales",
   excludeDirs: [
@@ -69,7 +69,7 @@ const languageCode = z
     "must match /^[a-zA-Z0-9_-]+$/ (no path separators)"
   )
 
-export const I18nCopConfigSchema = z.object({
+export const I18nSharpenConfigSchema = z.object({
   scanDirs: z
     .array(z.string())
     .nonempty("scanDirs must contain at least one directory path"),
@@ -109,7 +109,7 @@ export const I18nCopConfigSchema = z.object({
 export function loadConfig(
   cwd: string = process.cwd(),
   configPath?: string
-): I18nCopConfig {
+): I18nSharpenConfig {
   // LO-03: validate cwd is a real directory. Previously a typo'd cwd
   // silently produced an all-defaults config with no error.
   if (!fs.existsSync(cwd)) {
@@ -122,7 +122,7 @@ export function loadConfig(
   const configPathJson = path.join(cwd, "i18n-sharpen.json")
   const packageJsonPath = path.join(cwd, "package.json")
 
-  let fileConfig: Partial<I18nCopConfig> = {}
+  let fileConfig: Partial<I18nSharpenConfig> = {}
 
   // Phase 5: explicit --config <path> takes precedence over discovery.
   if (configPath) {
@@ -193,7 +193,7 @@ export function loadConfig(
   }
 
   // Zod validation
-  const result = I18nCopConfigSchema.safeParse(rawConfig)
+  const result = I18nSharpenConfigSchema.safeParse(rawConfig)
   if (!result.success) {
     const errors = result.error.issues
       .map((err) => `  - ${err.path.join(".")}: ${err.message}`)
