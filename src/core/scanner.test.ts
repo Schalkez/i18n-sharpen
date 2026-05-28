@@ -63,6 +63,29 @@ describe("scanner: isStaticStringLiteral", () => {
   it("rejects unterminated literal", () => {
     expect(isStaticStringLiteral('"unterm')).toBe(false)
   })
+  it("treats string literal followed by options object as static (FIX-1)", () => {
+    expect(isStaticStringLiteral('"user.greeting", { name: "John" }')).toBe(
+      true
+    )
+    expect(isStaticStringLiteral("'user.greeting', { name: 'John' }")).toBe(
+      true
+    )
+    expect(isStaticStringLiteral("`user.greeting`, { name: 'John' }")).toBe(
+      true
+    )
+  })
+  it("treats string literal followed by minimal options as static (FIX-1)", () => {
+    expect(isStaticStringLiteral('"key",opts')).toBe(true)
+    expect(isStaticStringLiteral('"key"  ,  opts')).toBe(true)
+  })
+  it("still rejects concatenation with trailing option (regression check)", () => {
+    expect(isStaticStringLiteral('"error." + code, { option: true }')).toBe(
+      false
+    )
+  })
+  it("still rejects chained method calls as dynamic (FIX-1 boundary)", () => {
+    expect(isStaticStringLiteral('"key".trim()')).toBe(false)
+  })
 })
 
 describe("scanner: getBaseKey + isKeyUsed", () => {

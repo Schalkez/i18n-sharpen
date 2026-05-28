@@ -127,7 +127,9 @@ export function isStaticStringLiteral(arg: string): boolean {
       return false
     }
     if (ch === quote) {
-      return i === trimmed.length - 1
+      const after = trimmed.slice(i + 1).trim()
+      // Static literal: nothing after (`"key"`) OR options-object follows (`"key", { ... }`)
+      return after.length === 0 || after.startsWith(",")
     }
     i++
   }

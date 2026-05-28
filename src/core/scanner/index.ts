@@ -5,6 +5,8 @@ import { stripComments } from "./text"
 export * from "./files"
 export * from "./regex"
 export * from "./text"
+export * from "./dynamic"
+export * from "./lines"
 
 /**
  * Read every file in `files`, strip comments, then run the function/attr
