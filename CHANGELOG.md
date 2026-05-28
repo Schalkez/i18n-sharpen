@@ -5,6 +5,30 @@ All notable changes to `i18n-sharpen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-05-28
+
+### Security & Safety
+
+- **Refuse to write JS/TS locale files**: `writeLocaleFile` now throws a clear, actionable error if asked to write to `.js`, `.cjs`, `.mjs`, `.ts`, or `.tsx` files. This prevents the `extract` and `prune` commands from destroying typescript imports, JSDoc comments, type annotations, and custom JS/TS wrappers in those files.
+
+### Added
+
+- Comprehensive unit tests covering JS/TS/ESM module reading, cache eviction, and write-refusal behaviors.
+
+## [0.2.2] - 2026-05-28
+
+### Added
+
+- **JS/TS locale file reading**: Added support to read `.js`, `.cjs`, `.mjs`, `.ts`, and `.tsx` locale files. `.js`/`.cjs` are loaded synchronously via `createRequire`, while `.mjs`/`.ts`/`.tsx` are compiled and loaded using `jiti` (must be installed by the user as a dev-dependency).
+- **Synchronous cache eviction**: CommonJS module cache is automatically cleared on each read to ensure fresh updates are loaded in watch/development flows.
+- **Robust error handling**: Wrapped JS/TS module loading in `try/catch` blocks to throw clear compile/syntax errors instead of crashing the CLI.
+
+## [0.2.1] - 2026-05-28
+
+### Added
+
+- Added repository metadata (`repository`, `bugs`, `homepage`, `author`) to `package.json` to improve package supply chain security and maintenance scores on Socket.dev.
+
 ## [0.2.0] - 2026-05-28
 
 First fully-stabilised release. Major architectural cleanup, broader

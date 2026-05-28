@@ -120,6 +120,20 @@ npx i18n-sharpen prune --force
 
 ---
 
+## Supported File Formats
+
+`i18n-sharpen` supports reading translation files in multiple formats:
+
+*   **JSON (`.json`)**: Out of the box. Fully writable (`extract`/`prune`).
+*   **YAML (`.yaml`, `.yml`)**: Out of the box. Fully writable (`extract`/`prune`).
+*   **CommonJS (`.js`, `.cjs`)**: Supported for **reading only**. Loaded synchronously via native Node `require`.
+*   **ESM / TypeScript (`.mjs`, `.ts`, `.tsx`)**: Supported for **reading only**. Requires the `jiti` package (install via `pnpm add -D jiti`). Supports ES modules syntax (`export default { ... }`).
+
+> [!WARNING]
+> **JS/TS locale files are Read-Only.** `extract` and `prune` will throw an error if asked to write to a `.js`, `.cjs`, `.mjs`, `.ts`, or `.tsx` file. This prevents the tool from destroying imports, JSDoc, type annotations, or custom wrapping code. If you want `i18n-sharpen` to automatically manage and mutate your locale files, convert them to `.json` or `.yaml`.
+
+---
+
 ## Locale Layouts
 
 Two layouts are supported under `localesDir`:
