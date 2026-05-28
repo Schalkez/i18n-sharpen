@@ -23,7 +23,7 @@
  * `package.json#i18nSharpen` → defaults. Throws `I18nSharpenError` of
  * kind `config` or `parse` on failure.
  */
-export { loadConfig } from "./config"
+export { loadConfig } from "./config/index"
 
 /**
  * Validate translation keys, active placeholders, and cross-locale
