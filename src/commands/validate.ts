@@ -20,6 +20,7 @@ import {
   isKeyUsed as sharedIsKeyUsed,
   log
 } from "../utils"
+import { buildAttrRegex } from "../core/scanner"
 import { writeMarkdownReport } from "./validate/report"
 
 export function validate(
@@ -143,13 +144,7 @@ export function validate(
     "g"
   )
 
-  const attrsJoined = (config.matchAttributes || ["i18nKey", "id"])
-    .map(escapeRegex)
-    .join("|")
-  const attrRegex = new RegExp(
-    "\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
-    "g"
-  )
+  const attrRegex = buildAttrRegex(config.matchAttributes || ["i18nKey", "id"])
 
   // Regex to capture the first argument of every <fn>(...) call, regardless
   // of whether it starts with a quote. We then post-classify the argument

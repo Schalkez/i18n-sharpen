@@ -14,6 +14,7 @@ import {
   escapeRegex,
   log
 } from "../utils"
+import { buildAttrRegex } from "../core/scanner"
 
 export function extract(
   config: I18nSharpenConfig,
@@ -57,13 +58,7 @@ export function extract(
     "g"
   )
 
-  const attrsJoined = (config.matchAttributes || ["i18nKey", "id"])
-    .map(escapeRegex)
-    .join("|")
-  const attrRegex = new RegExp(
-    "\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
-    "g"
-  )
+  const attrRegex = buildAttrRegex(config.matchAttributes || ["i18nKey", "id"])
 
   // MD-11: use matchAll instead of exec + lastIndex.
   for (const file of filesToScan) {

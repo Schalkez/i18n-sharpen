@@ -258,8 +258,15 @@ export function buildKeyRegex(matchFunctions: string[]): RegExp {
  */
 export function buildAttrRegex(matchAttributes: string[]): RegExp {
   const attrsJoined = matchAttributes.map(escapeRegex).join("|")
+  // Phase 8: framework attribute names can start with ':' (Vue v-bind)
+  // or end with ':' (Astro directives), so we can't rely on \b at the
+  // start of the alternation. Use a non-attribute-name lookbehind /
+  // start-of-string anchor instead so partial matches like `mi18n` for
+  // `i18n` are still rejected.
   return new RegExp(
-    "\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.:]+)\\1",
+    "(?:^|[\\s/{(>])(?:" +
+      attrsJoined +
+      ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.:]+)\\1",
     "g"
   )
 }

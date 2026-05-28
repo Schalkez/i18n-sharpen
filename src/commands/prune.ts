@@ -15,6 +15,7 @@ import {
   isKeyUsed as sharedIsKeyUsed,
   log
 } from "../utils"
+import { buildAttrRegex } from "../core/scanner"
 
 /**
  * Prune unused keys from locale files.
@@ -80,13 +81,7 @@ export function prune(
     "g"
   )
 
-  const attrsJoined = (config.matchAttributes || ["i18nKey", "id"])
-    .map(escapeRegex)
-    .join("|")
-  const attrRegex = new RegExp(
-    "\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
-    "g"
-  )
+  const attrRegex = buildAttrRegex(config.matchAttributes || ["i18nKey", "id"])
 
   const fileContents = filesToScan.map((file) => {
     try {

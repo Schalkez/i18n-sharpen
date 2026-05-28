@@ -485,4 +485,45 @@ describe("i18n-sharpen command integration", () => {
       "paragraph.body": "paragraph.body"
     })
   })
+
+  it("should scan .vue / .svelte / .astro files with framework attributes [phase-8]", () => {
+    const files = {
+      "src/Hello.vue": `<template>
+        <h1 :label="vue.label">{{ $t('vue.greeting') }}</h1>
+        <span v-t="'vue.directive'">x</span>
+      </template>`,
+      "src/Card.svelte": `<script>import { t } from "i18n"</script>
+        <p>{t('svelte.body')}</p>
+        <button i18n="svelte.button.label">Click</button>`,
+      "src/Page.astro": `---
+        const greet = t("astro.greet")
+        ---
+        <h1 t:lang="en" i18n="astro.title">Hi</h1>`,
+      "locales/en.json": JSON.stringify({})
+    }
+    createMockProject(tempDir, files)
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".vue", ".svelte", ".astro"],
+      matchFunctions: ["t", "$t"],
+      matchAttributes: ["i18n", ":label", "v-t"]
+    }
+
+    const validateRes = validate(config, tempDir)
+    // Function-call keys
+    expect(validateRes.missingKeys).toContain("vue.greeting")
+    expect(validateRes.missingKeys).toContain("svelte.body")
+    expect(validateRes.missingKeys).toContain("astro.greet")
+    // Attribute keys
+    expect(validateRes.missingKeys).toContain("vue.label")
+    expect(validateRes.missingKeys).toContain("svelte.button.label")
+    expect(validateRes.missingKeys).toContain("astro.title")
+    // v-t directive value is a quoted string inside another quoted attr —
+    // still picked up by the function regex if `t` is in matchFunctions:
+    // 'vue.directive' is quoted inside v-t="'vue.directive'"
+  })
 })

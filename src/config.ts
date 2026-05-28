@@ -26,12 +26,12 @@ export const DEFAULT_CONFIG: Partial<I18nSharpenConfig> = {
     ".agent",
     ".claude"
   ],
-  fileExtensions: [".ts", ".tsx", ".js", ".jsx"],
+  fileExtensions: [".ts", ".tsx", ".js", ".jsx", ".vue", ".svelte", ".astro"],
   matchFunctions: ["t", "getTranslation"],
   outputReport: "i18n-coverage.md",
   defaultLanguage: "en",
   supportedLanguages: ["en"],
-  matchAttributes: ["i18nKey", "id"],
+  matchAttributes: ["i18nKey", "id", "i18n", ":label", "v-t", "t:"],
   ignoreKeys: [],
   pluralSuffixes: [
     "_zero",
@@ -59,6 +59,19 @@ const identifierLike = z
     "must be an identifier-like token matching /^[A-Za-z_$][A-Za-z0-9_$.]*$/"
   )
 
+// Phase 8: attribute names are looser than function identifiers — they
+// can start with ':' (Vue v-bind), end with ':' (Astro directives), and
+// contain '-' (HTML data attrs, Vue directives). Still restricted to
+// printable ASCII without whitespace or regex metacharacters that could
+// survive the runtime escapeRegex() guard.
+const attributeNamePattern = /^[:]?[A-Za-z_$][A-Za-z0-9_$.\-:]*$/
+const attributeName = z
+  .string()
+  .regex(
+    attributeNamePattern,
+    "must match /^[:]?[A-Za-z_$][A-Za-z0-9_$.\\-:]*$/ (HTML/Vue/Astro-style attribute)"
+  )
+
 // Language codes must be filesystem-safe identifier-like strings to
 // guard against `path.join(localesDir, "../../etc/passwd")` style escape
 // from the locales directory. Allow letters, digits, underscore and
@@ -84,7 +97,7 @@ export const I18nSharpenConfigSchema = z.object({
   fileExtensions: z.array(z.string()).optional(),
   matchFunctions: z.array(identifierLike).optional(),
   outputReport: z.string().optional(),
-  matchAttributes: z.array(identifierLike).optional(),
+  matchAttributes: z.array(attributeName).optional(),
   ignoreKeys: z.array(z.string()).optional(),
   pluralSuffixes: z.array(z.string()).optional(),
   looseKeyMatch: z.boolean().optional(),
