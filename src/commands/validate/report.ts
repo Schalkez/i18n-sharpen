@@ -1,7 +1,8 @@
 import * as fs from "fs"
 import * as path from "path"
 import type { ValidationResults, LocaleAlignmentMismatch } from "../../types"
-import { normalizeDisplayPath, log } from "../../utils"
+import { normalizeDisplayPath } from "../../core/locale-io"
+import { log } from "../../utils"
 import pc from "picocolors"
 
 /**
