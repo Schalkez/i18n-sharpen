@@ -20,6 +20,7 @@ import {
   isKeyUsed as sharedIsKeyUsed,
   log
 } from "../utils"
+import { writeMarkdownReport } from "./validate/report"
 
 export function validate(
   config: I18nSharpenConfig,
@@ -447,134 +448,6 @@ export function validate(
   console.log(`- Missing/Undefined: ${pc.bold(missingKeys.length)}`)
   console.log(`- Unused/Stale: ${pc.bold(unusedKeys.length)}`)
 
-  // Save report if config outputReport is set
-  if (config.outputReport) {
-    const reportPath = path.resolve(cwd, config.outputReport)
-    const defaultBasename = path.basename(defaultLocalePath)
-
-    const markdownContent = `# i18n Quality and Coverage Report
-
-Generated on: ${new Date().toISOString()}
-
-## Quality Metrics Summary
-
-| Metric | Value | Status |
-| :--- | :--- | :--- |
-| **Code Translation Coverage** | ${codeKeyCoverage}% | ${codeKeyCoverage === "100.00" ? "🟢 100% Perfect" : "🔴 Missing Translations"} |
-| **Locales Key Utilization** | ${utilizationPercent}% | ${Number(utilizationPercent) > 90 ? "🟢 High" : "🟡 Medium"} |
-| **Total Defined Keys** | ${totalDefinedKeys} | - |
-| **Actually Used Keys** | ${usedDefinedKeysCount} | - |
-| **Missing Keys** | ${missingKeys.length} | ${missingKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |
-| **Active Placeholders** | ${activePlaceholderKeys.length} | ${activePlaceholderKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |
-| **Unused Keys** | ${unusedKeys.length} | ${unusedKeys.length === 0 ? "🟢 Optimized" : "🟡 Can be pruned"} |
-| **Locale Alignment** | ${keysOnlyInLanguages.length === 0 ? "Align'd" : "Mismatch"} | ${keysOnlyInLanguages.length === 0 ? "🟢 Perfect" : "🔴 Action Required"} |
-
-${
-  missingKeys.length > 0
-    ? `## ❌ Missing Keys (${missingKeys.length})
-
-The following keys are used in the source code but are not defined in the main locale file \`${defaultBasename}\`:
-
-${missingKeys
-  .sort()
-  .map(
-    (key) =>
-      `- **\`${key}\`** (referenced in: ${keyToFilesMap
-        .get(key)
-        ?.map((f) => `\`${f}\``)
-        .join(", ")})`
-  )
-  .join("\n")}
-`
-    : "## ✅ Missing Keys\n\nNo missing translation keys detected in the source code."
-}
-
-${
-  activePlaceholderKeys.length > 0
-    ? `## ❌ Active Placeholders (${activePlaceholderKeys.length})
-
-The following keys are referenced in the source code but only have placeholder values (identical to the key path):
-
-${activePlaceholderKeys
-  .sort((a, b) => a.key.localeCompare(b.key))
-  .map(
-    ({ key, lang }) =>
-      `- **\`${key}\`** [\`${lang.toUpperCase()}\`] ${
-        keyToFilesMap.has(key)
-          ? `(referenced in: ${keyToFilesMap
-              .get(key)
-              ?.map((f) => `\`${f}\``)
-              .join(", ")})`
-          : keyToFilesMap.has(getBaseKey(key))
-            ? `(referenced in: ${keyToFilesMap
-                .get(getBaseKey(key))
-                ?.map((f) => `\`${f}\``)
-                .join(", ")})`
-            : ""
-      }`
-  )
-  .join("\n")}
-`
-    : "## ✅ Active Placeholders\n\nNo active placeholder keys detected in the source code."
-}
-
-${
-  keysOnlyInLanguages.length > 0
-    ? `## ❌ Locale Alignment Mismatches
-
-${keysOnlyInLanguages
-  .map(
-    (m) => `### Keys in ${m.from} but missing in ${m.to} (${m.keys.length})
-${m.keys
-  .slice()
-  .sort()
-  .map((k) => `- \`${k}\``)
-  .join("\n")}
-`
-  )
-  .join("\n")}
-`
-    : "## ✅ Locale Alignment\n\nPerfect key alignment between all locale files."
-}
-
-${
-  unusedKeys.length > 0
-    ? `## ⚠️ Unused Keys (${unusedKeys.length})
-
-These keys are defined in the locale file but are not used anywhere in the source code. They can be safely pruned to reduce bundle size:
-
-${unusedKeys
-  .sort()
-  .map((key) => `- \`${key}\``)
-  .join("\n")}
-`
-    : "## ✅ Unused Keys\n\nAll defined translation keys are used in the source code."
-}
-
-${
-  unusedPlaceholderKeys.length > 0
-    ? `## ⚠️ Unused Placeholders (${unusedPlaceholderKeys.length})
-
-These keys have placeholder values but are not currently used in the source code. They should be translated before use:
-
-${unusedPlaceholderKeys
-  .sort((a, b) => a.key.localeCompare(b.key))
-  .map(({ key, lang }) => `- \`${key}\` [\`${lang.toUpperCase()}\`]`)
-  .join("\n")}
-`
-    : ""
-}
-`
-    // MD-07: ensure parent directory exists before writing the report.
-    // Previously `outputReport: "reports/i18n.md"` would throw ENOENT if
-    // `reports/` did not already exist.
-    fs.mkdirSync(path.dirname(reportPath), { recursive: true })
-    fs.writeFileSync(reportPath, markdownContent, "utf8")
-    log.info(
-      `💾 Markdown report saved to: ${pc.cyan(normalizeDisplayPath(path.relative(cwd, reportPath)))}\n`
-    )
-  }
-
   const results: ValidationResults = {
     missingKeys,
     activePlaceholderKeys,
@@ -585,6 +458,20 @@ ${unusedPlaceholderKeys
     utilizationPercent,
     totalDefinedKeys,
     usedDefinedKeysCount
+  }
+
+  // Save report if config outputReport is set. Delegated to the
+  // `validate/report` module so this orchestrator stays focused on
+  // computation.
+  if (config.outputReport) {
+    writeMarkdownReport({
+      cwd,
+      outputReport: config.outputReport,
+      defaultBasename: path.basename(defaultLocalePath),
+      results,
+      keyToFilesMap,
+      getBaseKey
+    })
   }
 
   if (hasError) {
