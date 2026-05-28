@@ -7,12 +7,10 @@ export function escapeRegex(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
-/**
- * Build the regex that matches `<fn>("key")` / `<fn>('key')` /
- * `` <fn>(`key`) `` calls. `matchFunctions` entries are regex-escaped
- * before being spliced in as an alternation group.
- */
 export function buildKeyRegex(matchFunctions: string[]): RegExp {
+  if (matchFunctions.length === 0) {
+    return /(?!)/g
+  }
   const functionsJoined = matchFunctions.map(escapeRegex).join("|")
   return new RegExp(
     "\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"`])([a-zA-Z0-9_\\-.:]+)\\1",
@@ -32,6 +30,9 @@ export function buildKeyRegex(matchFunctions: string[]): RegExp {
  * `i18n` are still rejected.
  */
 export function buildAttrRegex(matchAttributes: string[]): RegExp {
+  if (matchAttributes.length === 0) {
+    return /(?!)/g
+  }
   const attrsJoined = matchAttributes.map(escapeRegex).join("|")
   return new RegExp(
     "(?:^|[\\s/{(>])(?:" +
@@ -48,6 +49,9 @@ export function buildAttrRegex(matchAttributes: string[]): RegExp {
  * dynamic references.
  */
 export function buildDynamicCallRegex(matchFunctions: string[]): RegExp {
+  if (matchFunctions.length === 0) {
+    return /(?!)/g
+  }
   const functionsJoined = matchFunctions.map(escapeRegex).join("|")
   return new RegExp("\\b(?:" + functionsJoined + ")\\s*\\(\\s*([^)]*)\\)", "g")
 }

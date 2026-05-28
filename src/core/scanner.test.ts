@@ -110,6 +110,16 @@ describe("scanner: regex builders", () => {
     const matches = [...`tax("nope")`.matchAll(re)]
     expect(matches).toHaveLength(0)
   })
+  it("buildKeyRegex handles empty matchFunctions array", () => {
+    const re = buildKeyRegex([])
+    const matches = [...`t("k.a") translate('k.b')`.matchAll(re)]
+    expect(matches).toHaveLength(0)
+  })
+  it("buildAttrRegex handles empty matchAttributes array", () => {
+    const re = buildAttrRegex([])
+    const matches = [...`<h1 i18nKey="title.h">`.matchAll(re)]
+    expect(matches).toHaveLength(0)
+  })
 })
 
 describe("scanner: detectUsedKeys", () => {
