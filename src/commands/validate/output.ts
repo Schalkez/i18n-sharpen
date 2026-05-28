@@ -118,3 +118,60 @@ export function printValidationResults(
   log.info(`- Missing/Undefined: ${pc.bold(missingKeys.length)}`)
   log.info(`- Unused/Stale: ${pc.bold(unusedKeys.length)}`)
 }
+
+/**
+ * Print the grouped dynamic-key summary that replaces the v0.2.x
+ * per-call log.warn. Per Phase 2 D-08 (console verbose) + D-13
+ * (grouped end-of-validate). Suppressed entries (D-12) are already
+ * removed from the input arrays by the validator.
+ *
+ * Output shape:
+ *
+ *   Fully-dynamic keys (N):
+ *     - src/auth.ts:42  t(getKey())
+ *
+ *   Structured-concat keys (M):
+ *     - error.  ← t(`error.${err.code}`) (src/auth.ts:42)
+ *
+ * Silent (no header) when both arrays are empty.
+ */
+export function printDynamicKeysSummary(dynamicKeys: {
+  fullyDynamic: { file: string; line: number; expression: string }[]
+  structuredConcat: {
+    prefix: string
+    file: string
+    line: number
+    expression: string
+  }[]
+}): void {
+  const { fullyDynamic, structuredConcat } = dynamicKeys
+  if (fullyDynamic.length === 0 && structuredConcat.length === 0) return
+
+  log.header("DYNAMIC KEYS")
+
+  if (fullyDynamic.length > 0) {
+    log.info(
+      pc.bold(pc.yellow(`⚠️  Fully-dynamic keys (${fullyDynamic.length}):`))
+    )
+    for (const f of fullyDynamic) {
+      log.info(
+        `  - ${pc.cyan(`${f.file}:${f.line}`)}  ${pc.yellow(f.expression)}`
+      )
+    }
+  }
+
+  if (structuredConcat.length > 0) {
+    log.info(
+      pc.bold(
+        pc.yellow(`⚠️  Structured-concat keys (${structuredConcat.length}):`)
+      )
+    )
+    for (const f of structuredConcat) {
+      log.info(
+        `  - ${pc.green(f.prefix)}  ← ${pc.yellow(f.expression)} (${pc.cyan(
+          `${f.file}:${f.line}`
+        )})`
+      )
+    }
+  }
+}

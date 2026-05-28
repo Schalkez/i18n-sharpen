@@ -56,6 +56,21 @@ export interface I18nSharpenConfig {
    */
   defaultNamespace?: string
   /**
+   * Glob patterns that suppress dynamic-key findings from both the
+   * console summary and the markdown report. Patterns are matched
+   * against the extracted leading prefix (structured-concat) or
+   * against the empty string (fully-dynamic). The universal `*`
+   * silences every dynamic-key finding.
+   *
+   * Examples:
+   *   ignoreDynamicKeys: ["error.*"]   // suppress t("error." + x)
+   *   ignoreDynamicKeys: ["*"]         // suppress everything
+   *
+   * Per D-09 / D-11. Reuses the existing matchWildcard glob syntax
+   * shared with `ignoreKeys`.
+   */
+  ignoreDynamicKeys?: string[]
+  /**
    * Prune-only knobs. When `prune.force` is false (the default), `prune`
    * runs in dry-run mode: it prints a summary of which keys WOULD be
    * removed but does not modify any locale file. Set `prune.force: true`
@@ -137,4 +152,39 @@ export interface ValidationResults {
   utilizationPercent: string
   totalDefinedKeys: number
   usedDefinedKeysCount: number
+  /**
+   * Dynamic-key findings collected during validate. Phase 2 splits
+   * non-static t(...) calls into two buckets (D-01..D-07). These
+   * findings never contribute to exit code 1 (D-16). When
+   * `ignoreDynamicKeys` matches, the entry is removed entirely
+   * (D-12).
+   */
+  dynamicKeys: {
+    fullyDynamic: DynamicKeyFinding[]
+    structuredConcat: StructuredConcatFinding[]
+  }
+}
+
+/**
+ * One occurrence of a fully-dynamic translation key reference.
+ * Phase 2 D-01..D-02, D-04. The `expression` is the raw matched
+ * call string (e.g. `t(myVar)`) for display in the console summary
+ * and markdown report.
+ */
+export interface DynamicKeyFinding {
+  file: string
+  line: number
+  expression: string
+}
+
+/**
+ * One occurrence of a structured-concat translation key reference.
+ * Phase 2 D-03, D-05. Carries the normalized leading-static prefix
+ * (no surrounding quotes/backticks per D-07).
+ */
+export interface StructuredConcatFinding {
+  prefix: string
+  file: string
+  line: number
+  expression: string
 }

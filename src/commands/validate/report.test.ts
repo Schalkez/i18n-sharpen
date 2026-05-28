@@ -20,6 +20,7 @@ function baseResults(
     utilizationPercent: "100.00",
     totalDefinedKeys: 0,
     usedDefinedKeysCount: 0,
+    dynamicKeys: { fullyDynamic: [], structuredConcat: [] },
     ...overrides
   }
 }

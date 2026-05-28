@@ -10,9 +10,18 @@ import {
   buildAttrRegex,
   buildDynamicCallRegex,
   isStaticStringLiteral,
-  getBaseKey
+  getBaseKey,
+  classifyDynamicCall,
+  computeLineOffsets,
+  offsetToLine,
+  matchWildcard
 } from "@/core/scanner"
-import type { I18nSharpenConfig, ValidationResults } from "@/types"
+import type {
+  I18nSharpenConfig,
+  ValidationResults,
+  DynamicKeyFinding,
+  StructuredConcatFinding
+} from "@/types"
 import { log } from "@/utils"
 import {
   findMissingKeys,
@@ -20,7 +29,10 @@ import {
   findAlignmentMismatches,
   findPlaceholderKeys
 } from "./validate/checks"
-import { printValidationResults } from "./validate/output"
+import {
+  printValidationResults,
+  printDynamicKeysSummary
+} from "./validate/output"
 import { writeMarkdownReport } from "./validate/report"
 
 export function validate(
@@ -115,6 +127,9 @@ export function validate(
   const attrRegex = buildAttrRegex(matchAttributes)
   const dynamicCallRegex = buildDynamicCallRegex(matchFunctions)
 
+  const fullyDynamicFindings: DynamicKeyFinding[] = []
+  const structuredConcatFindings: StructuredConcatFinding[] = []
+
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
     const cleanContent = fileContents[i]
@@ -130,13 +145,41 @@ export function validate(
       if (key.endsWith(".")) continue
       keyToFilesMap.add(key, relativePath)
     }
+    // Phase 2: collect dynamic-key findings into accumulators. Per D-13
+    // the per-call log.warn is removed — a grouped summary is printed
+    // at the end of validate via printDynamicKeysSummary.
+    const lineOffsets = computeLineOffsets(cleanContent)
     for (const match of cleanContent.matchAll(dynamicCallRegex)) {
       const arg = match[1].trim()
       if (arg.length === 0) continue
-      if (!isStaticStringLiteral(arg)) {
-        log.warn(
-          `Potential dynamic translation key reference in ${pc.cyan(relativePath)}: ${pc.yellow(match[0])}`
-        )
+      if (isStaticStringLiteral(arg)) continue
+      const matchIndex = match.index
+      const line = offsetToLine(lineOffsets, matchIndex)
+      const classification = classifyDynamicCall(arg)
+      const expression = match[0]
+      const prefix =
+        classification.kind === "structured-concat" ? classification.prefix : ""
+
+      // D-10 / D-11 / D-12: ignoreDynamicKeys patterns match against the
+      // prefix (empty string for fully-dynamic). The universal "*"
+      // suppresses everything. Ignored entries are removed entirely.
+      const patterns = config.ignoreDynamicKeys ?? []
+      const suppressed = patterns.some((p) => matchWildcard(p, prefix))
+      if (suppressed) continue
+
+      if (classification.kind === "fully-dynamic") {
+        fullyDynamicFindings.push({
+          file: relativePath,
+          line,
+          expression
+        })
+      } else {
+        structuredConcatFindings.push({
+          prefix: classification.prefix,
+          file: relativePath,
+          line,
+          expression
+        })
       }
     }
   }
@@ -207,11 +250,16 @@ export function validate(
     codeKeyCoverage,
     utilizationPercent,
     totalDefinedKeys,
-    usedDefinedKeysCount
+    usedDefinedKeysCount,
+    dynamicKeys: {
+      fullyDynamic: fullyDynamicFindings,
+      structuredConcat: structuredConcatFindings
+    }
   }
 
   // --- Output ---
   printValidationResults(results, keyToFilesMap, suffixes)
+  printDynamicKeysSummary(results.dynamicKeys)
 
   if (config.outputReport) {
     writeMarkdownReport({

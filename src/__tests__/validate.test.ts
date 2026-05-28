@@ -12,6 +12,7 @@ import {
 import { extract } from "@/commands/extract"
 import { validate } from "@/commands/validate"
 import { readLocaleFile, flattenObject } from "@/core/locale-io"
+import type { I18nSharpenConfig } from "@/types"
 
 describe("validate: integration", () => {
   let tempDir: string
@@ -220,5 +221,181 @@ describe("validate: integration", () => {
     expect(validateRes.missingKeys).toContain("vue.label")
     expect(validateRes.missingKeys).toContain("svelte.button.label")
     expect(validateRes.missingKeys).toContain("astro.title")
+  })
+
+  describe("validate: dynamic keys (Phase 2)", () => {
+    const mixedSource = `
+      t("user.greeting")
+      t(getKey())
+      t(\`\${prefix}.error\`)
+      t(cond ? "a" : "b")
+      t("error." + code)
+      t(\`status.\${state}\`)
+    `
+
+    const baseConfig = (extra: Partial<I18nSharpenConfig> = {}) =>
+      ({
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"],
+        ...extra
+      }) as I18nSharpenConfig
+
+    it("classifies a mixed source into fully-dynamic and structured-concat (DKEY-01)", () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": mixedSource,
+        "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
+      })
+      const results = validate(baseConfig(), tempDir)
+
+      expect(results.dynamicKeys.fullyDynamic.length).toBe(3)
+      expect(results.dynamicKeys.structuredConcat.length).toBe(2)
+
+      const prefixes = results.dynamicKeys.structuredConcat
+        .map((f) => f.prefix)
+        .sort()
+      expect(prefixes).toEqual(["error.", "status."])
+
+      for (const f of [
+        ...results.dynamicKeys.fullyDynamic,
+        ...results.dynamicKeys.structuredConcat
+      ]) {
+        expect(f.line).toBeGreaterThan(0)
+      }
+    })
+
+    it("ignoreDynamicKeys: ['*'] silences every finding (D-11)", () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": mixedSource,
+        "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
+      })
+      const results = validate(
+        baseConfig({ ignoreDynamicKeys: ["*"] }),
+        tempDir
+      )
+      expect(results.dynamicKeys.fullyDynamic.length).toBe(0)
+      expect(results.dynamicKeys.structuredConcat.length).toBe(0)
+    })
+
+    it("ignoreDynamicKeys: ['error.*'] suppresses only matching prefixes (D-10)", () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": mixedSource,
+        "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
+      })
+      const results = validate(
+        baseConfig({ ignoreDynamicKeys: ["error.*"] }),
+        tempDir
+      )
+
+      const prefixes = results.dynamicKeys.structuredConcat.map((f) => f.prefix)
+      expect(prefixes).not.toContain("error.")
+      expect(prefixes).toContain("status.")
+      // Fully-dynamic findings have empty prefix → "error.*" does NOT match → all retained.
+      expect(results.dynamicKeys.fullyDynamic.length).toBe(3)
+    })
+
+    it("dynamic findings never contribute to the failure boolean (DKEY-03 / D-16)", () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": mixedSource,
+        "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
+      })
+      const results = validate(baseConfig(), tempDir)
+
+      // The CLI catch-site (validate.ts:227-230) constructs hasError from
+      // these three; dynamic findings MUST NOT be added.
+      expect(results.missingKeys.length).toBe(0)
+      expect(results.activePlaceholderKeys.length).toBe(0)
+      expect(results.keysOnlyInLanguages.length).toBe(0)
+
+      // Sanity: findings actually exist — we are not trivially passing.
+      expect(
+        results.dynamicKeys.fullyDynamic.length +
+          results.dynamicKeys.structuredConcat.length
+      ).toBeGreaterThan(0)
+    })
+
+    it("markdown report contains '## Dynamic Keys' with both sub-tables (DKEY-05)", () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": mixedSource,
+        "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
+      })
+      validate(baseConfig({ outputReport: "report.md" }), tempDir)
+      const report = fs.readFileSync(path.join(tempDir, "report.md"), "utf8")
+
+      expect(report).toContain("## Dynamic Keys")
+      expect(report).toContain("### Fully-dynamic keys (3)")
+      expect(report).toContain("### Structured-concat keys (2)")
+    })
+
+    it("markdown report surfaces the leading prefix in structured-concat rows (DKEY-02)", () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": mixedSource,
+        "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
+      })
+      validate(baseConfig({ outputReport: "report.md" }), tempDir)
+      const report = fs.readFileSync(path.join(tempDir, "report.md"), "utf8")
+
+      expect(report).toMatch(/\|\s*`error\.`\s*\|/)
+      expect(report).toMatch(/\|\s*`status\.`\s*\|/)
+    })
+
+    // FIX-1 regression coverage — i18next-style options-object usage
+    it("does NOT misclassify t('key', { options }) as dynamic (FIX-1)", () => {
+      createMockProject(tempDir, {
+        "locales/en.json": JSON.stringify({
+          "user.greeting": "Hello {{name}}"
+        }),
+        "src/a.ts": [
+          `t("user.greeting", { name: "John" })`,
+          `t('user.greeting', { name: 'Jane' })`,
+          't(`user.greeting`, { name: "Pat" })'
+        ].join("\n")
+      })
+
+      const results = validate(baseConfig(), tempDir)
+
+      expect(results.dynamicKeys.fullyDynamic).toHaveLength(0)
+      expect(results.dynamicKeys.structuredConcat).toHaveLength(0)
+      // And the static key IS counted as used (existing buildKeyRegex behavior, regression check):
+      expect(results.missingKeys).toHaveLength(0)
+    })
+
+    it("still classifies concat-WITH-options as structured-concat (FIX-1)", () => {
+      createMockProject(tempDir, {
+        "locales/en.json": JSON.stringify({}),
+        "src/a.ts": [
+          `t("error." + code, { option: true })`,
+          `t("status." + s, { count: 2 })`
+        ].join("\n")
+      })
+
+      const results = validate(baseConfig(), tempDir)
+
+      expect(results.dynamicKeys.structuredConcat).toHaveLength(2)
+      const prefixes = results.dynamicKeys.structuredConcat
+        .map((f) => f.prefix)
+        .sort()
+      expect(prefixes).toEqual(["error.", "status."])
+    })
+
+    // FIX-2 regression coverage — backticks in template-literal expressions
+    it("renders backtick-containing expressions as valid CommonMark inline code (FIX-2)", () => {
+      createMockProject(tempDir, {
+        "locales/en.json": JSON.stringify({}),
+        "src/a.ts": "t(`error.${code}`)\n"
+      })
+
+      validate(baseConfig({ outputReport: "report.md" }), tempDir)
+      const report = fs.readFileSync(path.join(tempDir, "report.md"), "utf8")
+
+      // Expression cell must use DOUBLE-backtick wrap (with padding spaces) because
+      // the expression contains a backtick. Backslash-escape is invalid CommonMark.
+      expect(report).toMatch(/\|\s*``\s*t\(`error\.\$\{code\}`\)\s*``\s*\|/)
+      // Negative: NO backslash-escape pattern should appear.
+      expect(report).not.toMatch(/\\`/)
+    })
   })
 })

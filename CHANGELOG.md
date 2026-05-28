@@ -5,6 +5,11 @@ All notable changes to `i18n-sharpen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - Unreleased
+
+### Changed (notable behavior change)
+- **validate**: dynamic-key warnings are now emitted as a single grouped summary at the end of the run (sections "Fully-dynamic keys" and "Structured-concat keys") instead of one `log.warn` per call site. Structured-concat keys surface their leading static prefix (e.g. `error.`) and every finding includes a `file:line` location. Configure suppression via `ignoreDynamicKeys: ["error.*", "*"]`. Exit code is unchanged — dynamic findings never cause `validate` to fail. (Phase 2 / D-13)
+
 ## [0.2.3] - 2026-05-28
 
 ### Security & Safety

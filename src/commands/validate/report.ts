@@ -61,7 +61,8 @@ export function renderMarkdownReport(args: {
     codeKeyCoverage,
     utilizationPercent,
     totalDefinedKeys,
-    usedDefinedKeysCount
+    usedDefinedKeysCount,
+    dynamicKeys
   } = args.results
   const { keyToFilesMap, getBaseKey, defaultBasename } = args
 
@@ -81,6 +82,7 @@ Generated on: ${new Date().toISOString()}
 | **Active Placeholders** | ${activePlaceholderKeys.length} | ${activePlaceholderKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |
 | **Unused Keys** | ${unusedKeys.length} | ${unusedKeys.length === 0 ? "🟢 Optimized" : "🟡 Can be pruned"} |
 | **Locale Alignment** | ${keysOnlyInLanguages.length === 0 ? "Align'd" : "Mismatch"} | ${keysOnlyInLanguages.length === 0 ? "🟢 Perfect" : "🔴 Action Required"} |
+| **Dynamic Keys** | fully-dynamic: ${dynamicKeys.fullyDynamic.length}, structured-concat: ${dynamicKeys.structuredConcat.length} | ${dynamicKeys.fullyDynamic.length + dynamicKeys.structuredConcat.length === 0 ? "🟢 None" : "🟡 Review"} |
 
 ${renderMissingKeysSection(missingKeys, keyToFilesMap, defaultBasename)}
 
@@ -91,6 +93,8 @@ ${renderAlignmentSection(keysOnlyInLanguages)}
 ${renderUnusedKeysSection(unusedKeys)}
 
 ${renderUnusedPlaceholdersSection(unusedPlaceholderKeys)}
+
+${renderDynamicKeysSection(dynamicKeys)}
 `
 }
 
@@ -203,4 +207,82 @@ ${unusedPlaceholderKeys
   .map(({ key, lang }) => `- \`${key}\` [\`${lang.toUpperCase()}\`]`)
   .join("\n")}
 `
+}
+
+// FIX-2 (CommonMark): backslash escape does NOT work inside inline code spans.
+// For strings containing backticks (template literals like `error.${x}`), wrap
+// the cell with DOUBLE backticks instead of single, with single-space padding —
+// this is the CommonMark-compliant way to embed `-containing content in inline code.
+// For strings without backticks, use single-backtick wrap (compact, conventional).
+// Pipe character (`|`) inside cells still breaks Markdown tables → replace with `\|`.
+const wrapCode = (s: string): string => {
+  const safe = s.replace(/\|/g, "\\|")
+  return safe.includes("`") ? `\`\` ${safe} \`\` ` : `\`${safe}\``
+}
+
+/**
+ * Render the Phase 2 Dynamic Keys section per D-14 / DKEY-05.
+ *
+ * Layout:
+ *   ## Dynamic Keys
+ *
+ *   ### Fully-dynamic keys (N)
+ *   | File | Line | Expression |
+ *
+ *   ### Structured-concat keys (M)
+ *   | Prefix | File | Line | Expression |
+ *
+ * Returns empty string when both buckets are empty (no pollution for
+ * clean projects). Findings are sorted by (file, line) for stable
+ * output across runs.
+ */
+function renderDynamicKeysSection(dynamicKeys: {
+  fullyDynamic: { file: string; line: number; expression: string }[]
+  structuredConcat: {
+    prefix: string
+    file: string
+    line: number
+    expression: string
+  }[]
+}): string {
+  const { fullyDynamic, structuredConcat } = dynamicKeys
+  if (fullyDynamic.length === 0 && structuredConcat.length === 0) return ""
+
+  const parts: string[] = ["## Dynamic Keys", ""]
+
+  if (fullyDynamic.length > 0) {
+    const sorted = fullyDynamic
+      .slice()
+      .sort((a, b) =>
+        a.file === b.file ? a.line - b.line : a.file.localeCompare(b.file)
+      )
+    parts.push(`### Fully-dynamic keys (${sorted.length})`, "")
+    parts.push("| File | Line | Expression |")
+    parts.push("| :--- | :--- | :--- |")
+    for (const f of sorted) {
+      parts.push(
+        `| ${wrapCode(f.file)} | ${f.line} | ${wrapCode(f.expression)} |`
+      )
+    }
+    parts.push("")
+  }
+
+  if (structuredConcat.length > 0) {
+    const sorted = structuredConcat
+      .slice()
+      .sort((a, b) =>
+        a.file === b.file ? a.line - b.line : a.file.localeCompare(b.file)
+      )
+    parts.push(`### Structured-concat keys (${sorted.length})`, "")
+    parts.push("| Prefix | File | Line | Expression |")
+    parts.push("| :--- | :--- | :--- | :--- |")
+    for (const f of sorted) {
+      parts.push(
+        `| ${wrapCode(f.prefix)} | ${wrapCode(f.file)} | ${f.line} | ${wrapCode(f.expression)} |`
+      )
+    }
+    parts.push("")
+  }
+
+  return parts.join("\n")
 }

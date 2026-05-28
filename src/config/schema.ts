@@ -85,6 +85,7 @@ export const I18nSharpenConfigSchema = z.object({
   outputReport: z.string().optional(),
   matchAttributes: z.array(attributeName).optional(),
   ignoreKeys: z.array(z.string()).optional(),
+  ignoreDynamicKeys: z.array(z.string()).optional(),
   pluralSuffixes: z.array(z.string()).optional(),
   looseKeyMatch: z.boolean().optional(),
   localesLayout: z.enum(["flat", "namespaced"]).optional(),
