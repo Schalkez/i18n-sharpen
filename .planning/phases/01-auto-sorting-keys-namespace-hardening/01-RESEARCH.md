@@ -382,7 +382,7 @@ Gates proving each locked decision was implemented correctly:
 | D-09 | `--clean-empty`: empty ns file deleted; dry-run shows "Would delete"; flat `{}` NOT deleted | `src/__tests__/prune.test.ts` (new) | `pnpm test --run prune` |
 | D-10 Phase A | Phase A failure → all `.tmp` cleaned, no original touched | `src/__tests__/atomic.test.ts` (new, `vi.spyOn(fs, 'writeFileSync')`) | `pnpm test --run atomic` |
 | D-10 Phase B | Phase B failure mid-rename → log captures committed vs pending files; `.tmp` remain | `src/__tests__/atomic.test.ts` (new, `vi.spyOn(fs, 'renameSync')`) | `pnpm test --run atomic` |
-| D-11 | Property: `sort(sort(obj)) === sort(obj)` (idempotent); `flatKeys(sort(obj)) === flatKeys(obj)` (no key loss) | `src/core/locale-io.prop.test.ts` (extend) | `pnpm test --run prop` |
+| D-11 | Property: `sort(sort(obj)) === sort(obj)` (idempotent); `flatKeys(sort(obj)) === flatKeys(obj)` (no key loss) | `src/__tests__/sort.test.ts` (new, in Plan 01-01 Task 1 alongside the unit cases) | `pnpm test --run sort` |
 | D-12 | (No test — `Intl.Collator('en', ...)` trusted to be stable per ICU version contract) | N/A | N/A |
 
 **Sampling rates:**
