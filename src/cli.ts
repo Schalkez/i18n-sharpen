@@ -8,6 +8,20 @@ import { validate } from "./commands/validate"
 import { extract } from "./commands/extract"
 import { prune } from "./commands/prune"
 import { log } from "./utils"
+import { I18nSharpenError } from "./core/errors"
+
+/**
+ * Translate a thrown error into a CLI-friendly message. Structured
+ * `I18nSharpenError`s print their kind; unstructured errors fall back
+ * to the message.
+ */
+function reportError(error: unknown): void {
+  if (error instanceof I18nSharpenError) {
+    log.error(`[${error.error.kind}] ${error.message}`)
+  } else {
+    log.error((error as Error).message)
+  }
+}
 
 // LO-09: read the version dynamically from package.json so it never
 // drifts from `npm version` / release tooling. Falls back to "0.0.0"
@@ -65,7 +79,7 @@ program
       // when stdout is piped.
       process.exitCode = hasErrors ? 1 : 0
     } catch (error) {
-      log.error((error as Error).message)
+      reportError(error)
       process.exitCode = 1
     }
   })
@@ -82,7 +96,7 @@ program
       extract(config, opts.cwd)
       process.exitCode = 0
     } catch (error) {
-      log.error((error as Error).message)
+      reportError(error)
       process.exitCode = 1
     }
   })
@@ -108,7 +122,7 @@ program
       })
       process.exitCode = 0
     } catch (error) {
-      log.error((error as Error).message)
+      reportError(error)
       process.exitCode = 1
     }
   })

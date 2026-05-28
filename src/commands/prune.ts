@@ -2,6 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
 import type { I18nSharpenConfig, PruneOptions, PruneResult } from "../types"
+import { I18nSharpenError } from "../core/errors"
 import {
   getFiles,
   stripComments,
@@ -46,7 +47,11 @@ export function prune(
   const localesDirAbs = path.resolve(cwd, config.localesDir)
 
   if (!fs.existsSync(localesDirAbs)) {
-    throw new Error(`Locales directory not found: ${localesDirAbs}`)
+    throw new I18nSharpenError({
+      kind: "filesystem",
+      message: `Locales directory not found: ${localesDirAbs}`,
+      path: localesDirAbs
+    })
   }
 
   // Find all source files
@@ -124,9 +129,11 @@ export function prune(
         localesFlat[lang] = flattenObject(parsed)
         Object.keys(localesFlat[lang]).forEach((key) => allLocaleKeys.add(key))
       } catch (error) {
-        throw new Error(
-          `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`
-        )
+        throw new I18nSharpenError({
+          kind: "parse",
+          message: `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`,
+          path: langPath
+        })
       }
     }
   }
@@ -241,9 +248,12 @@ export function prune(
         totalPrunedCount += plan.prunedKeys.length
         written = true
       } catch (error) {
-        throw new Error(
-          `Failed to write to file '${plan.langPath}': ${(error as Error).message}`
-        )
+        throw new I18nSharpenError({
+          kind: "filesystem",
+          message: `Failed to write to file '${plan.langPath}': ${(error as Error).message}`,
+          path: plan.langPath,
+          cause: error
+        })
       }
     } else {
       totalPrunedCount += plan.prunedKeys.length

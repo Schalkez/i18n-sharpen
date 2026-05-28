@@ -6,6 +6,7 @@ import type {
   ValidationResults,
   LocaleAlignmentMismatch
 } from "../types"
+import { I18nSharpenError } from "../core/errors"
 import {
   getFiles,
   stripComments,
@@ -57,16 +58,20 @@ export function validate(
       localesFlat[lang] = flattenObject(parsed)
       localeKeySets[lang] = new Set(Object.keys(localesFlat[lang]))
     } catch (error) {
-      throw new Error(
-        `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`
-      )
+      throw new I18nSharpenError({
+        kind: "parse",
+        message: `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`,
+        path: langPath
+      })
     }
   }
 
   if (!defaultLocalePath) {
-    throw new Error(
-      `Default language '${config.defaultLanguage}' locale file not found.`
-    )
+    throw new I18nSharpenError({
+      kind: "filesystem",
+      message: `Default language '${config.defaultLanguage}' locale file not found.`,
+      path: localesDirAbs
+    })
   }
 
   const defaultKeys = Object.keys(localesFlat[config.defaultLanguage])

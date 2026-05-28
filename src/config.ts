@@ -2,6 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { z } from "zod"
 import type { I18nSharpenConfig } from "./types"
+import { I18nSharpenError } from "./core/errors"
 
 /**
  * Single source of truth for every default value used by the CLI.
@@ -113,10 +114,18 @@ export function loadConfig(
   // LO-03: validate cwd is a real directory. Previously a typo'd cwd
   // silently produced an all-defaults config with no error.
   if (!fs.existsSync(cwd)) {
-    throw new Error(`cwd does not exist: ${cwd}`)
+    throw new I18nSharpenError({
+      kind: "config",
+      message: `cwd does not exist: ${cwd}`,
+      path: cwd
+    })
   }
   if (!fs.statSync(cwd).isDirectory()) {
-    throw new Error(`cwd is not a directory: ${cwd}`)
+    throw new I18nSharpenError({
+      kind: "config",
+      message: `cwd is not a directory: ${cwd}`,
+      path: cwd
+    })
   }
 
   const configPathJson = path.join(cwd, "i18n-sharpen.json")
@@ -130,18 +139,28 @@ export function loadConfig(
       ? configPath
       : path.resolve(cwd, configPath)
     if (!fs.existsSync(resolved)) {
-      throw new Error(`Config file not found: ${resolved}`)
+      throw new I18nSharpenError({
+        kind: "config",
+        message: `Config file not found: ${resolved}`,
+        path: resolved
+      })
     }
     if (!fs.statSync(resolved).isFile()) {
-      throw new Error(`Config path is not a file: ${resolved}`)
+      throw new I18nSharpenError({
+        kind: "config",
+        message: `Config path is not a file: ${resolved}`,
+        path: resolved
+      })
     }
     try {
       const content = fs.readFileSync(resolved, "utf8")
       fileConfig = JSON.parse(content)
     } catch (error) {
-      throw new Error(
-        `Failed to parse config file '${resolved}': ${(error as Error).message}`
-      )
+      throw new I18nSharpenError({
+        kind: "parse",
+        message: `Failed to parse config file '${resolved}': ${(error as Error).message}`,
+        path: resolved
+      })
     }
   } else if (fs.existsSync(configPathJson)) {
     try {
@@ -198,7 +217,10 @@ export function loadConfig(
     const errors = result.error.issues
       .map((err) => `  - ${err.path.join(".")}: ${err.message}`)
       .join("\n")
-    throw new Error(`Invalid configuration:\n${errors}`)
+    throw new I18nSharpenError({
+      kind: "config",
+      message: `Invalid configuration:\n${errors}`
+    })
   }
 
   const config = result.data
