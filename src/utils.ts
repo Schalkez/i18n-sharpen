@@ -14,7 +14,9 @@ export {
   /** @deprecated Import from `./core/scanner` instead. */
   isKeyUsed,
   /** @deprecated Import from `./core/scanner` instead. */
-  matchWildcard
+  matchWildcard,
+  /** @deprecated Import from `./core/scanner` instead. */
+  escapeRegex
 } from "./core/scanner"
 
 // Re-export locale-io primitives from core/locale-io for back-compat.
@@ -37,15 +39,6 @@ export {
   /** @deprecated Import from `./core/locale-io` instead. */
   normalizeDisplayPath
 } from "./core/locale-io"
-
-/**
- * Escape a string so it can be safely embedded in a regular expression.
- * Used to defend against regex-injection / ReDoS via user-controlled
- * matchFunctions / matchAttributes config entries.
- */
-export function escapeRegex(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
 
 /**
  * Logging helper utilities.
