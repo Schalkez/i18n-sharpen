@@ -142,6 +142,22 @@ describe("locale-io: writeLocaleFile atomicity", () => {
     }).toThrow()
     expect(fs.existsSync(target + ".tmp")).toBe(false)
   })
+
+  it("refuses to overwrite .ts/.tsx/.mjs/.cjs/.js locale files", () => {
+    fs.mkdirSync(dir, { recursive: true })
+    const original = "export default { a: 1 }\n"
+    for (const ext of [".ts", ".tsx", ".mjs", ".cjs", ".js"]) {
+      const target = path.join(dir, `en${ext}`)
+      fs.writeFileSync(target, original, "utf8")
+      expect(() => {
+        writeLocaleFile(target, { a: 2 })
+      }).toThrow(/Refusing to write JS\/TS locale file/)
+      // Source content must be preserved unchanged.
+      expect(fs.readFileSync(target, "utf8")).toBe(original)
+      // No .tmp leftover.
+      expect(fs.existsSync(target + ".tmp")).toBe(false)
+    }
+  })
 })
 
 describe("locale-io: findLocaleFile + loadAllLocales", () => {

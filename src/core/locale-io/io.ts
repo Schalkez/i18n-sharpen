@@ -159,20 +159,39 @@ export function readLocaleFile(filePath: string): Record<string, unknown> {
     : {}
 }
 
+/** Extensions that we can read via JS/TS module loaders but refuse to write. */
+const JS_TS_EXTENSIONS = new Set([".js", ".cjs", ".mjs", ".ts", ".tsx"])
+
 /**
  * Write a locale object to a file (JSON or YAML format).
  *
  * Uses a write-then-rename strategy: data is first written to
  * `<filePath>.tmp` and then atomically renamed into place. This prevents
  * truncation of the destination file if the process is killed mid-write.
+ *
+ * JS/TS locale files (`.js`, `.cjs`, `.mjs`, `.ts`, `.tsx`) are **read-only**:
+ * this function throws if asked to write to one, because doing so would
+ * destroy any imports, type annotations, or custom code the user may have
+ * around the exported object. Convert such files to `.json` / `.yaml` if you
+ * want `extract` / `prune` to mutate them.
  */
 export function writeLocaleFile(
   filePath: string,
   obj: Record<string, unknown>
 ): void {
   const ext = path.extname(filePath).toLowerCase()
-  let content = ""
 
+  if (JS_TS_EXTENSIONS.has(ext)) {
+    throw new Error(
+      `Refusing to write JS/TS locale file '${path.basename(filePath)}'.\n` +
+        `i18n-sharpen can read .js/.cjs/.mjs/.ts/.tsx locale files but will not overwrite them, ` +
+        `because doing so would destroy any imports, type annotations, or custom code in the source.\n` +
+        `Fix: convert this locale to .json or .yaml so extract/prune can update it safely, ` +
+        `or add the missing keys manually.`
+    )
+  }
+
+  let content = ""
   if (ext === ".yaml" || ext === ".yml") {
     content = YAML.stringify(obj, { indent: 2 })
   } else {
