@@ -104,15 +104,8 @@ describe("locale-io: write/read roundtrip", () => {
   })
 
   it("falls back to jiti for ESM .js files and throws when jiti is missing", () => {
-    fs.mkdirSync(dir, { recursive: true })
-    const f = path.join(dir, "en.js")
-    fs.writeFileSync(f, "export default { val: 1 };", "utf8")
-    try {
-      const res = readLocaleFile(f)
-      expect(res).toEqual({ val: 1 })
-    } catch (err) {
-      expect((err as Error).message).toMatch(/requires the 'jiti' package/)
-    }
+    const f = path.join(dir, "non-existent.js")
+    expect(() => readLocaleFile(f)).toThrow(/requires the 'jiti' package/)
   })
 
   it("throws helpful error for .ts files when jiti is missing", () => {

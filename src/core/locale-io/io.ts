@@ -107,8 +107,7 @@ export function readLocaleFile(filePath: string): Record<string, unknown> {
   if (ext === ".js" || ext === ".cjs") {
     try {
       const resolved = _require.resolve(filePath)
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete _require.cache[resolved]
+      Reflect.deleteProperty(_require.cache, resolved)
     } catch {
       // ignore cache resolution failure
     }
