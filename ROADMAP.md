@@ -31,6 +31,7 @@ Khi tiếp tục bảo trì và bổ sung các tính năng hoặc tối ưu hóa
 *   **Auto-sorting keys:** Bổ sung tùy chọn tự động sắp xếp các key dịch thuật theo thứ tự bảng chữ cái (A-Z) hoặc theo thứ tự xuất hiện trong code khi thực hiện ghi đè hoặc cắt tỉa file JSON/YAML.
 *   **Interactive Pruning CLI:** Hỗ trợ chế độ CLI tương tác (Interactive mode) cho phép người dùng dùng phím lên/xuống và Space để chọn cụ thể key nào muốn giữ hoặc xóa, thay vì chỉ xóa toàn bộ hoặc dry-run.
 *   **Cải tiến cảnh báo Key động:** Phân loại cảnh báo thông minh hơn để phân biệt giữa key động hoàn toàn (không thể đoán trước) và key nối chuỗi có cấu trúc (ví dụ: `t("error." + code)`).
+*   **Hardcoded string detection (Phát hiện chuỗi text cứng):** Bổ sung tính năng tự động quét các đoạn văn bản thuần (text nodes) chưa qua dịch thuật nằm giữa các thẻ HTML/JSX/Vue/Svelte/Astro (ví dụ: `<div>Xin chào</div>`) và đưa ra cảnh báo để lập trình viên bọc chúng vào hàm dịch `t()`.
 
 ### 📍 Giai đoạn 2: Mở rộng Hỗ trợ Hệ sinh thái
 *   **Hỗ trợ tệp cấu hình dạng TypeScript/JavaScript:** Quét và cập nhật trực tiếp trên các file dịch được xuất ra dạng module ESM/CommonJS (`locales/en.ts`, `locales/vi.js`) bên cạnh JSON/YAML.
