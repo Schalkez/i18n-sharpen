@@ -28,6 +28,48 @@ export interface I18nCopConfig {
    * and a short key like "a" matches every "a" literal in the codebase.
    */
   looseKeyMatch?: boolean
+  /**
+   * Prune-only knobs. When `prune.force` is false (the default), `prune`
+   * runs in dry-run mode: it prints a summary of which keys WOULD be
+   * removed but does not modify any locale file. Set `prune.force: true`
+   * in config, or pass `--force` on the CLI, to actually write.
+   */
+  prune?: {
+    /** If true, prune writes the cleaned locale files to disk. */
+    force?: boolean
+  }
+}
+
+/**
+ * Per-invocation options for the programmatic `prune()` API.
+ *
+ * Both `force` and `dryRun` can be set; if both are passed, `dryRun`
+ * wins (an explicit dry-run beats any `force` from config).
+ */
+export interface PruneOptions {
+  /** Force writes even when config.prune.force is false. */
+  force?: boolean
+  /** Preview only — never write, regardless of config.prune.force. */
+  dryRun?: boolean
+}
+
+/**
+ * Structured result returned by `prune()` so programmatic callers can
+ * inspect what was (or would be) removed without parsing console output.
+ */
+export interface PruneResult {
+  /** Whether any locale files were actually written. */
+  written: boolean
+  /** Whether prune ran in dry-run mode (no writes). */
+  dryRun: boolean
+  /** Per-language summary keyed by language code. */
+  perLocale: Array<{
+    lang: string
+    file: string
+    prunedKeys: string[]
+  }>
+  /** Total number of keys removed across all locales. */
+  totalPruned: number
 }
 
 export type FlatTranslationsMap = Record<string, string>

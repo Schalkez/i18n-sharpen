@@ -89,12 +89,23 @@ program
 
 program
   .command("prune")
-  .description("Prune unused translation keys from JSON files.")
-  .action(() => {
+  .description(
+    "Prune unused translation keys from JSON files (dry-run by default; use --force to actually write)."
+  )
+  .option(
+    "--dry-run",
+    "Preview only — never write. Default behavior; flag exists for explicit CI scripts.",
+    false
+  )
+  .option("--force", "Actually write the pruned locale files to disk.", false)
+  .action((cmdOpts: { dryRun?: boolean; force?: boolean }) => {
     const opts = program.opts()
     try {
       const config = loadConfig(opts.cwd, opts.config)
-      prune(config, opts.cwd)
+      prune(config, opts.cwd, {
+        force: cmdOpts.force === true,
+        dryRun: cmdOpts.dryRun === true
+      })
       process.exitCode = 0
     } catch (error) {
       log.error((error as Error).message)

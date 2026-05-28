@@ -272,8 +272,8 @@ describe("i18n-sharpen command integration", () => {
     expect(validateRes2.unusedKeys).toContain("dynamic.prefix.")
     expect(validateRes2.unusedKeys).toContain("unused.key")
 
-    // Run prune, both should be pruned
-    prune(config, tempDir)
+    // Run prune (force: true to actually write — Phase 6 made dry-run the default)
+    prune(config, tempDir, { force: true })
     const prunedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(prunedLocale)).toEqual({
       "normal.key": "Normal Key"
@@ -309,7 +309,7 @@ describe("i18n-sharpen command integration", () => {
     expect(validateRes.unusedKeys).not.toContain("status.success")
     expect(validateRes.unusedKeys).not.toContain("status.error")
 
-    prune(config, tempDir)
+    prune(config, tempDir, { force: true })
     const prunedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(prunedLocale)).toEqual({
       "normal.key": "Normal Key",
@@ -347,12 +347,102 @@ describe("i18n-sharpen command integration", () => {
     expect(validateRes.unusedKeys).not.toContain("count_other")
     expect(validateRes.missingKeys).not.toContain("count")
 
-    prune(config, tempDir)
+    prune(config, tempDir, { force: true })
     const prunedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(prunedLocale)).toEqual({
       count_one: "One item",
       count_other: "Other items"
     })
+  })
+
+  it("prune is dry-run by default and does not modify files", () => {
+    const files = {
+      "src/index.ts": `t('used.key')`,
+      "locales/en.json": JSON.stringify({
+        "used.key": "Used",
+        "stale.key": "Stale"
+      })
+    }
+    createMockProject(tempDir, files)
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"]
+    }
+
+    const before = fs.readFileSync(
+      path.join(tempDir, "locales/en.json"),
+      "utf8"
+    )
+    const result = prune(config, tempDir)
+    expect(result.dryRun).toBe(true)
+    expect(result.written).toBe(false)
+    expect(result.totalPruned).toBe(1)
+    expect(result.perLocale[0].prunedKeys).toEqual(["stale.key"])
+    const after = fs.readFileSync(path.join(tempDir, "locales/en.json"), "utf8")
+    expect(after).toBe(before) // file untouched
+  })
+
+  it("prune writes when config.prune.force is true", () => {
+    const files = {
+      "src/index.ts": `t('used.key')`,
+      "locales/en.json": JSON.stringify({
+        "used.key": "Used",
+        "stale.key": "Stale"
+      })
+    }
+    createMockProject(tempDir, files)
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      prune: { force: true }
+    }
+
+    const result = prune(config, tempDir)
+    expect(result.dryRun).toBe(false)
+    expect(result.written).toBe(true)
+    const pruned = readLocaleFile(path.join(tempDir, "locales/en.json"))
+    expect(flattenObject(pruned)).toEqual({ "used.key": "Used" })
+  })
+
+  it("prune options.dryRun overrides config.prune.force", () => {
+    const files = {
+      "src/index.ts": `t('used.key')`,
+      "locales/en.json": JSON.stringify({
+        "used.key": "Used",
+        "stale.key": "Stale"
+      })
+    }
+    createMockProject(tempDir, files)
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      prune: { force: true }
+    }
+
+    const before = fs.readFileSync(
+      path.join(tempDir, "locales/en.json"),
+      "utf8"
+    )
+    const result = prune(config, tempDir, { dryRun: true })
+    expect(result.dryRun).toBe(true)
+    expect(result.written).toBe(false)
+    const after = fs.readFileSync(path.join(tempDir, "locales/en.json"), "utf8")
+    expect(after).toBe(before)
   })
 
   it("should scan JSX/HTML attributes for translation keys", () => {

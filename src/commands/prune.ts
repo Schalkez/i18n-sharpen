@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
-import type { I18nCopConfig } from "../types"
+import type { I18nCopConfig, PruneOptions, PruneResult } from "../types"
 import {
   getFiles,
   stripComments,
@@ -15,11 +15,33 @@ import {
   log
 } from "../utils"
 
+/**
+ * Prune unused keys from locale files.
+ *
+ * Phase 6: safe-by-default. By default `prune` runs in dry-run mode and
+ * will NOT modify any locale file — it only prints a preview of what
+ * WOULD be removed. To actually write, set one of:
+ *
+ *   - `config.prune.force: true` in i18n-sharpen.json
+ *   - `--force` on the CLI
+ *   - `prune(config, cwd, { force: true })` programmatically
+ *
+ * `--dry-run` / `{ dryRun: true }` always wins over `force` to make
+ * preview-in-CI scripts robust.
+ */
 export function prune(
   config: I18nCopConfig,
-  cwd: string = process.cwd()
-): void {
+  cwd: string = process.cwd(),
+  options: PruneOptions = {}
+): PruneResult {
   log.header("I18N-SHARPEN PRUNER")
+
+  // Effective mode: dryRun beats force; otherwise honor force from
+  // options first, then config.prune.force, defaulting to false (= dry).
+  const configForce = config.prune?.force === true
+  const optForce = options.force === true
+  const optDryRun = options.dryRun === true
+  const dryRun = optDryRun ? true : !(optForce || configForce)
 
   const localesDirAbs = path.resolve(cwd, config.localesDir)
 
@@ -150,11 +172,13 @@ export function prune(
   // writeLocaleFile (.tmp + rename). Prevents partial prune state when
   // one language fails mid-loop.
   type Plan = {
+    lang: string
     langPath: string
     nestedJson: Record<string, unknown>
-    prunedCount: number
+    prunedKeys: string[]
   }
   const writePlans: Plan[] = []
+  const perLocale: PruneResult["perLocale"] = []
 
   for (const lang of config.supportedLanguages) {
     const langPath = localeFilePaths[lang]
@@ -162,46 +186,90 @@ export function prune(
 
     const flatJson = localesFlat[lang]
     const newFlatJson: Record<string, string> = {}
-    let prunedCount = 0
+    const prunedKeys: string[] = []
 
     for (const key in flatJson) {
       if (isKeyUsed(key)) {
         newFlatJson[key] = flatJson[key]
       } else {
-        prunedCount++
+        prunedKeys.push(key)
       }
     }
 
-    if (prunedCount > 0) {
+    if (prunedKeys.length > 0) {
       const nestedJson = unflattenObject(newFlatJson)
-      writePlans.push({ langPath, nestedJson, prunedCount })
+      writePlans.push({ lang, langPath, nestedJson, prunedKeys })
     } else {
       log.info(
         `✨ No unused keys to prune in ${pc.cyan(path.basename(langPath))}.`
       )
     }
+    perLocale.push({ lang, file: langPath, prunedKeys })
   }
 
   let totalPrunedCount = 0
-  for (const plan of writePlans) {
-    log.info(
-      `🧹 Pruning ${pc.yellow(plan.prunedCount)} unused keys from ${pc.cyan(path.basename(plan.langPath))}`
+  let written = false
+
+  if (dryRun) {
+    log.header(
+      writePlans.length === 0
+        ? "PRUNE PREVIEW (no changes)"
+        : "PRUNE PREVIEW (dry-run — no files written)"
     )
-    try {
-      writeLocaleFile(plan.langPath, plan.nestedJson)
-      totalPrunedCount += plan.prunedCount
-    } catch (error) {
-      throw new Error(
-        `Failed to write to file '${plan.langPath}': ${(error as Error).message}`
+  }
+
+  for (const plan of writePlans) {
+    const verb = dryRun ? "Would prune" : "🧹 Pruning"
+    log.info(
+      `${verb} ${pc.yellow(plan.prunedKeys.length)} unused keys from ${pc.cyan(path.basename(plan.langPath))}`
+    )
+    // Show a sample of up to 10 keys per file so CI logs stay readable
+    // but the user always has something concrete to inspect.
+    const sample = plan.prunedKeys.slice(0, 10)
+    for (const k of sample) {
+      console.log(`  - ${pc.yellow(k)}`)
+    }
+    if (plan.prunedKeys.length > sample.length) {
+      console.log(
+        `  ... and ${plan.prunedKeys.length - sample.length} more (run with verbose flag to see all)`
       )
+    }
+
+    if (!dryRun) {
+      try {
+        writeLocaleFile(plan.langPath, plan.nestedJson)
+        totalPrunedCount += plan.prunedKeys.length
+        written = true
+      } catch (error) {
+        throw new Error(
+          `Failed to write to file '${plan.langPath}': ${(error as Error).message}`
+        )
+      }
+    } else {
+      totalPrunedCount += plan.prunedKeys.length
     }
   }
 
-  if (totalPrunedCount > 0) {
+  if (dryRun) {
+    if (totalPrunedCount > 0) {
+      log.warn(
+        `Dry-run: ${totalPrunedCount} key${totalPrunedCount === 1 ? "" : "s"} would be removed. Re-run with --force (or set prune.force: true in config) to apply.\n`
+      )
+    } else {
+      log.success("Dry-run: no unused keys found to prune.\n")
+    }
+  } else if (totalPrunedCount > 0) {
     log.success(
       `Files have been successfully cleaned! Total pruned: ${totalPrunedCount} keys.\n`
     )
   } else {
     log.success("No unused keys found to prune.\n")
+  }
+
+  return {
+    written,
+    dryRun,
+    perLocale,
+    totalPruned: totalPrunedCount
   }
 }
