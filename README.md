@@ -132,6 +132,15 @@ npx i18n-sharpen prune --force
 > [!WARNING]
 > **JS/TS locale files are Read-Only.** `extract` and `prune` will throw an error if asked to write to a `.js`, `.cjs`, `.mjs`, `.ts`, or `.tsx` file. This prevents the tool from destroying imports, JSDoc, type annotations, or custom wrapping code. If you want `i18n-sharpen` to automatically manage and mutate your locale files, convert them to `.json` or `.yaml`.
 
+### Format Trade-offs (`.json` vs. `.ts` / `.js`)
+
+*   **Using `.ts` / `.tsx` (or JS modules):**
+    *   *Requirement:* You must install `jiti` as a `devDependency`.
+    *   *Capability:* Supported for **`validate` only**. Automatic `extract` and `prune` are disabled.
+*   **Using `.json` / `.yaml`:**
+    *   *Capability:* Full support for **all features** (`validate`, `extract`, and `prune`).
+    *   *Note:* Vite and TypeScript natively resolve types for `.json` imports (by enabling `"resolveJsonModule": true` in your `tsconfig.json`), guaranteeing compile-time type safety with zero runtime overhead.
+
 ---
 
 ## Locale Layouts
