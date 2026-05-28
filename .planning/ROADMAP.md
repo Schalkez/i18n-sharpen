@@ -12,7 +12,7 @@
 ## Phases
 
 - [x] **Phase 1: Auto-Sorting Keys + Namespace Hardening** — users can control key ordering on every locale write; configurable `defaultNamespace`; `--clean-empty` flag; cross-file atomicity for prune (completed 2026-05-28)
-- [ ] **Phase 2: Dynamic Key Warnings** — validator distinguishes fully-dynamic vs structured-concat keys and reports them separately
+- [x] **Phase 2: Dynamic Key Warnings** — validator distinguishes fully-dynamic vs structured-concat keys and reports them separately (completed 2026-05-28)
 - [ ] **Phase 3: Interactive Pruning** — `prune --interactive` lets users pick which unused keys to delete via TUI
 - [ ] **Phase 4: Hardcoded String Detection** — `validate --check-hardcoded` finds un-translated text nodes across all supported file extensions
 - [ ] **Phase 5: Deprecation Cleanup** — `I18nCopConfig` removed; clean breaking-change release prep
@@ -99,7 +99,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Auto-Sorting Keys + Namespace Hardening | 4/4 | Complete    | 2026-05-28 |
-| 2. Dynamic Key Warnings | 0/3 | Not started | - |
+| 2. Dynamic Key Warnings | 0/3 | Complete    | 2026-05-28 |
 | 3. Interactive Pruning | 0/? | Not started | - |
 | 4. Hardcoded String Detection | 0/? | Not started | - |
 | 5. Deprecation Cleanup | 0/? | Not started | - |
