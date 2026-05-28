@@ -10,6 +10,7 @@ import {
   writeLocaleFile,
   findLocaleFile,
   loadAllLocales,
+  loadNamespacedLocales,
   FORBIDDEN_KEY_SEGMENTS
 } from "./locale-io"
 
@@ -121,6 +122,33 @@ describe("locale-io: findLocaleFile + loadAllLocales", () => {
     fs.writeFileSync(path.join(dir, "en.yaml"), "")
     const found = findLocaleFile(dir, "en")
     expect(found && path.basename(found)).toBe("en.json")
+  })
+
+  it("loadNamespacedLocales merges per-namespace files with ns: prefix", () => {
+    fs.mkdirSync(path.join(dir, "en"), { recursive: true })
+    fs.writeFileSync(
+      path.join(dir, "en", "common.json"),
+      JSON.stringify({ greeting: "hi" })
+    )
+    fs.writeFileSync(
+      path.join(dir, "en", "auth.json"),
+      JSON.stringify({ login: { title: "Sign in" } })
+    )
+    const result = loadNamespacedLocales(dir, ["en"])
+    expect(result.localesFlat.en).toEqual({
+      "common:greeting": "hi",
+      "auth:login.title": "Sign in"
+    })
+    expect(result.localeNamespaces.en.common).toContain("common.json")
+    expect(result.localeNamespaces.en.auth).toContain("auth.json")
+    expect(result.localeKeySets.en.has("common:greeting")).toBe(true)
+  })
+
+  it("loadNamespacedLocales calls onMissing for languages without dirs", () => {
+    const missing: string[] = []
+    const result = loadNamespacedLocales(dir, ["fr"], (l) => missing.push(l))
+    expect(missing).toEqual(["fr"])
+    expect(result.localesFlat.fr).toEqual({})
   })
 
   it("loadAllLocales calls onMissing for languages without files", () => {

@@ -237,6 +237,76 @@ export function normalizeDisplayPath(p: string): string {
 }
 
 /**
+ * Phase 7: load every namespace file under `<localesDir>/<lang>/` and
+ * merge into a single flat map per language using `namespace:` prefix.
+ *
+ * Example layout:
+ *   locales/en/common.json  -> keys load as "common:greeting", ...
+ *   locales/en/auth.json    -> keys load as "auth:login.title", ...
+ *
+ * Languages without a directory (or with an empty one) load as empty
+ * maps; the caller's `onMissing` callback is invoked once per missing
+ * language.
+ */
+export function loadNamespacedLocales(
+  localesDir: string,
+  supportedLanguages: string[],
+  onMissing: (lang: string, localesDir: string) => void = () => {}
+): {
+  locales: Record<string, Record<string, unknown>>
+  localesFlat: Record<string, Record<string, string>>
+  localeKeySets: Record<string, Set<string>>
+  /**
+   * Per-language map of namespace -> resolved file path. Used by extract
+   * / prune to route writes back to the correct namespace file.
+   */
+  localeNamespaces: Record<string, Record<string, string>>
+} {
+  const locales: Record<string, Record<string, unknown>> = {}
+  const localesFlat: Record<string, Record<string, string>> = {}
+  const localeKeySets: Record<string, Set<string>> = {}
+  const localeNamespaces: Record<string, Record<string, string>> = {}
+
+  for (const lang of supportedLanguages) {
+    const langDir = path.join(localesDir, lang)
+    localeNamespaces[lang] = {}
+    if (!fs.existsSync(langDir) || !fs.statSync(langDir).isDirectory()) {
+      onMissing(lang, localesDir)
+      locales[lang] = {}
+      localesFlat[lang] = {}
+      localeKeySets[lang] = new Set()
+      continue
+    }
+
+    const entries = fs.readdirSync(langDir, { withFileTypes: true })
+    const merged: Record<string, unknown> = {}
+    const mergedFlat: Record<string, string> = {}
+
+    for (const entry of entries) {
+      if (!entry.isFile()) continue
+      const ext = path.extname(entry.name).toLowerCase()
+      if (ext !== ".json" && ext !== ".yaml" && ext !== ".yml") continue
+      const ns = path.basename(entry.name, ext)
+      const filePath = path.join(langDir, entry.name)
+      localeNamespaces[lang][ns] = filePath
+
+      const parsed = readLocaleFile(filePath)
+      merged[ns] = parsed
+      const nsFlat = flattenObject(parsed)
+      for (const [k, v] of Object.entries(nsFlat)) {
+        mergedFlat[`${ns}:${k}`] = v
+      }
+    }
+
+    locales[lang] = merged
+    localesFlat[lang] = mergedFlat
+    localeKeySets[lang] = new Set(Object.keys(mergedFlat))
+  }
+
+  return { locales, localesFlat, localeKeySets, localeNamespaces }
+}
+
+/**
  * Load every supported language's locale file into a flat map.
  *
  * Returns:

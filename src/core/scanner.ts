@@ -246,7 +246,7 @@ export function isKeyUsed(
 export function buildKeyRegex(matchFunctions: string[]): RegExp {
   const functionsJoined = matchFunctions.map(escapeRegex).join("|")
   return new RegExp(
-    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
+    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"`])([a-zA-Z0-9_\\-.:]+)\\1",
     "g"
   )
 }
@@ -259,7 +259,7 @@ export function buildKeyRegex(matchFunctions: string[]): RegExp {
 export function buildAttrRegex(matchAttributes: string[]): RegExp {
   const attrsJoined = matchAttributes.map(escapeRegex).join("|")
   return new RegExp(
-    "\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
+    "\\b(?:" + attrsJoined + ")\\s*=\\s*(['\"`])([a-zA-Z0-9_\\-.:]+)\\1",
     "g"
   )
 }

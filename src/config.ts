@@ -42,7 +42,8 @@ export const DEFAULT_CONFIG: Partial<I18nSharpenConfig> = {
     "_other",
     "_male",
     "_female"
-  ]
+  ],
+  localesLayout: "flat"
 }
 
 // Restrict matchFunctions / matchAttributes to plain identifier-like
@@ -87,6 +88,7 @@ export const I18nSharpenConfigSchema = z.object({
   ignoreKeys: z.array(z.string()).optional(),
   pluralSuffixes: z.array(z.string()).optional(),
   looseKeyMatch: z.boolean().optional(),
+  localesLayout: z.enum(["flat", "namespaced"]).optional(),
   prune: z
     .object({
       force: z.boolean().optional()
@@ -208,6 +210,7 @@ export function loadConfig(
     pluralSuffixes: fileConfig.pluralSuffixes || DEFAULT_CONFIG.pluralSuffixes,
     looseKeyMatch:
       fileConfig.looseKeyMatch !== undefined ? fileConfig.looseKeyMatch : false,
+    localesLayout: fileConfig.localesLayout || DEFAULT_CONFIG.localesLayout,
     prune: fileConfig.prune || { force: false }
   }
 

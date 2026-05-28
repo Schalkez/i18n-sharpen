@@ -29,6 +29,21 @@ export interface I18nSharpenConfig {
    */
   looseKeyMatch?: boolean
   /**
+   * Locale file layout under `localesDir`.
+   *
+   * - `"flat"` (default): one file per language at
+   *   `<localesDir>/<lang>.{json,yaml}` containing all keys.
+   * - `"namespaced"`: one directory per language with one file per
+   *   namespace, e.g. `<localesDir>/en/common.json` +
+   *   `<localesDir>/en/auth.json`. Keys are then referenced as
+   *   `t("namespace:key.path")` in code; the namespace is the file
+   *   basename.
+   *
+   * Phase 7 introduces the namespaced mode. Backwards compatible — when
+   * unset, behavior is identical to v0.1.x.
+   */
+  localesLayout?: "flat" | "namespaced"
+  /**
    * Prune-only knobs. When `prune.force` is false (the default), `prune`
    * runs in dry-run mode: it prints a summary of which keys WOULD be
    * removed but does not modify any locale file. Set `prune.force: true`
