@@ -15,6 +15,7 @@ import {
   isKeyUsed as sharedIsKeyUsed,
   log
 } from "../utils"
+import { loadNamespacedLocales } from "../core/locale-io"
 import { buildAttrRegex } from "../core/scanner"
 
 /**
@@ -70,14 +71,15 @@ export function prune(
     }
   }
 
-  // Scan source files for translation keys
+  // Scan source files for translation keys.
+  // The key regex allows `:` so namespaced keys like "common:greeting" are captured.
   const usedKeys = new Set<string>()
   // Escape user-supplied config entries to prevent regex injection / ReDoS.
   const functionsJoined = (config.matchFunctions || ["t", "getTranslation"])
     .map(escapeRegex)
     .join("|")
   const keyRegex = new RegExp(
-    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"`])([a-zA-Z0-9_\\-.]+)\\1",
+    "\\b(?:" + functionsJoined + ")\\s*\\(\\s*(['\"`])([a-zA-Z0-9_\\-.:]+)\\1",
     "g"
   )
 
@@ -108,9 +110,34 @@ export function prune(
     }
   }
 
+  log.info(
+    `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
+  )
+
+  if (config.localesLayout === "namespaced") {
+    return pruneNamespaced(
+      config,
+      localesDirAbs,
+      usedKeys,
+      fileContents,
+      dryRun
+    )
+  }
+  return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+}
+
+/**
+ * Prune unused keys from flat locale files (one file per language).
+ * This is the default (pre-Phase 7) behavior.
+ */
+function pruneFlat(
+  config: I18nSharpenConfig,
+  localesDirAbs: string,
+  usedKeys: Set<string>,
+  fileContents: string[],
+  dryRun: boolean
+): PruneResult {
   // Load locale files and get all keys.
-  // LO-05: drop the unused `localesData` accumulator — we only need the
-  // flattened map for prune's purposes.
   const allLocaleKeys = new Set<string>()
   const localesFlat: Record<string, Record<string, string>> = {}
   const localeFilePaths: Record<string, string> = {}
@@ -135,9 +162,7 @@ export function prune(
 
   // Second pass: opt-in loose match (config.looseKeyMatch). When enabled,
   // marks a locale key as "used" if its quoted form appears anywhere in
-  // scanned source — even outside a t(...)/attr=... call. Default-off
-  // because it keeps stale keys around forever and short keys collide
-  // with unrelated string literals.
+  // scanned source — even outside a t(...)/attr=... call.
   if (config.looseKeyMatch) {
     for (const key of allLocaleKeys) {
       if (usedKeys.has(key)) continue
@@ -159,20 +184,12 @@ export function prune(
     }
   }
 
-  // Plural/Context suffix alignment helper — shared with validate.ts
-  // through utils.isKeyUsed (LO-06).
   const suffixes = config.pluralSuffixes || []
   const isKeyUsed = (key: string): boolean =>
     sharedIsKeyUsed(key, usedKeys, config.ignoreKeys, suffixes)
 
-  log.info(
-    `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
-  )
-
   // Two-phase: plan every file in memory, only commit writes after the
-  // entire plan is computed. Each file is then written atomically via
-  // writeLocaleFile (.tmp + rename). Prevents partial prune state when
-  // one language fails mid-loop.
+  // entire plan is computed.
   type Plan = {
     lang: string
     langPath: string
@@ -209,6 +226,149 @@ export function prune(
     perLocale.push({ lang, file: langPath, prunedKeys })
   }
 
+  return executePrunePlans(writePlans, perLocale, dryRun)
+}
+
+/**
+ * Prune unused keys from namespaced locale files (one directory per language,
+ * one file per namespace).
+ */
+function pruneNamespaced(
+  config: I18nSharpenConfig,
+  localesDirAbs: string,
+  usedKeys: Set<string>,
+  fileContents: string[],
+  dryRun: boolean
+): PruneResult {
+  const suffixes = config.pluralSuffixes || []
+
+  const { localesFlat, localeNamespaces } = loadNamespacedLocales(
+    localesDirAbs,
+    config.supportedLanguages
+  )
+
+  // Build the full set of all namespaced locale keys for loose match.
+  const allLocaleKeys = new Set<string>()
+  for (const lang of config.supportedLanguages) {
+    for (const key of Object.keys(localesFlat[lang] ?? {})) {
+      allLocaleKeys.add(key)
+    }
+  }
+
+  // Opt-in loose match: check namespaced keys as quoted literals in source.
+  if (config.looseKeyMatch) {
+    for (const key of allLocaleKeys) {
+      if (usedKeys.has(key)) continue
+
+      const doubleQuote = `"${key}"`
+      const singleQuote = `'${key}'`
+      const backtickQuote = `\`${key}\``
+
+      for (const cleanContent of fileContents) {
+        if (
+          cleanContent.includes(doubleQuote) ||
+          cleanContent.includes(singleQuote) ||
+          cleanContent.includes(backtickQuote)
+        ) {
+          usedKeys.add(key)
+          break
+        }
+      }
+    }
+  }
+
+  // isKeyUsed works on the full "ns:key.path" form stored in usedKeys
+  // as well as plain key paths (no namespace).
+  const isKeyUsed = (namespacedKey: string): boolean =>
+    sharedIsKeyUsed(namespacedKey, usedKeys, config.ignoreKeys, suffixes)
+
+  type NsPlan = {
+    lang: string
+    ns: string
+    filePath: string
+    nestedJson: Record<string, unknown>
+    prunedKeys: string[]
+  }
+  const writePlans: NsPlan[] = []
+  const perLocale: PruneResult["perLocale"] = []
+
+  for (const lang of config.supportedLanguages) {
+    const nsFilePaths = localeNamespaces[lang] ?? {}
+    const langFlat = localesFlat[lang] ?? {}
+
+    // Group existing flat keys by namespace
+    const keysByNs = new Map<string, Record<string, string>>()
+    for (const [namespacedKey, value] of Object.entries(langFlat)) {
+      const colonIdx = namespacedKey.indexOf(":")
+      const ns = colonIdx >= 0 ? namespacedKey.slice(0, colonIdx) : "default"
+      const keyPath =
+        colonIdx >= 0 ? namespacedKey.slice(colonIdx + 1) : namespacedKey
+      if (!keysByNs.has(ns)) keysByNs.set(ns, {})
+      keysByNs.get(ns)![keyPath] = value
+    }
+
+    let langTotalPruned = 0
+    for (const [ns, nsFlatKeys] of keysByNs) {
+      const filePath = nsFilePaths[ns]
+      if (!filePath) continue
+
+      const newFlatJson: Record<string, string> = {}
+      const prunedKeys: string[] = []
+
+      for (const keyPath of Object.keys(nsFlatKeys)) {
+        // Reconstruct the full namespaced key for isKeyUsed check
+        const namespacedKey = `${ns}:${keyPath}`
+        if (isKeyUsed(namespacedKey)) {
+          newFlatJson[keyPath] = nsFlatKeys[keyPath]
+        } else {
+          prunedKeys.push(keyPath)
+        }
+      }
+
+      if (prunedKeys.length > 0) {
+        const nestedJson = unflattenObject(newFlatJson)
+        writePlans.push({ lang, ns, filePath, nestedJson, prunedKeys })
+        langTotalPruned += prunedKeys.length
+      } else {
+        log.info(
+          `✨ No unused keys to prune in ${pc.cyan(`${lang}/${ns}.json`)}.`
+        )
+      }
+
+      perLocale.push({ lang, file: filePath, prunedKeys })
+    }
+
+    if (keysByNs.size === 0) {
+      log.info(`✨ No locale files found for ${pc.cyan(lang)}.`)
+    }
+  }
+
+  // Convert NsPlan[] to the shape executePrunePlans expects
+  const flatPlans = writePlans.map((p) => ({
+    lang: p.lang,
+    langPath: p.filePath,
+    nestedJson: p.nestedJson,
+    prunedKeys: p.prunedKeys,
+    displayName: `${p.lang}/${p.ns}.json`
+  }))
+
+  return executePrunePlans(flatPlans, perLocale, dryRun)
+}
+
+type WritePlan = {
+  lang: string
+  langPath: string
+  nestedJson: Record<string, unknown>
+  prunedKeys: string[]
+  /** Optional display label override (used by namespaced mode) */
+  displayName?: string
+}
+
+function executePrunePlans(
+  writePlans: WritePlan[],
+  perLocale: PruneResult["perLocale"],
+  dryRun: boolean
+): PruneResult {
   let totalPrunedCount = 0
   let written = false
 
@@ -221,18 +381,19 @@ export function prune(
   }
 
   for (const plan of writePlans) {
-    const verb = dryRun ? "Would prune" : "🧹 Pruning"
+    const displayName = plan.displayName ?? path.basename(plan.langPath)
+    const verb = dryRun ? "Would prune" : "Pruning"
     log.info(
-      `${verb} ${pc.yellow(plan.prunedKeys.length)} unused keys from ${pc.cyan(path.basename(plan.langPath))}`
+      `${verb} ${pc.yellow(plan.prunedKeys.length)} unused keys from ${pc.cyan(displayName)}`
     )
     // Show a sample of up to 10 keys per file so CI logs stay readable
     // but the user always has something concrete to inspect.
     const sample = plan.prunedKeys.slice(0, 10)
     for (const k of sample) {
-      console.log(`  - ${pc.yellow(k)}`)
+      log.info(`  - ${pc.yellow(k)}`)
     }
     if (plan.prunedKeys.length > sample.length) {
-      console.log(
+      log.info(
         `  ... and ${plan.prunedKeys.length - sample.length} more (run with verbose flag to see all)`
       )
     }

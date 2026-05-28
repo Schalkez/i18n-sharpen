@@ -526,4 +526,105 @@ describe("i18n-sharpen command integration", () => {
     // still picked up by the function regex if `t` is in matchFunctions:
     // 'vue.directive' is quoted inside v-t="'vue.directive'"
   })
+
+  it("extract with namespaced layout writes into namespace files [gap-1]", () => {
+    const files = {
+      "src/index.ts": `
+        t('common:greeting')
+        t('common:farewell')
+        t('auth:login.title')
+        t('noprefix.key')
+      `,
+      // Pre-existing namespace file with one key already present
+      "locales/en/common.json": JSON.stringify({ greeting: "Hello" })
+    }
+    createMockProject(tempDir, files)
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const
+    }
+
+    extract(config, tempDir)
+
+    // common.json should have both greeting (pre-existing) and farewell (new)
+    const commonLocale = readLocaleFile(
+      path.join(tempDir, "locales/en/common.json")
+    )
+    expect(flattenObject(commonLocale)).toMatchObject({
+      greeting: "Hello",
+      farewell: "farewell"
+    })
+
+    // auth.json should be created with login.title
+    const authLocale = readLocaleFile(
+      path.join(tempDir, "locales/en/auth.json")
+    )
+    expect(flattenObject(authLocale)).toMatchObject({
+      "login.title": "login.title"
+    })
+
+    // default.json should hold the key with no namespace prefix
+    const defaultLocale = readLocaleFile(
+      path.join(tempDir, "locales/en/default.json")
+    )
+    expect(flattenObject(defaultLocale)).toMatchObject({
+      "noprefix.key": "noprefix.key"
+    })
+  })
+
+  it("prune with namespaced layout prunes per namespace file and preserves others [gap-1]", () => {
+    const files = {
+      "src/index.ts": `
+        t('common:greeting')
+        t('auth:login.title')
+      `,
+      "locales/en/common.json": JSON.stringify({
+        greeting: "Hello",
+        farewell: "Goodbye"
+      }),
+      "locales/en/auth.json": JSON.stringify({
+        login: { title: "Login", subtitle: "Welcome back" }
+      })
+    }
+    createMockProject(tempDir, files)
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      localesLayout: "namespaced" as const,
+      prune: { force: true }
+    }
+
+    const result = prune(config, tempDir)
+    expect(result.written).toBe(true)
+
+    // common.json: farewell should be pruned, greeting kept
+    const commonLocale = readLocaleFile(
+      path.join(tempDir, "locales/en/common.json")
+    )
+    expect(flattenObject(commonLocale)).toEqual({ greeting: "Hello" })
+    expect(flattenObject(commonLocale)).not.toHaveProperty("farewell")
+
+    // auth.json: login.title kept, login.subtitle pruned
+    const authLocale = readLocaleFile(
+      path.join(tempDir, "locales/en/auth.json")
+    )
+    expect(flattenObject(authLocale)).toEqual({ "login.title": "Login" })
+    expect(flattenObject(authLocale)).not.toHaveProperty("login.subtitle")
+
+    // perLocale entries reference namespace files
+    const fileNames = result.perLocale.map((e) => path.basename(e.file))
+    expect(fileNames).toContain("common.json")
+    expect(fileNames).toContain("auth.json")
+  })
 })
