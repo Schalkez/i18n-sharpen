@@ -217,7 +217,7 @@ ${unusedPlaceholderKeys
 // Pipe character (`|`) inside cells still breaks Markdown tables → replace with `\|`.
 const wrapCode = (s: string): string => {
   const safe = s.replace(/\|/g, "\\|")
-  return safe.includes("`") ? `\`\` ${safe} \`\` ` : `\`${safe}\``
+  return safe.includes("`") ? `\`\` ${safe} \`\`` : `\`${safe}\``
 }
 
 /**

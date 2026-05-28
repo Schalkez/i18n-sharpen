@@ -34,13 +34,21 @@ describe("offsetToLine", () => {
 describe("offsetToLine property: matches naive split reference", () => {
   it("agrees with slow path for random strings + offsets", () => {
     fc.assert(
-      fc.property(fc.string({ maxLength: 200 }), fc.nat(), (s, rawOff) => {
-        if (s.length === 0) return // skip degenerate
-        const off = rawOff % s.length
-        const naive = s.slice(0, off + 1).split("\n").length
-        const fast = offsetToLine(computeLineOffsets(s), off)
-        expect(fast).toBe(naive)
-      })
+      fc.property(
+        fc.string({
+          unit: fc.constantFrom("a", "b", "c", "\n"),
+          maxLength: 200
+        }),
+        fc.nat(),
+        (s, rawOff) => {
+          if (s.length === 0) return // skip degenerate
+          const off = rawOff % s.length
+          const naive =
+            Array.from(s.slice(0, off)).filter((c) => c === "\n").length + 1
+          const fast = offsetToLine(computeLineOffsets(s), off)
+          expect(fast).toBe(naive)
+        }
+      )
     )
   })
 })
