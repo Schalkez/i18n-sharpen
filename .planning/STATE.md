@@ -1,12 +1,27 @@
+---
+gsd_state_version: 1.0
+milestone: v0.3.0
+milestone_name: milestone
+status: executing
+last_updated: "2026-05-28T16:09:44.102Z"
+last_activity: 2026-05-28 -- Phase 1 planning complete
+progress:
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 0
+  percent: 0
+---
+
 # STATE — i18n-sharpen
 
 ## Current Position
 
 Phase: 1 — Auto-Sorting Keys + Namespace Hardening (in discussion)
 Plan: —
-Status: Discussing Phase 1 — identifying gray areas
+Status: Ready to execute
 Phase numbering: Reset to 1 for v0.3.0
-Last activity: 2026-05-28 — Phase 1 scout found NSWRITE-01/02 already shipped; merged Phase 1 (NSWRITE) into Phase 2 (SORT). 5 phases total now.
+Last activity: 2026-05-28 -- Phase 1 planning complete
 
 ## Project Reference
 
