@@ -20,7 +20,7 @@ progress:
 Milestone: v0.4.0 — AST Parser Rewrite
 Phase: none yet (planning)
 Status: v0.3.0 archived; defining v0.4.0 requirements + roadmap
-Last activity: 2026-05-31 -- Completed/archived v0.3.0 milestone. Next: `/gsd-new-milestone` to define v0.4.0 from AST_PARSER_PLAN.md.
+Last activity: 2026-05-31 -- Completed/archived v0.3.0 milestone. Next: `/gsd-new-milestone` to define v0.4.0 from .planning/v0.4.0-SEED-PLAN.md.
 
 ## Project Reference
 
@@ -39,7 +39,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-30)
 ## Accumulated Context
 
 - **v0.3.0 shipped & archived** — sorting, namespace hardening, dynamic-key warnings, interactive prune TUI, hardcoded-string detection, `I18nCopConfig` removed. Full archive in `milestones/v0.3.0-*`.
-- **v0.4.0 seed plan:** `AST_PARSER_PLAN.md` (repo root). Author's intent: AST parsers per framework, strict fail-fast, delete the old regex scanner.
+- **v0.4.0 seed plan:** `.planning/v0.4.0-SEED-PLAN.md` (moved from repo root, now tracked). Author's intent: AST parsers per framework, strict fail-fast, delete the old regex scanner.
 - **Open review notes on the seed plan (raised before planning, to resolve during discuss/plan):**
   1. "Strict fail-fast / throw on any syntax error" is wrong for a *scanner* — separate "compiler missing" (throw once, actionable) from "one file has a syntax error" (collect-and-continue; don't abort the whole CI run). The plan also self-contradicts with `errorRecovery: true`.
   2. Don't *delete* `dynamic.test.ts` / `hardcoded.test.ts` / `scanner.test.ts` — *port* their input→output behavioral cases onto the new parser; only drop regex-internal tests.

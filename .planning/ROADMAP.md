@@ -22,7 +22,7 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 
 ### 🚧 v0.4.0 — AST Parser Rewrite (Planning)
 
-Phases TBD — defined via `/gsd-new-milestone`. Seed plan: `AST_PARSER_PLAN.md` (repo root).
+Phases TBD — defined via `/gsd-new-milestone`. Seed plan: [v0.4.0-SEED-PLAN.md](v0.4.0-SEED-PLAN.md).
 
 ## Progress
 

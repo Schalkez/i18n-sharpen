@@ -12,7 +12,7 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 
 **Shipped:** v0.3.0 — Developer Experience (2026-05-30). 5 phases, 13 plans, tag `v0.3.0`. See `MILESTONES.md` + `milestones/v0.3.0-ROADMAP.md`.
 
-**Next milestone (planning): v0.4.0 — AST Parser Rewrite.** Replace the regex/state-machine scanner with real per-framework AST parsers (`@babel/parser` for JS/TS/JSX; dynamically-loaded Vue/Svelte/Astro compilers) for ~100% extraction accuracy. Seed plan: `AST_PARSER_PLAN.md` (repo root). Scope/requirements to be defined via `/gsd-new-milestone`.
+**Next milestone (planning): v0.4.0 — AST Parser Rewrite.** Replace the regex/state-machine scanner with real per-framework AST parsers (`@babel/parser` for JS/TS/JSX; dynamically-loaded Vue/Svelte/Astro compilers) for ~100% extraction accuracy. Seed plan: `.planning/v0.4.0-SEED-PLAN.md`. Scope/requirements to be defined via `/gsd-new-milestone`.
 
 > **Note:** v0.4.0 deliberately revisits two long-standing constraints below — the "regex-only scanner" engine choice and the "no heavy AST deps" rule. Those decisions were correct for v0.2–v0.3 but the accumulating edge-case patches in `hardcoded.ts` (e.g. `<Foo.Bar>` tags, JSX-in-expression boundaries) now justify the trade-off. The constraint revision is part of the v0.4.0 discussion.
 
@@ -42,7 +42,7 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 
 ### Active
 
-<!-- v0.4.0 requirements defined via /gsd-new-milestone. Seed: AST_PARSER_PLAN.md -->
+<!-- v0.4.0 requirements defined via /gsd-new-milestone. Seed: .planning/v0.4.0-SEED-PLAN.md -->
 
 Planning v0.4.0 (AST Parser Rewrite) — fresh `REQUIREMENTS.md` created via `/gsd-new-milestone`.
 
