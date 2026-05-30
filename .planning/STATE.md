@@ -4,31 +4,31 @@ milestone: v0.3.0
 milestone_name: milestone
 status: executing
 last_updated: "2026-05-30T14:30:00.000Z"
-last_activity: 2026-05-30 -- Phase 3 (Interactive Pruning) complete — 166 tests green
+last_activity: 2026-05-30 -- Phase 4 (Hardcoded String Detection) complete — 181 tests green
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
-  percent: 60
+  completed_phases: 4
+  total_plans: 12
+  completed_plans: 12
+  percent: 80
 ---
 
 # STATE — i18n-sharpen
 
 ## Current Position
 
-Phase: 4
-Plan: 01
-Status: Executing Plan 01 (Parser and Types)
+Phase: 5
+Plan: Discuss
+Status: Phase 5 (Deprecation Cleanup) discussion starting
 Phase numbering: Reset to 1 for v0.3.0
-Last activity: 2026-05-30 -- Phase 3 complete; Phase 4 plan approved and execution started
+Last activity: 2026-05-30 -- Phase 4 complete; all HSTR requirements shipped and 181 tests green.
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-05-28)
 
 **Core value:** Keep translation files sharp, tidy, and synchronized — without losing data.
-**Current focus:** v0.3.0 Developer Experience — Phases 1-3 shipped; next Phase 4 (Hardcoded String Detection)
+**Current focus:** v0.3.0 Developer Experience — Phases 1-4 shipped; next Phase 5 (Deprecation Cleanup)
 
 ## Roadmap Summary
 
@@ -37,8 +37,8 @@ See: `.planning/PROJECT.md` (updated 2026-05-28)
 | 1 | Auto-Sorting Keys + Namespace Hardening | Complete |
 | 2 | Dynamic Key Warnings | Complete |
 | 3 | Interactive Pruning | Complete |
-| 4 | Hardcoded String Detection | In progress |
-| 5 | Deprecation Cleanup | Not started |
+| 4 | Hardcoded String Detection | Complete |
+| 5 | Deprecation Cleanup | Discuss |
 
 ## Accumulated Context
 
