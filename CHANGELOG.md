@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - Unreleased
 
+### Added
+- **Interactive Pruning (`prune --interactive`)**: Introduce an interactive TUI picker (built with raw ANSI escape sequences and no third-party dependencies) to selectively prune unused translation keys.
+  - Full keyboard control: `↑`/`↓` for fine navigation, `PageUp`/`PageDown` to jump cursor by page, `Space` to toggle key selection, `a` to check all, `n` to uncheck all, `i` to invert checks, `Enter` to confirm, and `Esc`/`Ctrl+C` to cancel (exiting with code `130` and making no modifications).
+  - Safety-first write gate: Selection is confirmed via `Enter`, but changes are only written to disk if `--force` is provided. If run without `--force`, prints a preview of selected keys and exits.
+  - Environment-friendly: Respects `NO_EMOJI` by falling back to clean ASCII indicators dynamically at render time.
+  - Non-TTY fallback: Gracefully falls back to standard dry-run preview in non-TTY environments with a warning. If `--force` is passed in a non-TTY environment, it is ignored to prevent accidental bulk-pruning.
+  - Short-circuit: Skips the TUI entirely if there are no unused keys to prune, completing instantly.
+  - Composes with `--clean-empty`: Cleans up empty namespace files in `namespaced` layout after the TUI prune is written.
+
 ### Changed (notable behavior change)
+- **prune**: The programmatic API `prune()` is now asynchronous and returns `Promise<PruneResult>` instead of a synchronous `PruneResult` to accommodate TUI interactive choices.
 - **validate**: dynamic-key warnings are now emitted as a single grouped summary at the end of the run (sections "Fully-dynamic keys" and "Structured-concat keys") instead of one `log.warn` per call site. Structured-concat keys surface their leading static prefix (e.g. `error.`) and every finding includes a `file:line` location. Configure suppression via `ignoreDynamicKeys: ["error.*", "*"]`. Exit code is unchanged — dynamic findings never cause `validate` to fail. (Phase 2 / D-13)
 
 ## [0.2.3] - 2026-05-28

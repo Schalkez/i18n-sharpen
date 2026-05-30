@@ -106,6 +106,11 @@ This phase ships a new `--interactive` flag on the existing `prune` command. In 
     - `--interactive --clean-empty --force` in namespaced layout: empty ns files deleted post-write, matching Phase 1 D-09 behavior.
   - **Property test (fast-check)**: for any sequence of `[arrow-down, space, arrow-up, space, ...]` keystrokes, the final selection set equals the set of indices that had an odd number of Space toggles. Idempotency: `confirm-then-replay-selection == confirm-with-same-selection`.
 
+### Resize & Input Robustness (added 2026-05-30 during planning)
+
+- **D-19: Row truncation + live resize handling.** Every rendered row is truncated to `(stdout.columns ?? 80) - 2` columns so a row NEVER wraps — this is the root-cause fix that keeps the in-place `\x1b[<n>A` redraw math correct (a wrapped row would occupy 2 physical lines and desync the cursor-up count). Terminal width/height are read FRESH each frame (never cached), so `PageUp`/`PageDown` page size also tracks the current height. A `stdout.on("resize")` listener re-renders in place at the new width immediately; it is registered on enter and removed in `cleanup()` on every exit path (same leak-prevention as the SIGINT handler). Still no `\x1b[2J` clear-screen — scrollback is preserved per D-08.
+- **D-20: Esc disambiguation via injectable `escDelay` timer.** A bare `\x1b` (Esc) and the start of an arrow/PageX sequence (`\x1b[...`) share the same first byte. Disambiguate with a timer-based "escape delay" (`escDelay`, default 50ms) — NOT `setImmediate`, whose ordering versus stream `data` events is unspecified and splits unreliably on slow links/SSH where `\x1b` and `[A` arrive in two separate reads. On a lone `\x1b`, start `setTimeout(commitAsEsc, escDelay)`; a continuation byte arriving first `clearTimeout`s and parses the full sequence. `escDelay` is injectable via `InteractivePruneOptions.escDelay` for deterministic tests. Ctrl+C (`0x03`) is unambiguous and bypasses the delay. This is the standard approach used by readline/ink/blessed.
+
 ### Claude's Discretion
 
 The user accepted every recommended default (consistent with the Phase 1 / Phase 2 pattern: "best practice tùy bạn quyết"). Remaining technical choices delegated to planner/researcher:

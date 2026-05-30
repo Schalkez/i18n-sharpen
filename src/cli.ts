@@ -177,7 +177,6 @@ program
         if (cmdOpts.cleanEmpty === true) {
           config.prune = { ...(config.prune ?? {}), cleanEmpty: true }
         }
-        // eslint-disable-next-line @typescript-eslint/await-thenable
         await prune(config, cwd, {
           force: cmdOpts.force === true,
           dryRun: cmdOpts.dryRun === true,

@@ -65,7 +65,10 @@
   3. Pressing Esc or Ctrl+C exits the TUI with no file changes and returns exit code 130.
   4. With `--force` passed alongside `--interactive`, confirmed selections are written to disk; without `--force`, the run stays in dry-run preview even after confirmation.
   5. Running `prune --interactive` in a non-TTY environment (piped input, CI) skips the TUI, prints a warning, and falls back to standard dry-run behavior.
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 03-01-PLAN-cli-flag-and-types.md — PruneOptions.interactive surface + CLI --interactive flag wiring (IPRUNE-01 surface)
+- [ ] 03-02-PLAN-tui-renderer.md — hand-rolled raw-mode TUI runInteractivePrune + unit tests + property test (IPRUNE-02, IPRUNE-03, IPRUNE-04)
+- [ ] 03-03-PLAN-integration-and-fallback.md — integration into prune.ts with TTY detection, non-TTY fallback (D-14/D-15), summary preamble, CHANGELOG, 6 integration tests (IPRUNE-01, IPRUNE-05, IPRUNE-06)
 **UI hint**: yes
 
 ### Phase 4: Hardcoded String Detection

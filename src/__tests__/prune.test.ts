@@ -1,4 +1,5 @@
 import * as fs from "fs"
+import { PassThrough } from "node:stream"
 import * as path from "path"
 import {
   describe,
@@ -9,8 +10,17 @@ import {
   vi,
   type MockInstance
 } from "vitest"
-import { prune } from "@/commands/prune"
+import { prune, __setInteractiveIOForTests } from "@/commands/prune"
 import { readLocaleFile, flattenObject } from "@/core/locale-io"
+
+/* eslint-disable no-control-regex */
+function stripAnsi(s: string) {
+  return s.replace(
+    /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+    ""
+  )
+}
+/* eslint-enable no-control-regex */
 
 describe("prune: integration", () => {
   let tempDir: string
@@ -58,7 +68,7 @@ describe("prune: integration", () => {
     }
   })
 
-  it("prune is dry-run by default and does not modify files", () => {
+  it("prune is dry-run by default and does not modify files", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `t('used.key')`,
       "locales/en.json": JSON.stringify({
@@ -80,7 +90,7 @@ describe("prune: integration", () => {
       path.join(tempDir, "locales/en.json"),
       "utf8"
     )
-    const result = prune(config, tempDir)
+    const result = await prune(config, tempDir)
     expect(result.dryRun).toBe(true)
     expect(result.written).toBe(false)
     expect(result.totalPruned).toBe(1)
@@ -89,7 +99,7 @@ describe("prune: integration", () => {
     expect(after).toBe(before)
   })
 
-  it("prune writes when config.prune.force is true", () => {
+  it("prune writes when config.prune.force is true", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `t('used.key')`,
       "locales/en.json": JSON.stringify({
@@ -108,14 +118,14 @@ describe("prune: integration", () => {
       prune: { force: true }
     }
 
-    const result = prune(config, tempDir)
+    const result = await prune(config, tempDir)
     expect(result.dryRun).toBe(false)
     expect(result.written).toBe(true)
     const pruned = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(pruned)).toEqual({ "used.key": "Used" })
   })
 
-  it("prune options.dryRun overrides config.prune.force", () => {
+  it("prune options.dryRun overrides config.prune.force", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `t('used.key')`,
       "locales/en.json": JSON.stringify({
@@ -138,14 +148,14 @@ describe("prune: integration", () => {
       path.join(tempDir, "locales/en.json"),
       "utf8"
     )
-    const result = prune(config, tempDir, { dryRun: true })
+    const result = await prune(config, tempDir, { dryRun: true })
     expect(result.dryRun).toBe(true)
     expect(result.written).toBe(false)
     const after = fs.readFileSync(path.join(tempDir, "locales/en.json"), "utf8")
     expect(after).toBe(before)
   })
 
-  it("should ignore keys ending with a dot in prune", () => {
+  it("should ignore keys ending with a dot in prune", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `t('normal.key')`,
       "locales/en.json": JSON.stringify({
@@ -164,14 +174,14 @@ describe("prune: integration", () => {
       matchFunctions: ["t"]
     }
 
-    prune(config, tempDir, { force: true })
+    await prune(config, tempDir, { force: true })
     const prunedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(prunedLocale)).toEqual({
       "normal.key": "Normal Key"
     })
   })
 
-  it("should support wildcard bypass using ignoreKeys to prevent pruning", () => {
+  it("should support wildcard bypass using ignoreKeys to prevent pruning", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `t('normal.key')`,
       "locales/en.json": JSON.stringify({
@@ -192,7 +202,7 @@ describe("prune: integration", () => {
       ignoreKeys: ["status.*"]
     }
 
-    prune(config, tempDir, { force: true })
+    await prune(config, tempDir, { force: true })
     const prunedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(prunedLocale)).toEqual({
       "normal.key": "Normal Key",
@@ -201,7 +211,7 @@ describe("prune: integration", () => {
     })
   })
 
-  it("should handle plural suffix alignment in prune", () => {
+  it("should handle plural suffix alignment in prune", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `t('count')`,
       "locales/en.json": JSON.stringify({
@@ -221,7 +231,7 @@ describe("prune: integration", () => {
       pluralSuffixes: ["_one", "_other"]
     }
 
-    prune(config, tempDir, { force: true })
+    await prune(config, tempDir, { force: true })
     const prunedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(prunedLocale)).toEqual({
       count_one: "One item",
@@ -229,7 +239,7 @@ describe("prune: integration", () => {
     })
   })
 
-  it("prune with namespaced layout prunes per namespace file [gap-1]", () => {
+  it("prune with namespaced layout prunes per namespace file [gap-1]", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('common:greeting')
@@ -255,7 +265,7 @@ describe("prune: integration", () => {
       prune: { force: true }
     }
 
-    const result = prune(config, tempDir)
+    const result = await prune(config, tempDir)
     expect(result.written).toBe(true)
 
     const commonLocale = readLocaleFile(
@@ -275,7 +285,7 @@ describe("prune: integration", () => {
     expect(fileNames).toContain("auth.json")
   })
 
-  it("deletes empty namespace file when cleanEmpty is true and force is true (namespaced)", () => {
+  it("deletes empty namespace file when cleanEmpty is true and force is true (namespaced)", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('common:greeting')
@@ -299,7 +309,7 @@ describe("prune: integration", () => {
       prune: { force: true, cleanEmpty: true }
     }
 
-    const result = prune(config, tempDir)
+    const result = await prune(config, tempDir)
     expect(result.written).toBe(true)
 
     expect(fs.existsSync(path.join(tempDir, "locales/en/common.json"))).toBe(
@@ -310,7 +320,7 @@ describe("prune: integration", () => {
     )
   })
 
-  it("logs Would delete but does not physically delete empty namespace file when cleanEmpty is true and dryRun is true", () => {
+  it("logs Would delete but does not physically delete empty namespace file when cleanEmpty is true and dryRun is true", async () => {
     const authPath = path.join(tempDir, "locales/en/auth.json")
     createMockProject(tempDir, {
       "src/index.ts": `
@@ -335,7 +345,7 @@ describe("prune: integration", () => {
       prune: { force: false, cleanEmpty: true }
     }
 
-    const result = prune(config, tempDir)
+    const result = await prune(config, tempDir)
     expect(result.written).toBe(false)
     expect(fs.existsSync(authPath)).toBe(true)
 
@@ -348,7 +358,7 @@ describe("prune: integration", () => {
     expect(hasDeleteLog).toBe(true)
   })
 
-  it("keeps empty namespace file with empty object when cleanEmpty is false", () => {
+  it("keeps empty namespace file with empty object when cleanEmpty is false", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('common:greeting')
@@ -372,7 +382,7 @@ describe("prune: integration", () => {
       prune: { force: true, cleanEmpty: false }
     }
 
-    const result = prune(config, tempDir)
+    const result = await prune(config, tempDir)
     expect(result.written).toBe(true)
 
     const authFile = path.join(tempDir, "locales/en/auth.json")
@@ -381,7 +391,7 @@ describe("prune: integration", () => {
     expect(content).toEqual({})
   })
 
-  it("never deletes main lang file in flat layout even when cleanEmpty is true", () => {
+  it("never deletes main lang file in flat layout even when cleanEmpty is true", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         // no keys
@@ -401,7 +411,7 @@ describe("prune: integration", () => {
       prune: { force: true, cleanEmpty: true }
     }
 
-    const result = prune(config, tempDir)
+    const result = await prune(config, tempDir)
     expect(result.written).toBe(true)
 
     const flatFile = path.join(tempDir, "locales/en.json")
@@ -410,7 +420,7 @@ describe("prune: integration", () => {
     expect(content).toEqual({})
   })
 
-  it("sorts remaining keys alphabetically on disk when sortKeys is alpha in prune", () => {
+  it("sorts remaining keys alphabetically on disk when sortKeys is alpha in prune", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('z_key')
@@ -436,7 +446,7 @@ describe("prune: integration", () => {
       prune: { force: true }
     }
 
-    prune(config, tempDir)
+    await prune(config, tempDir)
 
     const rawFileContent = fs.readFileSync(
       path.join(tempDir, "locales/en.json"),
@@ -448,5 +458,348 @@ describe("prune: integration", () => {
     expect(idxA).toBeLessThan(idxM)
     expect(idxM).toBeLessThan(idxZ)
     expect(rawFileContent).not.toContain("stale_key")
+  })
+
+  describe("prune: interactive integration", () => {
+    function mockInteractiveIO() {
+      const stdin = new PassThrough() as PassThrough & {
+        isTTY: boolean
+        setRawMode: (b: boolean) => void
+      }
+      const stdout = new PassThrough() as PassThrough & {
+        isTTY: boolean
+        columns?: number
+        rows?: number
+      }
+      stdin.isTTY = true
+      stdout.isTTY = true
+      stdin.setRawMode = () => {
+        /* noop */
+      }
+      const exitCalls: number[] = []
+      const exit = (code: number) => {
+        exitCalls.push(code)
+      }
+      const captured: string[] = []
+      stdout.on("data", (c: Buffer) => captured.push(c.toString("utf8")))
+      return {
+        stdin,
+        stdout,
+        exit,
+        exitCalls,
+        getOutput: () => captured.join("")
+      }
+    }
+
+    it("interactive + force writes only TUI-selected (toDelete) keys", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `t('used.key')`,
+        "locales/en.json": JSON.stringify({
+          "used.key": "Used",
+          "stale.a": "A",
+          "stale.b": "B"
+        })
+      })
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"]
+      }
+
+      const io = mockInteractiveIO()
+      __setInteractiveIOForTests({
+        stdin: io.stdin,
+        stdout: io.stdout,
+        exit: io.exit
+      })
+
+      // Schedule keys: Space (check stale.a), Arrow Down, Space (check stale.b), Enter
+      setImmediate(() => {
+        io.stdin.write(" ") // check stale.a
+        setImmediate(() => {
+          io.stdin.write("\x1b[B") // down to stale.b
+          setImmediate(() => {
+            io.stdin.write(" ") // check stale.b
+            setImmediate(() => {
+              io.stdin.write("\r") // enter
+            })
+          })
+        })
+      })
+
+      const result = await prune(config, tempDir, {
+        interactive: true,
+        force: true
+      })
+      __setInteractiveIOForTests(undefined)
+
+      expect(result.written).toBe(true)
+      expect(result.totalPruned).toBe(2)
+      const after = readLocaleFile(path.join(tempDir, "locales/en.json"))
+      expect(flattenObject(after)).toEqual({ "used.key": "Used" })
+    })
+
+    it("interactive without --force prints preview and does not write", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `t('used.key')`,
+        "locales/en.json": JSON.stringify({
+          "used.key": "Used",
+          "stale.a": "A",
+          "stale.b": "B"
+        })
+      })
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"]
+      }
+
+      const io = mockInteractiveIO()
+      __setInteractiveIOForTests({
+        stdin: io.stdin,
+        stdout: io.stdout,
+        exit: io.exit
+      })
+
+      setImmediate(() => {
+        io.stdin.write(" ") // select stale.a
+        setImmediate(() => io.stdin.write("\r"))
+      })
+
+      const result = await prune(config, tempDir, { interactive: true })
+      __setInteractiveIOForTests(undefined)
+
+      expect(result.written).toBe(false)
+      expect(result.dryRun).toBe(true)
+      expect(result.totalPruned).toBe(1) // only one key would be pruned
+
+      const content = readLocaleFile(path.join(tempDir, "locales/en.json"))
+      expect(flattenObject(content)).toHaveProperty("stale.b") // not touched
+
+      const warnLog = stripAnsi(
+        logSpy.mock.calls.map((c) => String(c[0] ?? "")).join("\n")
+      )
+      expect(warnLog).toContain("Re-run with --interactive --force to apply.")
+
+      const infoLog = stripAnsi(
+        logSpy.mock.calls.map((c) => String(c[0] ?? "")).join("\n")
+      )
+      expect(infoLog).toContain(
+        "PRUNE PREVIEW (interactive — no files written)"
+      )
+      expect(infoLog).toContain(
+        "Interactive selection: kept 1 keys, removed 1 keys."
+      )
+    })
+
+    it("interactive --dry-run behaves identically to interactive alone", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `t('used.key')`,
+        "locales/en.json": JSON.stringify({
+          "used.key": "Used",
+          "stale.a": "A"
+        })
+      })
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"]
+      }
+
+      const io = mockInteractiveIO()
+      __setInteractiveIOForTests({
+        stdin: io.stdin,
+        stdout: io.stdout,
+        exit: io.exit
+      })
+
+      setImmediate(() => {
+        io.stdin.write(" ") // select stale.a
+        setImmediate(() => io.stdin.write("\r"))
+      })
+
+      const result = await prune(config, tempDir, {
+        interactive: true,
+        dryRun: true
+      })
+      __setInteractiveIOForTests(undefined)
+
+      expect(result.written).toBe(false)
+      expect(result.dryRun).toBe(true)
+      expect(result.totalPruned).toBe(1)
+    })
+
+    it("interactive with no unused keys short-circuits and skips TUI", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `t('used.key')`,
+        "locales/en.json": JSON.stringify({ "used.key": "Used" })
+      })
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"]
+      }
+
+      const io = mockInteractiveIO()
+      __setInteractiveIOForTests({
+        stdin: io.stdin,
+        stdout: io.stdout,
+        exit: io.exit
+      })
+
+      const result = await prune(config, tempDir, { interactive: true })
+      __setInteractiveIOForTests(undefined)
+
+      expect(result.totalPruned).toBe(0)
+      expect(io.getOutput()).toBe("") // TUI was never drawn
+    })
+
+    it("non-TTY + interactive falls back to dry-run preview of all keys", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `t('used.key')`,
+        "locales/en.json": JSON.stringify({
+          "used.key": "Used",
+          "stale.a": "A"
+        })
+      })
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"]
+      }
+
+      const originalIsTTY = process.stdin.isTTY
+      Object.defineProperty(process.stdin, "isTTY", {
+        value: false,
+        configurable: true
+      })
+
+      try {
+        const result = await prune(config, tempDir, { interactive: true })
+        expect(result.written).toBe(false)
+        expect(result.dryRun).toBe(true)
+        expect(result.totalPruned).toBe(1)
+
+        const warnLog = logSpy.mock.calls
+          .map((c) => String(c[0] ?? ""))
+          .join("\n")
+        expect(warnLog).toContain(
+          "--interactive requires a TTY; falling back to dry-run preview of all candidates."
+        )
+      } finally {
+        Object.defineProperty(process.stdin, "isTTY", {
+          value: originalIsTTY,
+          configurable: true
+        })
+      }
+    })
+
+    it("non-TTY + interactive + force refuses to write and warns", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `t('used.key')`,
+        "locales/en.json": JSON.stringify({
+          "used.key": "Used",
+          "stale.a": "A"
+        })
+      })
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"]
+      }
+
+      const originalIsTTY = process.stdin.isTTY
+      Object.defineProperty(process.stdin, "isTTY", {
+        value: false,
+        configurable: true
+      })
+
+      try {
+        const result = await prune(config, tempDir, {
+          interactive: true,
+          force: true
+        })
+        expect(result.written).toBe(false)
+        expect(result.dryRun).toBe(true)
+        expect(result.totalPruned).toBe(1)
+
+        const warnLog = logSpy.mock.calls
+          .map((c) => String(c[0] ?? ""))
+          .join("\n")
+        expect(warnLog).toContain(
+          "--interactive requires a TTY; --force ignored to avoid unintended bulk prune."
+        )
+        expect(warnLog).toContain(
+          "Falling back to dry-run preview of all candidates."
+        )
+      } finally {
+        Object.defineProperty(process.stdin, "isTTY", {
+          value: originalIsTTY,
+          configurable: true
+        })
+      }
+    })
+
+    it("interactive + cleanEmpty + force in namespaced layout deletes empty ns files", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `t('common:greeting')`,
+        "locales/en/common.json": JSON.stringify({ greeting: "Hello" }),
+        "locales/en/auth.json": JSON.stringify({ stale: "Stale Value" })
+      })
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"],
+        localesLayout: "namespaced" as const,
+        prune: { cleanEmpty: true }
+      }
+
+      const io = mockInteractiveIO()
+      __setInteractiveIOForTests({
+        stdin: io.stdin,
+        stdout: io.stdout,
+        exit: io.exit
+      })
+
+      setImmediate(() => {
+        io.stdin.write(" ") // select the unused auth:stale key
+        setImmediate(() => io.stdin.write("\r"))
+      })
+
+      const result = await prune(config, tempDir, {
+        interactive: true,
+        force: true
+      })
+      __setInteractiveIOForTests(undefined)
+
+      expect(result.written).toBe(true)
+      expect(fs.existsSync(path.join(tempDir, "locales/en/common.json"))).toBe(
+        true
+      )
+      expect(fs.existsSync(path.join(tempDir, "locales/en/auth.json"))).toBe(
+        false
+      ) // deleted empty ns
+    })
   })
 })

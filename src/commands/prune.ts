@@ -5,7 +5,25 @@ import { I18nSharpenError } from "@/core/errors"
 import { scanSourceFiles, detectUsedKeys } from "@/core/scanner"
 import type { I18nSharpenConfig, PruneOptions, PruneResult } from "@/types"
 import { log } from "@/utils"
-import { pruneFlat, pruneNamespaced } from "./prune/plans"
+import {
+  runInteractivePrune,
+  InteractiveCancelledError,
+  type InteractivePruneOptions
+} from "./prune/interactive"
+import {
+  pruneFlat,
+  pruneNamespaced,
+  collectFlatCandidates,
+  collectNamespacedCandidates
+} from "./prune/plans"
+
+/** @internal — tests inject a fake stdin/stdout for the interactive branch. */
+let _interactiveIOOverride: InteractivePruneOptions | undefined
+export function __setInteractiveIOForTests(
+  opts: InteractivePruneOptions | undefined
+): void {
+  _interactiveIOOverride = opts
+}
 
 /**
  * Prune unused keys from locale files.
@@ -14,17 +32,17 @@ import { pruneFlat, pruneNamespaced } from "./prune/plans"
  * config.prune.force, options.force, or --force CLI flag.
  * options.dryRun always wins over force.
  */
-export function prune(
+export async function prune(
   config: I18nSharpenConfig,
   cwd: string = process.cwd(),
   options: PruneOptions = {}
-): PruneResult {
+): Promise<PruneResult> {
   log.header("I18N-SHARPEN PRUNER")
 
   const configForce = config.prune?.force === true
   const optForce = options.force === true
   const optDryRun = options.dryRun === true
-  const dryRun = optDryRun ? true : !(optForce || configForce)
+  let dryRun = optDryRun ? true : !(optForce || configForce)
 
   const localesDirAbs = path.resolve(cwd, config.localesDir)
 
@@ -50,14 +68,122 @@ export function prune(
     `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
   )
 
-  if (config.localesLayout === "namespaced") {
+  const wantInteractive = options.interactive === true
+
+  // ───── Non-interactive path (Phases 1-2 behavior, untouched) ─────
+  if (!wantInteractive) {
+    if (config.localesLayout === "namespaced") {
+      return pruneNamespaced(
+        config,
+        localesDirAbs,
+        usedKeys,
+        fileContents,
+        dryRun
+      )
+    }
+    return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+  }
+
+  // ───── Interactive path (Phase 3 D-13..D-17) ─────
+  const isTTY =
+    _interactiveIOOverride !== undefined ||
+    (process.stdin.isTTY && process.stdout.isTTY) // D-13: BOTH sides
+
+  // D-14 / D-15: non-TTY fallback
+  if (!isTTY) {
+    if (optForce || configForce) {
+      // D-15 verbatim two-line warning — the safety-critical gate
+      log.warn(
+        "--interactive requires a TTY; --force ignored to avoid unintended bulk prune.\nFalling back to dry-run preview of all candidates."
+      )
+    } else {
+      // D-14 verbatim single-line warning
+      log.warn(
+        "--interactive requires a TTY; falling back to dry-run preview of all candidates."
+      )
+    }
+    // Force dry-run regardless of force/configForce (D-15 safety override)
+    dryRun = true
+    if (config.localesLayout === "namespaced") {
+      return pruneNamespaced(
+        config,
+        localesDirAbs,
+        usedKeys,
+        fileContents,
+        dryRun
+      )
+    }
+    return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+  }
+
+  // TTY path: compute candidates and decide short-circuit (D-16) or launch TUI
+  const isNamespaced = config.localesLayout === "namespaced"
+  const candidates = isNamespaced
+    ? collectNamespacedCandidates(config, localesDirAbs, usedKeys, fileContents)
+    : collectFlatCandidates(config, localesDirAbs, usedKeys, fileContents)
+
+  if (candidates.length === 0) {
+    // D-16: skip TUI entirely — defer to the existing pipeline which logs
+    // the standard "✨ No unused keys" message.
+    if (isNamespaced) {
+      return pruneNamespaced(
+        config,
+        localesDirAbs,
+        usedKeys,
+        fileContents,
+        dryRun
+      )
+    }
+    return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+  }
+
+  // Launch the TUI
+  let tuiResult
+  try {
+    tuiResult = await runInteractivePrune(candidates, _interactiveIOOverride)
+  } catch (e) {
+    if (e instanceof InteractiveCancelledError) {
+      // D-17: SIGINT cancel path. Set process.exitCode = 130 defensively.
+      process.exitCode = 130
+      return { written: false, dryRun: true, perLocale: [], totalPruned: 0 }
+    }
+    throw e
+  }
+
+  if (tuiResult.cancelled) {
+    // Esc path — IPRUNE-04: process.exitCode = 130, no writes
+    process.exitCode = 130
+    return { written: false, dryRun: true, perLocale: [], totalPruned: 0 }
+  }
+
+  // D-05: checked rows = toDelete. Kept = candidates − toDelete.
+  const kept = candidates.filter((c) => !tuiResult.toDelete.has(c))
+  const removedCount = tuiResult.toDelete.size
+
+  // Augment usedKeys with kept candidates to preserve them in locale files.
+  const augmentedUsedKeys = new Set(usedKeys)
+  for (const candidate of kept) {
+    augmentedUsedKeys.add(candidate)
+  }
+
+  const interactiveSummary = { kept: kept.length, removed: removedCount }
+
+  if (isNamespaced) {
     return pruneNamespaced(
       config,
       localesDirAbs,
-      usedKeys,
+      augmentedUsedKeys,
       fileContents,
-      dryRun
+      dryRun,
+      interactiveSummary
     )
   }
-  return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+  return pruneFlat(
+    config,
+    localesDirAbs,
+    augmentedUsedKeys,
+    fileContents,
+    dryRun,
+    interactiveSummary
+  )
 }

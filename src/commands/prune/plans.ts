@@ -32,17 +32,27 @@ interface WritePlan {
 export function executePrunePlans(
   writePlans: WritePlan[],
   perLocale: PruneResult["perLocale"],
-  dryRun: boolean
+  dryRun: boolean,
+  interactiveSummary?: { kept: number; removed: number }
 ): PruneResult {
   let totalPrunedCount = 0
   let written = false
 
   if (dryRun) {
-    log.header(
-      writePlans.length === 0
-        ? "PRUNE PREVIEW (no changes)"
-        : "PRUNE PREVIEW (dry-run — no files written)"
-    )
+    if (interactiveSummary) {
+      log.header("PRUNE PREVIEW (interactive — no files written)")
+    } else {
+      log.header(
+        writePlans.length === 0
+          ? "PRUNE PREVIEW (no changes)"
+          : "PRUNE PREVIEW (dry-run — no files written)"
+      )
+    }
+    if (interactiveSummary) {
+      log.info(
+        `Interactive selection: kept ${pc.green(interactiveSummary.kept)} keys, removed ${pc.yellow(interactiveSummary.removed)} keys.`
+      )
+    }
   }
 
   // Phase 1: log what will be (or would be) pruned
@@ -77,13 +87,21 @@ export function executePrunePlans(
 
   if (dryRun) {
     if (totalPrunedCount > 0) {
+      const reRunHint = interactiveSummary
+        ? "Re-run with --interactive --force to apply."
+        : "Re-run with --force (or set prune.force: true in config) to apply."
       log.warn(
-        `Dry-run: ${totalPrunedCount} key${totalPrunedCount === 1 ? "" : "s"} would be removed. Re-run with --force (or set prune.force: true in config) to apply.\n`
+        `Dry-run: ${totalPrunedCount} key${totalPrunedCount === 1 ? "" : "s"} would be removed. ${reRunHint}\n`
       )
     } else {
       log.success("Dry-run: no unused keys found to prune.\n")
     }
   } else if (totalPrunedCount > 0) {
+    if (interactiveSummary) {
+      log.info(
+        `Interactive selection: kept ${pc.green(interactiveSummary.kept)} keys, removed ${pc.yellow(interactiveSummary.removed)} keys.`
+      )
+    }
     log.success(
       `Files have been successfully cleaned! Total pruned: ${totalPrunedCount} keys.\n`
     )
@@ -153,7 +171,8 @@ export function pruneFlat(
   localesDirAbs: string,
   usedKeys: Set<string>,
   fileContents: string[],
-  dryRun: boolean
+  dryRun: boolean,
+  interactiveSummary?: { kept: number; removed: number }
 ): PruneResult {
   const allLocaleKeys = new Set<string>()
   const localesFlat: Record<string, Record<string, string>> = {}
@@ -247,7 +266,7 @@ export function pruneFlat(
     perLocale.push({ lang, file: langPath, prunedKeys })
   }
 
-  return executePrunePlans(writePlans, perLocale, dryRun)
+  return executePrunePlans(writePlans, perLocale, dryRun, interactiveSummary)
 }
 
 /**
@@ -259,7 +278,8 @@ export function pruneNamespaced(
   localesDirAbs: string,
   usedKeys: Set<string>,
   fileContents: string[],
-  dryRun: boolean
+  dryRun: boolean,
+  interactiveSummary?: { kept: number; removed: number }
 ): PruneResult {
   const suffixes = config.pluralSuffixes ?? []
 
@@ -395,7 +415,12 @@ export function pruneNamespaced(
     displayName: `${p.lang}/${p.ns}.json`
   }))
 
-  const result = executePrunePlans(flatPlans, perLocale, dryRun)
+  const result = executePrunePlans(
+    flatPlans,
+    perLocale,
+    dryRun,
+    interactiveSummary
+  )
 
   if (config.prune?.cleanEmpty === true) {
     const emptyPlans = flatPlans.filter(
@@ -405,4 +430,144 @@ export function pruneNamespaced(
   }
 
   return result
+}
+
+/**
+ * Phase 3 D-13/D-16 helper: compute the flat list of candidate unused keys
+ * (in the flat layout) that the interactive TUI will display. Mirrors the
+ * key-collection logic in `pruneFlat` but stops before the
+ * write-plan stage — returns just the candidate key strings.
+ *
+ * Returns an empty array when no candidates exist (D-16 short-circuit).
+ */
+export function collectFlatCandidates(
+  config: I18nSharpenConfig,
+  localesDirAbs: string,
+  usedKeys: Set<string>,
+  fileContents: string[]
+): string[] {
+  const allLocaleKeys = new Set<string>()
+  const localesFlat: Record<string, Record<string, string>> = {}
+  const localeFilePaths: Record<string, string> = {}
+
+  for (const lang of config.supportedLanguages) {
+    const langPath = findLocaleFile(localesDirAbs, lang)
+    if (langPath) {
+      localeFilePaths[lang] = langPath
+      try {
+        const parsed = readLocaleFile(langPath)
+        localesFlat[lang] = flattenObject(parsed)
+        Object.keys(localesFlat[lang]).forEach((key) => allLocaleKeys.add(key))
+      } catch (error) {
+        throw new I18nSharpenError({
+          kind: "parse",
+          message: `Failed to parse locale file '${path.basename(langPath)}': ${(error as Error).message}`,
+          path: langPath
+        })
+      }
+    }
+  }
+
+  // Clone usedKeys to avoid mutating caller's set in this read-only phase
+  const localUsed = new Set(usedKeys)
+
+  // Opt-in loose match
+  if (config.looseKeyMatch) {
+    for (const key of allLocaleKeys) {
+      if (localUsed.has(key)) continue
+      const dq = `"${key}"`,
+        sq = `'${key}'`,
+        bq = `\`${key}\``
+      for (const cleanContent of fileContents) {
+        if (
+          cleanContent.includes(dq) ||
+          cleanContent.includes(sq) ||
+          cleanContent.includes(bq)
+        ) {
+          localUsed.add(key)
+          break
+        }
+      }
+    }
+  }
+
+  const suffixes = config.pluralSuffixes ?? []
+  const isUsed = (key: string): boolean =>
+    isKeyUsed(key, localUsed, config.ignoreKeys, suffixes)
+
+  const unusedSet = new Set<string>()
+  for (const lang of config.supportedLanguages) {
+    const langPath = localeFilePaths[lang]
+    if (!langPath) continue
+    const flatJson = localesFlat[lang]
+    for (const key in flatJson) {
+      if (!isUsed(key)) {
+        unusedSet.add(key)
+      }
+    }
+  }
+
+  return Array.from(unusedSet).sort()
+}
+
+/**
+ * Phase 3 D-13/D-16 helper for namespaced layout. Returns candidates as
+ * `ns:key.path` strings — the same form the user sees in source code
+ * (matches D-07: "Namespaced layout: [ ] auth:login.title").
+ */
+export function collectNamespacedCandidates(
+  config: I18nSharpenConfig,
+  localesDirAbs: string,
+  usedKeys: Set<string>,
+  fileContents: string[]
+): string[] {
+  const { localesFlat } = loadNamespacedLocales(
+    localesDirAbs,
+    config.supportedLanguages
+  )
+
+  const allLocaleKeys = new Set<string>()
+  for (const lang of config.supportedLanguages) {
+    for (const key of Object.keys(localesFlat[lang] ?? {})) {
+      allLocaleKeys.add(key)
+    }
+  }
+
+  // Clone usedKeys to avoid mutation
+  const localUsed = new Set(usedKeys)
+
+  if (config.looseKeyMatch) {
+    for (const key of allLocaleKeys) {
+      if (localUsed.has(key)) continue
+      const dq = `"${key}"`,
+        sq = `'${key}'`,
+        bq = `\`${key}\``
+      for (const cleanContent of fileContents) {
+        if (
+          cleanContent.includes(dq) ||
+          cleanContent.includes(sq) ||
+          cleanContent.includes(bq)
+        ) {
+          localUsed.add(key)
+          break
+        }
+      }
+    }
+  }
+
+  const suffixes = config.pluralSuffixes ?? []
+  const isUsed = (namespacedKey: string): boolean =>
+    isKeyUsed(namespacedKey, localUsed, config.ignoreKeys, suffixes)
+
+  const unusedSet = new Set<string>()
+  for (const lang of config.supportedLanguages) {
+    const langFlat = localesFlat[lang] ?? {}
+    for (const namespacedKey in langFlat) {
+      if (!isUsed(namespacedKey)) {
+        unusedSet.add(namespacedKey)
+      }
+    }
+  }
+
+  return Array.from(unusedSet).sort()
 }
