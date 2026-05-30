@@ -85,6 +85,12 @@ export interface I18nSharpenConfig {
      */
     cleanEmpty?: boolean
   }
+  /**
+   * Hardcoded string detection options.
+   */
+  hardcoded?: {
+    ignore?: string[]
+  }
 }
 
 /**
@@ -174,6 +180,13 @@ export interface ValidationResults {
     fullyDynamic: DynamicKeyFinding[]
     structuredConcat: StructuredConcatFinding[]
   }
+  hardcodedStrings?: HardcodedFinding[]
+}
+
+export interface HardcodedFinding {
+  file: string
+  line: number
+  text: string
 }
 
 /**

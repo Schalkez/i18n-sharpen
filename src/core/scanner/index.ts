@@ -7,6 +7,7 @@ export * from "./regex"
 export * from "./text"
 export * from "./dynamic"
 export * from "./lines"
+export * from "./hardcoded"
 
 /**
  * Read every file in `files`, strip comments, then run the function/attr
