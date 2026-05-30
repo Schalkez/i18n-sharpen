@@ -4,7 +4,7 @@ milestone: v0.4.0
 milestone_name: AST Parser Rewrite
 status: planning
 last_updated: "2026-05-31T00:00:00.000Z"
-last_activity: 2026-05-31 -- v0.3.0 archived to milestones/; starting v0.4.0 (AST Parser Rewrite) planning
+last_activity: 2026-05-31 -- Milestone v0.4.0 (AST Parser Rewrite) started; defining requirements
 progress:
   total_phases: 0
   completed_phases: 0
@@ -18,9 +18,10 @@ progress:
 ## Current Position
 
 Milestone: v0.4.0 — AST Parser Rewrite
-Phase: none yet (planning)
-Status: v0.3.0 archived; defining v0.4.0 requirements + roadmap
-Last activity: 2026-05-31 -- Completed/archived v0.3.0 milestone. Next: `/gsd-new-milestone` to define v0.4.0 from .planning/v0.4.0-SEED-PLAN.md.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-31 -- Milestone v0.4.0 started
 
 ## Project Reference
 

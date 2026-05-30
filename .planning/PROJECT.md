@@ -12,9 +12,18 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 
 **Shipped:** v0.3.0 — Developer Experience (2026-05-30). 5 phases, 13 plans, tag `v0.3.0`. See `MILESTONES.md` + `milestones/v0.3.0-ROADMAP.md`.
 
-**Next milestone (planning): v0.4.0 — AST Parser Rewrite.** Replace the regex/state-machine scanner with real per-framework AST parsers (`@babel/parser` for JS/TS/JSX; dynamically-loaded Vue/Svelte/Astro compilers) for ~100% extraction accuracy. Seed plan: `.planning/v0.4.0-SEED-PLAN.md`. Scope/requirements to be defined via `/gsd-new-milestone`.
+## Current Milestone: v0.4.0 — AST Parser Rewrite
 
-> **Note:** v0.4.0 deliberately revisits two long-standing constraints below — the "regex-only scanner" engine choice and the "no heavy AST deps" rule. Those decisions were correct for v0.2–v0.3 but the accumulating edge-case patches in `hardcoded.ts` (e.g. `<Foo.Bar>` tags, JSX-in-expression boundaries) now justify the trade-off. The constraint revision is part of the v0.4.0 discussion.
+**Goal:** Replace the regex / hand-rolled state-machine scanner with real per-framework AST parsers so key extraction, dynamic-key classification, and hardcoded-string detection reach near-100% accuracy — without regressing the tool's safety, CI-friendliness, or framework coverage.
+
+**Target features:**
+- Babel-based AST parser for `.ts/.tsx/.js/.jsx` — used keys + dynamic calls + hardcoded candidates in one traversal, with correct offsets.
+- Dynamically-loaded framework compilers for `.vue` / `.svelte` (Svelte 5 AST) / `.astro` (WASM async init), resolved from the user's workspace.
+- Central extension dispatcher producing a unified `ParsedFileResult`.
+- Resilient error model (collect-and-continue on file syntax errors; fatal on missing compiler) + a shadow-mode differential-testing harness to prove accuracy before flipping the default.
+- Async public API migration (`validate`/`extract`/`prune` → `Promise`) with bounded-concurrency parsing.
+
+> **Note:** v0.4.0 deliberately revisits two long-standing constraints below — the "regex-only scanner" engine choice and the "no heavy AST deps" rule. Those decisions were correct for v0.2–v0.3 but the accumulating edge-case patches (e.g. `<Foo.Bar>` tags, `forwardRef<A,B>` generics misread as JSX) now justify the trade-off. Dependency strategy (mandatory Babel vs the TypeScript Compiler API as an optional peer dep) is an open decision for the requirements/research step. Implementation detail seed: `.planning/v0.4.0-SEED-PLAN.md`.
 
 ## Requirements
 
@@ -42,9 +51,17 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 
 ### Active
 
-<!-- v0.4.0 requirements defined via /gsd-new-milestone. Seed: .planning/v0.4.0-SEED-PLAN.md -->
+<!-- v0.4.0 (AST Parser Rewrite). Full REQ-IDs in REQUIREMENTS.md; phase mapping in ROADMAP.md. -->
 
-Planning v0.4.0 (AST Parser Rewrite) — fresh `REQUIREMENTS.md` created via `/gsd-new-milestone`.
+- [ ] Babel AST parser core + extension dispatcher → unified `ParsedFileResult` (used keys, dynamic calls, hardcoded candidates, offsets)
+- [ ] Dynamically-loaded Vue / Svelte 5 / Astro framework compilers (missing compiler → actionable install error)
+- [ ] Resilient error model — collect-and-continue on file syntax errors, fatal missing-compiler, distinct exit codes
+- [ ] Shadow-mode differential accuracy harness (regex vs AST corpus diff) — gates the default flip
+- [ ] Offset / line correctness across embedded script blocks
+- [ ] Async migration of `validate`/`extract`/`prune` + public API, bounded-concurrency parse pool
+- [ ] Performance budget vs v0.3.0 baseline (perf-regression gate)
+- [ ] Port behavioral tests (incl. `<m.div>` dot-notation + `forwardRef<A,B>` generics golden cases)
+- [ ] Cleanup: delete regex scanner after AST is default & verified; BREAKING CHANGELOG entry
 
 ### Out of Scope (for now)
 
@@ -63,9 +80,9 @@ Planning v0.4.0 (AST Parser Rewrite) — fresh `REQUIREMENTS.md` created via `/g
 
 ## Constraints
 
-- **Dependencies:** Keep the CLI dep tree tiny. No new heavy deps (e.g., no `typescript`/`babel` AST parsers in runtime deps). Prefer pure code or sub-1KB utilities. Optional peer deps (like `jiti`) only when strictly necessary.
+- **Dependencies:** Keep the CLI dep tree tiny. **Revised for v0.4.0:** AST parsing requires a parser dependency — strategy (mandatory Babel ~4.7MB vs the TypeScript Compiler API as an optional peer dep vs a `@babel/types` hand-walk) is an open decision for requirements/research. Framework compilers (Vue/Svelte/Astro) stay **dynamically loaded** from the user's workspace, never bundled. No other heavy deps; optional peer deps (like `jiti`) only when strictly necessary.
 - **Safety:** `prune` must remain safe-by-default (dry-run). Any feature that touches locale files on disk must use atomic writes (`.tmp` + rename, already in `locale-io`).
-- **Framework-agnostic:** No assumption of React/Vue/Next/etc. — regex-based scanner stays the engine. New features must work across all supported file extensions.
+- **Framework-agnostic:** No assumption of React/Vue/Next/etc. **Revised for v0.4.0:** per-framework AST parsers replace the regex scanner as the engine; config-driven `matchFunctions`/`matchAttributes` stay the detection mechanism (no hardcoded i18n-function names). New features must work across all supported file extensions.
 - **Performance:** End-to-end run on a medium repo must stay sub-second; no regression past 100ms baseline overhead.
 - **Compatibility:** Node ≥ 20 (already in CI). ESM-only output (already shipped). Don't break the 0.2.0 public API mid-milestone — additive only or behind explicit flags.
 
@@ -78,6 +95,10 @@ Planning v0.4.0 (AST Parser Rewrite) — fresh `REQUIREMENTS.md` created via `/g
 | Refuse to write JS/TS locales | Cannot safely preserve imports/JSDoc/types | ✓ Good (v0.2.3) |
 | Discriminated-union error type | Lets callers branch on `err.error.kind` without string matching | ✓ Good (v0.2.0) |
 | Property-based testing on core modules | Catches regex/parsing crashes on weird real-world files | ✓ Good (v0.2.0) |
+| AST parser per framework (v0.4.0) | Regex can't parse context-free grammars; hardcoded-string detection needs the document tree | — Pending (in progress) |
+| Sync → async public API (v0.4.0) | Dynamic compiler `import()` forces `await`; project < 1.0 ⇒ minor bump → 0.4.0 | — Pending |
+| Collect-and-continue on file syntax errors (v0.4.0) | A CI scanner must not crash on one bad file; missing *compiler* stays fatal | — Pending |
+| Shadow-mode before deleting regex (v0.4.0) | Prove AST parity on a real corpus before flipping default; delete old code in a later phase | — Pending |
 
 ## Evolution
 
@@ -97,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-30 after completing milestone v0.3.0 (planning v0.4.0 — AST Parser Rewrite)*
+*Last updated: 2026-05-31 after starting milestone v0.4.0 (AST Parser Rewrite)*
