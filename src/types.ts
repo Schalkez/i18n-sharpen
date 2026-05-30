@@ -105,6 +105,17 @@ export interface PruneOptions {
   force?: boolean
   /** Preview only — never write, regardless of config.prune.force. */
   dryRun?: boolean
+  /**
+   * If true, launch the interactive TUI picker (arrow-key + Space)
+   * when running in a TTY. In a non-TTY environment (pipe, CI),
+   * the picker is skipped — see Phase 3 D-13/D-14/D-15 for the
+   * fallback semantics. The standard `force` / `dryRun` write gate
+   * still applies: `interactive` selects WHICH keys to prune; `force`
+   * decides WHETHER they are written. Per IPRUNE-01..06.
+   *
+   * Defaults to false (existing non-interactive behavior preserved).
+   */
+  interactive?: boolean
 }
 
 /**

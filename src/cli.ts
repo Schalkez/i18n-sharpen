@@ -143,12 +143,18 @@ program
     "After pruning (namespaced layout only), delete namespace files that have zero keys. Flat layout files are never deleted.",
     false
   )
+  .option(
+    "--interactive",
+    "Pick which unused keys to prune via an arrow-key TUI (TTY only; non-TTY falls back to dry-run preview).",
+    false
+  )
   .action(
-    (cmdOpts: {
+    async (cmdOpts: {
       dryRun?: boolean
       force?: boolean
       sort?: string
       cleanEmpty?: boolean
+      interactive?: boolean
     }) => {
       const opts = program.opts()
       const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
@@ -171,9 +177,11 @@ program
         if (cmdOpts.cleanEmpty === true) {
           config.prune = { ...(config.prune ?? {}), cleanEmpty: true }
         }
-        prune(config, cwd, {
+        // eslint-disable-next-line @typescript-eslint/await-thenable
+        await prune(config, cwd, {
           force: cmdOpts.force === true,
-          dryRun: cmdOpts.dryRun === true
+          dryRun: cmdOpts.dryRun === true,
+          interactive: cmdOpts.interactive === true
         })
         process.exitCode = 0
       } catch (error) {
