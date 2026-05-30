@@ -2,6 +2,29 @@
 
 Shipped milestones and what they delivered. Active milestone lives in `PROJECT.md` and `ROADMAP.md`.
 
+## v0.3.0 — 2026-05-30 (Developer Experience)
+
+Tag: `v0.3.0`. 5 phases, 13 plans. Tests: 166 passing; ESLint strict-type-checked clean; tsc clean; build success. Full archive: `milestones/v0.3.0-ROADMAP.md` + `milestones/v0.3.0-REQUIREMENTS.md` (phase artifacts under `milestones/v0.3.0-phases/`).
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| 1 | Auto-sorting keys (`sortKeys`/`--sort`) + namespace hardening (`defaultNamespace`, `--clean-empty`, two-phase atomic prune) | DONE |
+| 2 | Dynamic-key warnings — fully-dynamic vs structured-concat, `ignoreDynamicKeys`, report counts | DONE |
+| 3 | Interactive pruning — hand-rolled raw-mode TUI (`prune --interactive`), non-TTY fallback | DONE |
+| 4 | Hardcoded string detection — `validate --check-hardcoded` (text nodes + attributes), markdown section | DONE |
+| 5 | Deprecation cleanup — `I18nCopConfig` alias removed (breaking) | DONE |
+
+**Key accomplishments:**
+1. Deterministic locale key ordering on every extract/prune write, opt-in via config or `--sort`.
+2. Cross-file atomic prune (`writeLocaleFilesAtomic`) — no mixed pruned/unpruned state on partial failure.
+3. Actionable dynamic-key reporting that no longer pollutes the missing-key failure count.
+4. Zero-dependency interactive prune TUI honoring the tiny-dep constraint.
+5. `validate --check-hardcoded` catches un-translated text before ship; CI-failing exit code.
+
+**Breaking change:** `I18nCopConfig` removed (migrate to `I18nSharpenConfig`).
+
+**Tech debt → motivates v0.4.0:** hardcoded/key/dynamic detection still on a hand-rolled regex/state-machine scanner that accumulates edge-case patches; v0.4.0 replaces it with real per-framework AST parsers.
+
 ## v0.2.0 — 2026-05-28 (Architecture, safety, framework coverage)
 
 Final HEAD: `d3e6071`. Tests: 15 → 58 passing across 5 files. Build: ESM + DTS clean.

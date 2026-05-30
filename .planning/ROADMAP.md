@@ -1,135 +1,38 @@
-# Roadmap — i18n-sharpen v0.3.0 (Developer Experience)
+# Roadmap — i18n-sharpen
 
-**Milestone:** v0.3.0 — Developer Experience
-**Phase numbering:** Reset to 1 (clean slate for this milestone)
-**Granularity:** Standard (5 phases, requirement-driven)
-**Coverage:** 29/29 v0.3.0 requirements mapped (NSWRITE-01/02 shipped pre-milestone)
+## Milestones
 
-> **Restructuring note (2026-05-28):** Original roadmap had 6 phases. Phase 1 scout discovered NSWRITE-01/02 were already shipped in commit `54712ab` (post v0.2.0 release). The standalone "Namespace Write-Routing" phase was therefore merged into the SORT phase (now Phase 1) since the remaining NSWRITE-03/04/05 work is small and touches the same locale write path. All subsequent phases renumbered down by one.
-
----
+- ✅ **v0.3.0 — Developer Experience** — Phases 1-5 (shipped 2026-05-30) → [archive](milestones/v0.3.0-ROADMAP.md)
+- 🚧 **v0.4.0 — AST Parser Rewrite** — (planning) — replace regex/state-machine scanner with real AST parsers per framework for 100% extraction accuracy
 
 ## Phases
 
-- [x] **Phase 1: Auto-Sorting Keys + Namespace Hardening** — users can control key ordering on every locale write; configurable `defaultNamespace`; `--clean-empty` flag; cross-file atomicity for prune (completed 2026-05-28)
-- [x] **Phase 2: Dynamic Key Warnings** — validator distinguishes fully-dynamic vs structured-concat keys and reports them separately (completed 2026-05-28)
-- [x] **Phase 3: Interactive Pruning** — `prune --interactive` lets users pick which unused keys to delete via TUI (completed 2026-05-30)
-- [x] **Phase 4: Hardcoded String Detection** — `validate --check-hardcoded` finds un-translated text nodes, attributes, and expression literals (completed 2026-05-30)
-- [x] **Phase 5: Deprecation Cleanup** — `I18nCopConfig` removed; clean breaking-change release prep (completed 2026-05-30)
+<details>
+<summary>✅ v0.3.0 Developer Experience (Phases 1-5) — SHIPPED 2026-05-30</summary>
+
+- [x] Phase 1: Auto-Sorting Keys + Namespace Hardening (4/4 plans) — 2026-05-28
+- [x] Phase 2: Dynamic Key Warnings (3/3 plans) — 2026-05-28
+- [x] Phase 3: Interactive Pruning (3/3 plans) — 2026-05-30
+- [x] Phase 4: Hardcoded String Detection (2/2 plans) — 2026-05-30
+- [x] Phase 5: Deprecation Cleanup (1/1 plan) — 2026-05-30
+
+Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
+
+</details>
+
+### 🚧 v0.4.0 — AST Parser Rewrite (Planning)
+
+Phases TBD — defined via `/gsd-new-milestone`. Seed plan: `AST_PARSER_PLAN.md` (repo root).
+
+## Progress
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Auto-Sorting Keys + Namespace Hardening | v0.3.0 | 4/4 | Complete | 2026-05-28 |
+| 2. Dynamic Key Warnings | v0.3.0 | 3/3 | Complete | 2026-05-28 |
+| 3. Interactive Pruning | v0.3.0 | 3/3 | Complete | 2026-05-30 |
+| 4. Hardcoded String Detection | v0.3.0 | 2/2 | Complete | 2026-05-30 |
+| 5. Deprecation Cleanup | v0.3.0 | 1/1 | Complete | 2026-05-30 |
 
 ---
-
-## Phase Details
-
-### Phase 1: Auto-Sorting Keys + Namespace Hardening
-**Goal**: Users can opt in to deterministic key ordering on every locale file write performed by `extract` or `prune`, and the namespaced write-path is hardened (configurable default namespace, `--clean-empty` semantics, cross-file atomicity for prune).
-**Depends on**: Nothing (NSWRITE-01/02 already shipped, this phase composes on top)
-**Requirements**: SORT-01..06, NSWRITE-03..05
-**Success Criteria** (what must be TRUE):
-  1. With `sortKeys: "alpha"` in config (or `--sort=alpha` flag), every locale file written by `extract`/`prune` has its top-level and nested keys in A-Z order — across both `flat` and `namespaced` layouts.
-  2. With `sortKeys: "source"`, keys appear in the order they were first encountered during the source scan — stable across reruns when source order is stable.
-  3. With no `sortKeys` set (or `"preserve"`), file output is identical to current 0.2.x behavior — existing users see zero diff.
-  4. A key referenced without a namespace prefix in `namespaced` layout falls into the configured `defaultNamespace` (default value decided during discuss-phase; current code uses hardcoded `"default"`).
-  5. Namespace files are preserved even when emptied by prune — only deleted when `--clean-empty` is passed explicitly.
-  6. If a single namespace write fails during prune, the user's locale set is not left in a mixed pruned-and-unpruned state (strategy decided during discuss-phase: two-phase commit or in-memory staging).
-  7. Test coverage expanded: multi-language namespaced extract/prune, plural suffixes, error paths, atomic failure recovery.
-**Plans**: 4 plans
-- [x] 01-01-PLAN.md — Sort utility (sortLocaleObject) + sortKeys config + --sort CLI flag + getFiles determinism fix (SORT-01..06)
-- [x] 01-02-PLAN.md — defaultNamespace config + replace hardcoded "default" + D-08 migration warning (NSWRITE-03)
-- [x] 01-03-PLAN.md — --clean-empty flag + cleanEmptyNamespaceFiles helper (NSWRITE-04)
-- [x] 01-04-PLAN.md — writeLocaleFilesAtomic two-phase commit + wire into extract/prune (NSWRITE-05)
-**UI hint**: no
-
-### Phase 2: Dynamic Key Warnings
-**Goal**: Developers see clearly separated, actionable warnings for structured-concat dynamic keys (with static prefix shown) vs fully-dynamic keys that cannot be analyzed — neither class pollutes the missing-key failure count.
-**Depends on**: Nothing (purely additive to scanner + validator; independent of Phase 1)
-**Requirements**: DKEY-01..05
-**Success Criteria** (what must be TRUE):
-  1. `validate` output groups dynamic keys into two labeled sections: "Fully-dynamic keys" and "Structured-concat keys" — each section lists affected files and key expressions.
-  2. A structured-concat key like `` t(`error.${code}`) `` shows its static prefix (`error.`) in the report so the user knows which namespace/section is affected.
-  3. Neither category of dynamic key contributes to the exit-code-1 "missing keys" failure — `validate` passes a clean project even with dynamic keys present.
-  4. Setting `ignoreDynamicKeys: ["error.", "route.*"]` in config suppresses matching dynamic-key entries from the report entirely.
-  5. The markdown coverage report generated by `validate` includes a "Dynamic keys" row with counts for fully-dynamic and structured-concat variants.
-**Plans**: 3 plans
-- [x] 02-01-PLAN.md — Classifier core (dynamic.ts) + types + zod schema + table-driven tests (DKEY-01)
-- [x] 02-02-PLAN.md — Validator integration + line-number tracking + ignoreDynamicKeys filter + grouped console summary + CHANGELOG (DKEY-03, DKEY-04)
-- [x] 02-03-PLAN.md — Markdown report Dynamic Keys section + end-to-end integration tests (DKEY-01, DKEY-02, DKEY-05)
-
-### Phase 3: Interactive Pruning
-**Goal**: Developers running `prune` in a terminal can select exactly which unused keys to delete via an arrow-key TUI instead of accepting or rejecting all candidates at once.
-**Depends on**: Nothing (additive flag on the existing `prune` command; independent of Phases 1-2)
-**Requirements**: IPRUNE-01..06
-**Success Criteria** (what must be TRUE):
-  1. Running `prune --interactive` in a TTY presents a list of candidate unused keys with arrow-key navigation and Space to toggle each key for deletion.
-  2. Pressing Enter confirms the selection — only the toggled keys are pruned; untoggled keys remain in the locale files.
-  3. Pressing Esc or Ctrl+C exits the TUI with no file changes and returns exit code 130.
-  4. With `--force` passed alongside `--interactive`, confirmed selections are written to disk; without `--force`, the run stays in dry-run preview even after confirmation.
-  5. Running `prune --interactive` in a non-TTY environment (piped input, CI) skips the TUI, prints a warning, and falls back to standard dry-run behavior.
-**Plans**: 3 plans
-- [x] 03-01-PLAN-cli-flag-and-types.md — PruneOptions.interactive surface + CLI --interactive flag wiring (IPRUNE-01 surface)
-- [x] 03-02-PLAN-tui-renderer.md — hand-rolled raw-mode TUI runInteractivePrune + unit tests + property test (IPRUNE-02, IPRUNE-03, IPRUNE-04)
-- [x] 03-03-PLAN-integration-and-fallback.md — integration into prune.ts with TTY detection, non-TTY fallback (D-14/D-15), summary preamble, CHANGELOG, integration tests (IPRUNE-01, IPRUNE-05, IPRUNE-06)
-- [x] Hardening (D-19/D-20): row truncation + `~` indicator, resize listener, injectable escDelay, split/Alt/double-Esc handling, viewport-height guard fallback
-**UI hint**: yes
-
-### Phase 4: Hardcoded String Detection
-**Goal**: Developers can run `validate --check-hardcoded` to get a per-file report of raw text nodes inside HTML/JSX/Vue/Svelte/Astro tags that are not wrapped in a translation call, enabling them to catch un-translated strings before they ship.
-**Depends on**: Phase 2 (shares scanner internals and validation report structure; DKEY should settle scanner changes before HSTR layers the text-node detection engine on top)
-**Requirements**: HSTR-01..06
-**Success Criteria** (what must be TRUE):
-  1. Running `validate --check-hardcoded` on a project containing `<div>Hello</div>` reports that file, the line number, and the text snippet `Hello`.
-  2. Text nodes that are already wrapped in a translation call (e.g., `<div>{t("greeting")}</div>`) do not appear in the report.
-  3. Setting `hardcoded.ignore` patterns in config (e.g., punctuation-only strings, numeric-only, custom regex) suppresses matching strings from the report.
-  4. The check respects `excludeDirs` and `fileExtensions` from the existing config — files outside the scan scope are never analyzed.
-  5. When `--check-hardcoded` is passed and hardcoded strings are found, the process exits with code 1, allowing CI pipelines to fail the build.
-  6. The markdown report generated by `validate --check-hardcoded` includes a "Hardcoded strings" section listing all findings.
-**Plans**: 2 plans
-- [x] 04-01-PLAN-parser-and-types.md — Parser and Types implementation (HSTR-01, HSTR-03, HSTR-04)
-- [x] 04-02-PLAN-integration-and-reporting.md — CLI flag integration, terminal output, Markdown report, integration tests (HSTR-02, HSTR-05, HSTR-06)
-**UI hint**: no
-
-### Phase 5: Deprecation Cleanup
-**Goal**: The `I18nCopConfig` deprecated alias is fully removed from the public API and all internal references, completing the migration announced in v0.2.0 and preparing the codebase for a clean v0.3.0 release.
-**Depends on**: Phases 1-4 (breaking change goes in final release prep after all features are stable)
-**Requirements**: CLEANUP-01..03
-**Success Criteria** (what must be TRUE):
-  1. Importing `I18nCopConfig` from `i18n-sharpen` causes a TypeScript compile error — the symbol no longer exists in the package exports.
-  2. No reference to `I18nCopConfig` remains anywhere in `src/`, tests, or documentation files.
-  3. `CHANGELOG.md` contains a BREAKING CHANGES entry for v0.3.0 documenting the removal with a one-line migration snippet (`I18nCopConfig` → `I18nSharpenConfig`).
-**Plans**: 1 plan
-- [x] 05-01-PLAN.md — Remove deprecated I18nCopConfig alias from types and index exports
-
----
-
-## Progress Table
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Auto-Sorting Keys + Namespace Hardening | 4/4 | Complete    | 2026-05-28 |
-| 2. Dynamic Key Warnings | 3/3 | Complete    | 2026-05-28 |
-| 3. Interactive Pruning | 3/3 | Complete    | 2026-05-30 |
-| 4. Hardcoded String Detection | 2/2 | Complete    | 2026-05-30 |
-| 5. Deprecation Cleanup | 1/1 | Complete    | 2026-05-30 |
-
----
-
-## Requirement Coverage
-
-| Requirement | Phase |
-|-------------|-------|
-| NSWRITE-01 | — (✅ shipped pre-milestone, commit `54712ab`) |
-| NSWRITE-02 | — (✅ shipped pre-milestone, commit `54712ab`) |
-| SORT-01..06 | Phase 1 |
-| NSWRITE-03..05 | Phase 1 |
-| DKEY-01..05 | Phase 2 |
-| IPRUNE-01..06 | Phase 3 |
-| HSTR-01..06 | Phase 4 |
-| CLEANUP-01..03 | Phase 5 |
-
-**Coverage: 29/29 active requirements mapped ✓**
-
----
-
-*Roadmap created: 2026-05-28*
-*Restructured: 2026-05-28 after Phase 1 scout (NSWRITE-01/02 already shipped)*
-*Milestone: v0.3.0 — Developer Experience*
+*v0.3.0 archived 2026-05-30. Next milestone (v0.4.0) to be defined via `/gsd-new-milestone`.*

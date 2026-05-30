@@ -1,51 +1,53 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.3.0
-milestone_name: milestone
-status: complete
-last_updated: "2026-05-30T16:20:00.000Z"
-last_activity: 2026-05-30 -- Phase 5 (Deprecation Cleanup) complete — milestone v0.3.0 complete
+milestone: v0.4.0
+milestone_name: AST Parser Rewrite
+status: planning
+last_updated: "2026-05-31T00:00:00.000Z"
+last_activity: 2026-05-31 -- v0.3.0 archived to milestones/; starting v0.4.0 (AST Parser Rewrite) planning
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE — i18n-sharpen
 
 ## Current Position
 
-Phase: 5
-Plan: Complete
-Status: Phase 5 (Deprecation Cleanup) complete
-Phase numbering: Reset to 1 for v0.3.0
-Last activity: 2026-05-30 -- Phase 5 complete; I18nCopConfig removed, milestone v0.3.0 fully completed.
+Milestone: v0.4.0 — AST Parser Rewrite
+Phase: none yet (planning)
+Status: v0.3.0 archived; defining v0.4.0 requirements + roadmap
+Last activity: 2026-05-31 -- Completed/archived v0.3.0 milestone. Next: `/gsd-new-milestone` to define v0.4.0 from AST_PARSER_PLAN.md.
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-05-28)
+See: `.planning/PROJECT.md` (updated 2026-05-30)
 
 **Core value:** Keep translation files sharp, tidy, and synchronized — without losing data.
-**Current focus:** milestone v0.3.0 completed!
+**Current focus:** v0.4.0 — replace regex/state-machine scanner with real per-framework AST parsers for ~100% extraction accuracy.
 
 ## Roadmap Summary
 
-| # | Phase | Status |
-|---|-------|--------|
-| 1 | Auto-Sorting Keys + Namespace Hardening | Complete |
-| 2 | Dynamic Key Warnings | Complete |
-| 3 | Interactive Pruning | Complete |
-| 4 | Hardcoded String Detection | Complete |
-| 5 | Deprecation Cleanup | Complete |
+| Milestone | Status |
+|-----------|--------|
+| v0.3.0 — Developer Experience (Phases 1-5) | ✅ Shipped 2026-05-30 (archived) |
+| v0.4.0 — AST Parser Rewrite | 🚧 Planning |
 
 ## Accumulated Context
 
-- v0.2.0 shipped a major architectural cleanup (core/ split, structured errors, safe prune, namespaced foundation, Vue/Svelte/Astro coverage). See `MILESTONES.md`.
-- v0.2.x patch releases (0.2.1 → 0.2.4) added supply-chain metadata, JS/TS locale reading + write-refusal, and scanner regex hardening.
-- **Post-v0.2.0 commit `54712ab` closed the namespaced extract/prune write-routing gap** (NSWRITE-01/02 of v0.3.0). Verified via `src/__tests__/extract.test.ts:61` + `src/__tests__/prune.test.ts:232`. The PHASE-EXECUTION-REPORT.md was written before this commit, so it incorrectly lists namespace routing as a Known Gap.
-- **Phase 3 (Interactive Pruning) shipped 2026-05-30** — `prune --interactive` hand-rolled raw-mode TUI (IPRUNE-01..06), plus D-19/D-20 hardening (row truncation + `~` indicator, resize listener, injectable escDelay, split/Alt/double-Esc handling, viewport-height guard fallback). 166 tests passing; ESLint strict-type-checked clean; tsc clean; build success.
-- One known gap from 0.2.0 still standing: removing the `I18nCopConfig` deprecated alias (Phase 5 here).
-- Phase numbering reset to 1 for this milestone — prior milestone ended at Phase 10.
-- Phase 1 originally split NSWRITE/SORT; merged after scout discovered NSWRITE was largely done. Remaining NSWRITE-03/04/05 fold naturally into the SORT phase because both touch the locale write path.
+- **v0.3.0 shipped & archived** — sorting, namespace hardening, dynamic-key warnings, interactive prune TUI, hardcoded-string detection, `I18nCopConfig` removed. Full archive in `milestones/v0.3.0-*`.
+- **v0.4.0 seed plan:** `AST_PARSER_PLAN.md` (repo root). Author's intent: AST parsers per framework, strict fail-fast, delete the old regex scanner.
+- **Open review notes on the seed plan (raised before planning, to resolve during discuss/plan):**
+  1. "Strict fail-fast / throw on any syntax error" is wrong for a *scanner* — separate "compiler missing" (throw once, actionable) from "one file has a syntax error" (collect-and-continue; don't abort the whole CI run). The plan also self-contradicts with `errorRecovery: true`.
+  2. Don't *delete* `dynamic.test.ts` / `hardcoded.test.ts` / `scanner.test.ts` — *port* their input→output behavioral cases onto the new parser; only drop regex-internal tests.
+  3. Don't big-bang rewrite + delete in one shot — run AST behind a flag in shadow mode, diff against regex on a real corpus, flip default, then delete in a separate PR.
+  4. Offset rebasing: Babel offsets for embedded `<script>` blocks (Vue/Svelte/Astro) are block-relative — must add the block's start offset or report line numbers will be wrong.
+  5. Reconsider deps: `@babel/traverse` has painful ESM interop (`.default` unwrap) and may be unnecessary (hand-walk or `@babel/types`); consider the TypeScript compiler API as an optional peer dep (most TS projects already have `typescript`) for zero added weight on the common path.
+  6. Turn the sync→async migration into a perf win (bounded-concurrency parse pool, optional mtime cache); add a perf-regression gate to the verification plan.
+  7. Pin compiler major versions — Svelte 5 AST shape changed (`ast.html` → `fragment`, `{ modern: true }`); `@astrojs/compiler` is WASM with async init.
+- **Async blast radius (GitNexus):** making `detectUsedKeys` async is HIGH risk — breaks `validate`/`extract`/`prune` at step 1 + `cli.ts` + public API `index.ts` + their tests. `validate` itself only has `cli.ts` as a direct caller. Cascade is bounded (~6-8 files).
+- **Uncommitted at archive time:** `src/core/scanner/hardcoded.ts` + `hardcoded.test.ts` have in-flight regex patches (`<Foo.Bar>` tag handling). Decide whether to commit as the last regex-era fix or discard before the AST rewrite deletes that file.
+- **Constraint under revision for v0.4.0:** PROJECT.md "no heavy AST deps" + "regex-based scanner stays the engine" — the v0.4.0 milestone explicitly revisits both.

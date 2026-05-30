@@ -8,18 +8,13 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 
 **Keep translation files sharp, tidy, and synchronized — without losing data.** If everything else fails, `prune` must never silently destroy translation work, and `validate` must never miss a real key drift.
 
-## Current Milestone: v0.3.0 — Developer Experience (Giai đoạn 1 of ROADMAP)
+## Current State
 
-**Goal:** Sharpen the day-to-day developer loop around prune/extract/validate — ordering, interactivity, smarter warnings, and catching un-translated hardcoded text.
+**Shipped:** v0.3.0 — Developer Experience (2026-05-30). 5 phases, 13 plans, tag `v0.3.0`. See `MILESTONES.md` + `milestones/v0.3.0-ROADMAP.md`.
 
-**Target features:**
-- Auto-sorting keys (A-Z or order-of-appearance on extract/prune writes) + finish NSWRITE hardening (configurable `defaultNamespace`, `--clean-empty`, cross-file atomicity)
-- Improved dynamic-key warnings (distinguish fully-dynamic vs structured concat keys)
-- Interactive Pruning CLI (arrow-key + space selection per key)
-- Hardcoded string detection (text nodes between HTML/JSX/Vue/Svelte/Astro tags not wrapped in `t()`)
-- Remove `I18nCopConfig` deprecated alias (per 0.2.0 announcement)
+**Next milestone (planning): v0.4.0 — AST Parser Rewrite.** Replace the regex/state-machine scanner with real per-framework AST parsers (`@babel/parser` for JS/TS/JSX; dynamically-loaded Vue/Svelte/Astro compilers) for ~100% extraction accuracy. Seed plan: `AST_PARSER_PLAN.md` (repo root). Scope/requirements to be defined via `/gsd-new-milestone`.
 
-**Phase numbering:** Reset to Phase 1 for this milestone (clean slate). Originally 6 phases; reduced to 5 after scoping (NSWRITE-01/02 were already shipped in v0.2.x via commit `54712ab`, remaining NSWRITE-03/04/05 folded into Phase 1 with SORT).
+> **Note:** v0.4.0 deliberately revisits two long-standing constraints below — the "regex-only scanner" engine choice and the "no heavy AST deps" rule. Those decisions were correct for v0.2–v0.3 but the accumulating edge-case patches in `hardcoded.ts` (e.g. `<Foo.Bar>` tags, JSX-in-expression boundaries) now justify the trade-off. The constraint revision is part of the v0.4.0 discussion.
 
 ## Requirements
 
@@ -38,12 +33,18 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 - ✓ JS/TS/ESM locale **reading** (`.js`, `.cjs`, `.mjs`, `.ts`, `.tsx` via `jiti`) — v0.2.2
 - ✓ Refuse to write JS/TS locale files (safety) — v0.2.3
 - ✓ Scanner returns match-nothing regex on empty matchFunctions/matchAttributes — v0.2.4
+- ✓ Auto-sorting keys (`sortKeys` config + `--sort` flag, alpha/source/preserve) — v0.3.0
+- ✓ Namespace hardening: `defaultNamespace`, `--clean-empty`, cross-file atomic prune — v0.3.0
+- ✓ Dynamic-key warnings: fully-dynamic vs structured-concat, `ignoreDynamicKeys`, report counts — v0.3.0
+- ✓ Interactive pruning TUI (`prune --interactive`, non-TTY fallback) — v0.3.0
+- ✓ Hardcoded string detection (`validate --check-hardcoded`) — v0.3.0
+- ✓ `I18nCopConfig` deprecated alias removed (breaking) — v0.3.0
 
 ### Active
 
-<!-- Building toward these in v0.3.0. Filled in via REQUIREMENTS.md. -->
+<!-- v0.4.0 requirements defined via /gsd-new-milestone. Seed: AST_PARSER_PLAN.md -->
 
-See `.planning/REQUIREMENTS.md`.
+Planning v0.4.0 (AST Parser Rewrite) — fresh `REQUIREMENTS.md` created via `/gsd-new-milestone`.
 
 ### Out of Scope (for now)
 
@@ -72,7 +73,7 @@ See `.planning/REQUIREMENTS.md`.
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Regex-based scanner over AST | Framework-agnostic, dependency-free, fast | ✓ Good (v0.2.0) |
+| Regex-based scanner over AST | Framework-agnostic, dependency-free, fast | ⚠️ Revisit — correct for v0.2–v0.3; v0.4.0 moves to AST parsers for accuracy as edge-case patches accumulate |
 | `prune` dry-run by default | Translation data is precious; opt-in writes | ✓ Good (v0.2.0) |
 | Refuse to write JS/TS locales | Cannot safely preserve imports/JSDoc/types | ✓ Good (v0.2.3) |
 | Discriminated-union error type | Lets callers branch on `err.error.kind` without string matching | ✓ Good (v0.2.0) |
@@ -96,4 +97,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-28 after starting milestone v0.3.0*
+*Last updated: 2026-05-30 after completing milestone v0.3.0 (planning v0.4.0 — AST Parser Rewrite)*
