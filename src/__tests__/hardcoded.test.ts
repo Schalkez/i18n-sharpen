@@ -103,6 +103,27 @@ describe("scanTemplateTextNodes", () => {
       { text: "Keep Me", offset: content.indexOf("Keep Me") }
     ])
   })
+
+  it("handles comparison operators inside expression attributes without breaking tag mode", () => {
+    const html = `<div title={x > 0}>hello</div>`
+    expect(scanTemplateTextNodes(html, true)).toEqual([
+      { text: "hello", offset: 19 }
+    ])
+  })
+
+  it("extracts nested JSX elements inside expressions", () => {
+    const html = `<div>{isActive && <span>Hello</span>}</div>`
+    expect(scanTemplateTextNodes(html, true)).toEqual([
+      { text: "Hello", offset: 24 }
+    ])
+  })
+
+  it("handles comparison operators inside quoted attributes in Vue/HTML without breaking tag mode", () => {
+    const html = `<div :title="x > 0">hello</div>`
+    expect(scanTemplateTextNodes(html, false)).toEqual([
+      { text: "hello", offset: 20 }
+    ])
+  })
 })
 
 describe("isHardcodedIgnored", () => {
