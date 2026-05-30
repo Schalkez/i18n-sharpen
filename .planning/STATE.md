@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.3.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-05-30T14:30:00.000Z"
-last_activity: 2026-05-30 -- Phase 4 (Hardcoded String Detection) complete — 181 tests green
+status: complete
+last_updated: "2026-05-30T16:20:00.000Z"
+last_activity: 2026-05-30 -- Phase 5 (Deprecation Cleanup) complete — milestone v0.3.0 complete
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
-  percent: 80
+  completed_phases: 5
+  total_plans: 13
+  completed_plans: 13
+  percent: 100
 ---
 
 # STATE — i18n-sharpen
@@ -18,17 +18,17 @@ progress:
 ## Current Position
 
 Phase: 5
-Plan: Discuss
-Status: Phase 5 (Deprecation Cleanup) discussion starting
+Plan: Complete
+Status: Phase 5 (Deprecation Cleanup) complete
 Phase numbering: Reset to 1 for v0.3.0
-Last activity: 2026-05-30 -- Phase 4 complete; all HSTR requirements shipped and 181 tests green.
+Last activity: 2026-05-30 -- Phase 5 complete; I18nCopConfig removed, milestone v0.3.0 fully completed.
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-05-28)
 
 **Core value:** Keep translation files sharp, tidy, and synchronized — without losing data.
-**Current focus:** v0.3.0 Developer Experience — Phases 1-4 shipped; next Phase 5 (Deprecation Cleanup)
+**Current focus:** milestone v0.3.0 completed!
 
 ## Roadmap Summary
 
@@ -38,7 +38,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-28)
 | 2 | Dynamic Key Warnings | Complete |
 | 3 | Interactive Pruning | Complete |
 | 4 | Hardcoded String Detection | Complete |
-| 5 | Deprecation Cleanup | Discuss |
+| 5 | Deprecation Cleanup | Complete |
 
 ## Accumulated Context
 

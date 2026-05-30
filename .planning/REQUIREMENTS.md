@@ -23,50 +23,50 @@ Phase 1 was originally split (NSWRITE / SORT) but merged because NSWRITE-01/02 s
 
 #### Auto-sorting (SORT)
 
-- [ ] **SORT-01**: User can configure key ordering for `extract`/`prune` writes via `sortKeys` config option (`"alpha" | "source" | "preserve"`)
-- [ ] **SORT-02**: User can override ordering per invocation via `--sort=alpha|source|preserve` CLI flag
-- [ ] **SORT-03**: Default ordering is `"preserve"` (no behavior change vs 0.2.x) — opt-in to sort
-- [ ] **SORT-04**: Alpha mode produces deterministic key order across all locale languages (no drift between `en.json` and `ja.json`)
-- [ ] **SORT-05**: Source mode orders keys by first-appearance in scanned code (stable when code order is stable)
-- [ ] **SORT-06**: Sorting preserves nested object structure — never flattens dotted keys into a flat map
+- [x] **SORT-01**: User can configure key ordering for `extract`/`prune` writes via `sortKeys` config option (`"alpha" | "source" | "preserve"`)
+- [x] **SORT-02**: User can override ordering per invocation via `--sort=alpha|source|preserve` CLI flag
+- [x] **SORT-03**: Default ordering is `"preserve"` (no behavior change vs 0.2.x) — opt-in to sort
+- [x] **SORT-04**: Alpha mode produces deterministic key order across all locale languages (no drift between `en.json` and `ja.json`)
+- [x] **SORT-05**: Source mode orders keys by first-appearance in scanned code (stable when code order is stable)
+- [x] **SORT-06**: Sorting preserves nested object structure — never flattens dotted keys into a flat map
 
 #### Namespace hardening (NSWRITE remnants)
 
-- [ ] **NSWRITE-03**: A key referenced without `ns:` prefix in `namespaced` layout falls into a configurable `defaultNamespace` config option (decide migration path: keep current `"default"` for compat, or move to `"common"` and document as breaking — see Phase 1 CONTEXT.md)
-- [ ] **NSWRITE-04**: Namespace files preserve their on-disk structure — never auto-deleted (even when empty) unless an explicit `--clean-empty` CLI flag is passed
-- [ ] **NSWRITE-05**: Cross-file atomicity for prune in `namespaced` layout — partial failure of one namespace write doesn't leave the user with a mix of pruned-and-unpruned files (strategy TBD: two-phase commit vs in-memory staging — see Phase 1 CONTEXT.md)
+- [x] **NSWRITE-03**: A key referenced without `ns:` prefix in `namespaced` layout falls into a configurable `defaultNamespace` config option (decide migration path: keep current `"default"` for compat, or move to `"common"` and document as breaking — see Phase 1 CONTEXT.md)
+- [x] **NSWRITE-04**: Namespace files preserve their on-disk structure — never auto-deleted (even when empty) unless an explicit `--clean-empty` CLI flag is passed
+- [x] **NSWRITE-05**: Cross-file atomicity for prune in `namespaced` layout — partial failure of one namespace write doesn't leave the user with a mix of pruned-and-unpruned files (strategy TBD: two-phase commit vs in-memory staging — see Phase 1 CONTEXT.md)
 
 ### Improved dynamic-key warnings (DKEY) — Phase 2
 
-- [ ] **DKEY-01**: Validator classifies dynamic keys into "fully-dynamic" (`t(myVar)`) vs "structured-concat" (`t("error." + code)`, `` t(`error.${code}`) ``)
-- [ ] **DKEY-02**: Structured-concat keys surface their static prefix in the report so the user knows which namespace/section is involved
-- [ ] **DKEY-03**: Fully-dynamic keys are reported separately and do NOT pollute the "missing keys" failure list
-- [ ] **DKEY-04**: Warnings for either class can be silenced per pattern via `ignoreDynamicKeys` config (string[] of prefixes or globs)
-- [ ] **DKEY-05**: CI-friendly: dynamic-key counts appear in the markdown coverage report
+- [x] **DKEY-01**: Validator classifies dynamic keys into "fully-dynamic" (`t(myVar)`) vs "structured-concat" (`t("error." + code)`, `` t(`error.${code}`) ``)
+- [x] **DKEY-02**: Structured-concat keys surface their static prefix in the report so the user knows which namespace/section is involved
+- [x] **DKEY-03**: Fully-dynamic keys are reported separately and do NOT pollute the "missing keys" failure list
+- [x] **DKEY-04**: Warnings for either class can be silenced per pattern via `ignoreDynamicKeys` config (string[] of prefixes or globs)
+- [x] **DKEY-05**: CI-friendly: dynamic-key counts appear in the markdown coverage report
 
 ### Interactive Pruning CLI (IPRUNE) — Phase 3
 
-- [ ] **IPRUNE-01**: User can run `prune --interactive` to enter a TUI flow showing candidate unused keys
-- [ ] **IPRUNE-02**: User can navigate the candidate list with arrow keys (↑/↓) and toggle keep/delete with Space
-- [ ] **IPRUNE-03**: User can confirm selection with Enter — only the marked-for-delete keys are pruned
-- [ ] **IPRUNE-04**: User can cancel with Esc or Ctrl+C — no file changes occur, exit code 130
-- [ ] **IPRUNE-05**: Interactive mode honors `--force` semantics: writes to disk only after explicit confirm; otherwise stays in dry-run preview
-- [ ] **IPRUNE-06**: Interactive mode is gracefully skipped in non-TTY environments (CI) — falls back to dry-run + warning
+- [x] **IPRUNE-01**: User can run `prune --interactive` to enter a TUI flow showing candidate unused keys
+- [x] **IPRUNE-02**: User can navigate the candidate list with arrow keys (↑/↓) and toggle keep/delete with Space
+- [x] **IPRUNE-03**: User can confirm selection with Enter — only the marked-for-delete keys are pruned
+- [x] **IPRUNE-04**: User can cancel with Esc or Ctrl+C — no file changes occur, exit code 130
+- [x] **IPRUNE-05**: Interactive mode honors `--force` semantics: writes to disk only after explicit confirm; otherwise stays in dry-run preview
+- [x] **IPRUNE-06**: Interactive mode is gracefully skipped in non-TTY environments (CI) — falls back to dry-run + warning
 
 ### Hardcoded string detection (HSTR) — Phase 4
 
-- [ ] **HSTR-01**: New `validate --check-hardcoded` flag scans text nodes between tags in `.tsx`/`.jsx`/`.vue`/`.svelte`/`.astro` that are NOT wrapped in `t()`
-- [ ] **HSTR-02**: Report includes file path, line number, and the offending text snippet
-- [ ] **HSTR-03**: User can configure ignore patterns via `hardcoded.ignore` config (punctuation-only, numbers-only, all-caps acronyms, custom regex)
-- [ ] **HSTR-04**: Detection respects `excludeDirs` and `fileExtensions` from existing config
-- [ ] **HSTR-05**: Exit code reflects findings — when `--check-hardcoded` is set, hardcoded strings cause exit 1 (so CI can fail)
-- [ ] **HSTR-06**: Markdown report includes a "Hardcoded strings" section when the check is enabled
+- [x] **HSTR-01**: New `validate --check-hardcoded` flag scans text nodes between tags in `.tsx`/`.jsx`/`.vue`/`.svelte`/`.astro` that are NOT wrapped in `t()`
+- [x] **HSTR-02**: Report includes file path, line number, and the offending text snippet
+- [x] **HSTR-03**: User can configure ignore patterns via `hardcoded.ignore` config (punctuation-only, numbers-only, all-caps acronyms, custom regex)
+- [x] **HSTR-04**: Detection respects `excludeDirs` and `fileExtensions` from existing config
+- [x] **HSTR-05**: Exit code reflects findings — when `--check-hardcoded` is set, hardcoded strings cause exit 1 (so CI can fail)
+- [x] **HSTR-06**: Markdown report includes a "Hardcoded strings" section when the check is enabled
 
 ### Cleanup (CLEANUP) — Phase 5
 
-- [ ] **CLEANUP-01**: `I18nCopConfig` type alias is removed from `src/types.ts` and `src/index.ts` exports
-- [ ] **CLEANUP-02**: CHANGELOG documents the removal under BREAKING with migration snippet (same wording as the 0.2.0 deprecation notice)
-- [ ] **CLEANUP-03**: Any internal references to `I18nCopConfig` (including in tests/docs) migrated to `I18nSharpenConfig`
+- [x] **CLEANUP-01**: `I18nCopConfig` type alias is removed from `src/types.ts` and `src/index.ts` exports
+- [x] **CLEANUP-02**: CHANGELOG documents the removal under BREAKING with migration snippet (same wording as the 0.2.0 deprecation notice)
+- [x] **CLEANUP-03**: Any internal references to `I18nCopConfig` (including in tests/docs) migrated to `I18nSharpenConfig`
 
 ## Future Requirements (deferred to v0.4.x+)
 

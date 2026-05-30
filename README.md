@@ -228,8 +228,7 @@ try {
 
 ## Migration from 0.0.x / 0.1.x
 
-* Rename `I18nCopConfig` → `I18nSharpenConfig` (the old name is a
-  deprecated alias, removal scheduled for 0.3.0).
+* Rename `I18nCopConfig` → `I18nSharpenConfig` (the old name has been fully removed in `0.3.0`).
 * `prune()` is now dry-run by default. Pass `{ force: true }` or set
   `config.prune.force: true` to write.
 * `looseKeyMatch` is opt-in. Add `"looseKeyMatch": true` if you relied on

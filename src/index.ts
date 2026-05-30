@@ -55,12 +55,6 @@ export { I18nSharpenError, type I18nError } from "./core/errors"
 export type {
   /** Configuration object accepted by the CLI and programmatic API. */
   I18nSharpenConfig,
-  /**
-   * @deprecated Use {@link I18nSharpenConfig}. Kept for backwards
-   * compatibility with v0.0.x / v0.1.x consumers; will be removed in a
-   * future major version.
-   */
-  I18nCopConfig,
   /** Structured result returned by {@link validate}. */
   ValidationResults,
   /** Per-invocation options for the programmatic {@link prune} API. */

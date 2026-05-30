@@ -15,10 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Non-TTY fallback: Gracefully falls back to standard dry-run preview in non-TTY environments with a warning. If `--force` is passed in a non-TTY environment, it is ignored to prevent accidental bulk-pruning.
   - Short-circuit: Skips the TUI entirely if there are no unused keys to prune, completing instantly.
   - Composes with `--clean-empty`: Cleans up empty namespace files in `namespaced` layout after the TUI prune is written.
+- **Hardcoded String Detection (`validate --check-hardcoded`)**: Detect un-translated raw text nodes, attributes (`placeholder`, `label`, `title`, `alt`, `aria-label`), and expression literals in HTML/JSX/Vue/Svelte/Astro templates. Features a robust stack-based parser to handle nested JSX elements inside expressions and heuristic look-behind to differentiate mathematical comparison operators (`<`, `>`) from tags. Includes default and custom regex filter ignores (`hardcoded.ignore`) and exits with code `1` in CI/pipelines on finding un-translated text.
 
 ### Changed (notable behavior change)
 - **prune**: The programmatic API `prune()` is now asynchronous and returns `Promise<PruneResult>` instead of a synchronous `PruneResult` to accommodate TUI interactive choices.
 - **validate**: dynamic-key warnings are now emitted as a single grouped summary at the end of the run (sections "Fully-dynamic keys" and "Structured-concat keys") instead of one `log.warn` per call site. Structured-concat keys surface their leading static prefix (e.g. `error.`) and every finding includes a `file:line` location. Configure suppression via `ignoreDynamicKeys: ["error.*", "*"]`. Exit code is unchanged — dynamic findings never cause `validate` to fail. (Phase 2 / D-13)
+
+### Changed (BREAKING)
+- **Removed `I18nCopConfig` type alias**: The deprecated `I18nCopConfig` type alias has been fully removed. Use `I18nSharpenConfig` instead.
+  ```ts
+  // Migration
+  - import type { I18nCopConfig } from "i18n-sharpen"
+  + import type { I18nSharpenConfig } from "i18n-sharpen"
+  ```
 
 ## [0.2.3] - 2026-05-28
 

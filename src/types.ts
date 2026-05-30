@@ -94,13 +94,6 @@ export interface I18nSharpenConfig {
 }
 
 /**
- * @deprecated Use `I18nSharpenConfig`. This alias is kept for backwards
- * compatibility with v0.0.x / v0.1.x consumers and will be removed in
- * a future major version.
- */
-export type I18nCopConfig = I18nSharpenConfig
-
-/**
  * Per-invocation options for the programmatic `prune()` API.
  *
  * Both `force` and `dryRun` can be set; if both are passed, `dryRun`

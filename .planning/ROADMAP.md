@@ -15,7 +15,7 @@
 - [x] **Phase 2: Dynamic Key Warnings** — validator distinguishes fully-dynamic vs structured-concat keys and reports them separately (completed 2026-05-28)
 - [x] **Phase 3: Interactive Pruning** — `prune --interactive` lets users pick which unused keys to delete via TUI (completed 2026-05-30)
 - [x] **Phase 4: Hardcoded String Detection** — `validate --check-hardcoded` finds un-translated text nodes, attributes, and expression literals (completed 2026-05-30)
-- [ ] **Phase 5: Deprecation Cleanup** — `I18nCopConfig` removed; clean breaking-change release prep
+- [x] **Phase 5: Deprecation Cleanup** — `I18nCopConfig` removed; clean breaking-change release prep (completed 2026-05-30)
 
 ---
 
@@ -96,7 +96,8 @@
   1. Importing `I18nCopConfig` from `i18n-sharpen` causes a TypeScript compile error — the symbol no longer exists in the package exports.
   2. No reference to `I18nCopConfig` remains anywhere in `src/`, tests, or documentation files.
   3. `CHANGELOG.md` contains a BREAKING CHANGES entry for v0.3.0 documenting the removal with a one-line migration snippet (`I18nCopConfig` → `I18nSharpenConfig`).
-**Plans**: TBD
+**Plans**: 1 plan
+- [x] 05-01-PLAN.md — Remove deprecated I18nCopConfig alias from types and index exports
 
 ---
 
@@ -108,7 +109,7 @@
 | 2. Dynamic Key Warnings | 3/3 | Complete    | 2026-05-28 |
 | 3. Interactive Pruning | 3/3 | Complete    | 2026-05-30 |
 | 4. Hardcoded String Detection | 2/2 | Complete    | 2026-05-30 |
-| 5. Deprecation Cleanup | 0/1 | Not started | - |
+| 5. Deprecation Cleanup | 1/1 | Complete    | 2026-05-30 |
 
 ---
 
