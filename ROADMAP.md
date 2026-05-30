@@ -28,20 +28,17 @@ Khi tiếp tục bảo trì và bổ sung các tính năng hoặc tối ưu hóa
 ## 🚀 Lộ trình phát triển tương lai (Roadmap)
 
 ### 📍 Giai đoạn 1: Hoàn thiện Trải nghiệm Lập trình viên (Developer Experience)
-*   **Auto-sorting keys:** Bổ sung tùy chọn tự động sắp xếp các key dịch thuật theo thứ tự bảng chữ cái (A-Z) hoặc theo thứ tự xuất hiện trong code khi thực hiện ghi đè hoặc cắt tỉa file JSON/YAML.
-*   **Interactive Pruning CLI:** Hỗ trợ chế độ CLI tương tác (Interactive mode) cho phép người dùng dùng phím lên/xuống và Space để chọn cụ thể key nào muốn giữ hoặc xóa, thay vì chỉ xóa toàn bộ hoặc dry-run.
-*   **Cải tiến cảnh báo Key động:** Phân loại cảnh báo thông minh hơn để phân biệt giữa key động hoàn toàn (không thể đoán trước) và key nối chuỗi có cấu trúc (ví dụ: `t("error." + code)`).
-*   **Hardcoded string detection (Phát hiện chuỗi text cứng):** Bổ sung tính năng tự động quét các đoạn văn bản thuần (text nodes) chưa qua dịch thuật nằm giữa các thẻ HTML/JSX/Vue/Svelte/Astro (ví dụ: `<div>Xin chào</div>`) và đưa ra cảnh báo để lập trình viên bọc chúng vào hàm dịch `t()`.
+*   **Auto-sorting keys:** Bổ sung tùy chọn tự động sắp xếp các key dịch thuật theo thứ tự bảng chữ cái (A-Z) hoặc theo thứ tự xuất hiện trong code khi thực hiện ghi đè hoặc cắt tỉa file JSON/YAML. *(Đã hoàn thành)*
+*   **Interactive Pruning CLI:** Hỗ trợ chế độ CLI tương tác (Interactive mode) cho phép người dùng chọn cụ thể key dịch thuật muốn xoá qua giao diện TUI Picker trực quan. *(Đã hoàn thành)*
+*   **Cải tiến cảnh báo Key động:** Phân loại cảnh báo thông minh hơn để phân biệt giữa key động hoàn toàn và key nối chuỗi có cấu trúc. *(Đã hoàn thành)*
+*   **Hardcoded string detection (Phát hiện chuỗi text cứng):** Bổ sung tính năng tự động quét các đoạn văn bản thuần (text nodes) chưa qua dịch thuật nằm giữa các thẻ HTML/JSX/Vue/Svelte/Astro (ví dụ: `<div>Xin chào</div>`) và đưa ra cảnh báo để lập trình viên bọc chúng vào hàm dịch `t()`. *(Phase 4)*
 
-### 📍 Giai đoạn 2: Mở rộng Hỗ trợ Hệ sinh thái
-*   **Hỗ trợ tệp cấu hình dạng TypeScript/JavaScript:** Quét và cập nhật trực tiếp trên các file dịch được xuất ra dạng module ESM/CommonJS (`locales/en.ts`, `locales/vi.js`) bên cạnh JSON/YAML.
-*   **Tăng cường khả năng tích hợp CI/CD:** Hỗ trợ xuất kết quả validation ra định dạng JSON/JUnit XML tiêu chuẩn để các hệ thống CI/CD (GitHub Actions, GitLab CI, Jenkins) có thể vẽ biểu đồ chất lượng hoặc hiển thị lỗi trực tiếp trên giao diện Pull Request.
+### 📍 Giai đoạn 2: Tối ưu hóa cấu trúc & Khả năng tích hợp (Structure & Integration)
+*   **Đọc và ghi an toàn tệp JS/TS:** Hỗ trợ đọc/ghi trực tiếp và an toàn trên các file locale dạng JavaScript/TypeScript (module ESM/CommonJS như `.ts`, `.js`, `.mjs`) sử dụng AST-based parser mà không làm hỏng định dạng file code hiện có.
+*   **Tích hợp CI/CD nâng cao:** Hỗ trợ xuất kết quả kiểm tra ra định dạng cấu trúc chuẩn (JSON, JUnit XML) để tích hợp sâu vào các hệ thống CI/CD (GitHub Actions, GitLab CI), hiển thị PR annotations trực quan.
 
-### 📍 Giai đoạn 3: Tự động hóa thông minh (AI & Auto-Translation)
-*   **Auto-Translation Integration:** Tích hợp với các dịch vụ dịch thuật phổ biến (Google Translate, DeepL) hoặc gọi API mô hình ngôn ngữ lớn (LLMs như GPT, Gemini, Claude) thông qua cấu hình API Key của người dùng để tự động sinh bản dịch nháp cho các key bị thiếu trong quá trình validate.
-
-### 📍 Giai đoạn 4: Công cụ tích hợp sâu (Integrations)
-*   **i18n-sharpen VS Code Extension:** Đóng gói nhân quét của dự án thành một Extension cho VS Code để highlight trực tiếp các key chưa được định nghĩa trong file locale ngay trên file code của lập trình viên khi đang gõ chữ.
+### 📍 Giai đoạn 3: Tương thích hệ sinh thái IDE (IDE Compatibility)
+*   **Hỗ trợ cấu hình tích hợp IDE:** Thay vì xây dựng Extension riêng gây trùng lặp tính năng, dự án sẽ cung cấp các tệp cấu hình mẫu và tài liệu hướng dẫn giúp tích hợp và hoạt động mượt mà với các Extension phổ biến có sẵn trong cộng đồng (chẳng hạn như `i18n Ally` trên VS Code) để tối ưu hóa trải nghiệm autocomplete, hover preview và quản lý dịch thuật trực tiếp trong editor.
 
 ---
 
