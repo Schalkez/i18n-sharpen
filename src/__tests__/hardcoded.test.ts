@@ -110,6 +110,15 @@ describe("isHardcodedIgnored", () => {
     expect(isHardcodedIgnored("-99")).toBe(true)
   })
 
+  it("ignores HTML entities", () => {
+    expect(isHardcodedIgnored("&nbsp;")).toBe(true)
+    expect(isHardcodedIgnored("&times;")).toBe(true)
+    expect(isHardcodedIgnored("&#39;")).toBe(true)
+    expect(isHardcodedIgnored("&#x20;")).toBe(true)
+    expect(isHardcodedIgnored("&amp;")).toBe(true)
+    expect(isHardcodedIgnored("Normal text with &nbsp;")).toBe(false)
+  })
+
   it("does NOT ignore acronyms or uppercase UI strings by default", () => {
     expect(isHardcodedIgnored("OK")).toBe(false)
     expect(isHardcodedIgnored("SAVE")).toBe(false)

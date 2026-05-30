@@ -398,4 +398,63 @@ describe("validate: integration", () => {
       expect(report).not.toMatch(/\\`/)
     })
   })
+
+  describe("hardcoded string checks", () => {
+    it("detects untranslated text nodes, attributes, and JSX literals", () => {
+      createMockProject(tempDir, {
+        "locales/en.json": JSON.stringify({ welcome: "Welcome" }),
+        "src/App.tsx": `
+          export function App() {
+            return (
+              <div className="container">
+                <h1>Hello World</h1>
+                <input placeholder="Enter text" label={t("welcome")} />
+                <p>{"Goodbye"}</p>
+                <p>{\`Template String\`}</p>
+                <span>{t("welcome")}</span>
+              </div>
+            )
+          }
+        `
+      })
+
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".tsx"]
+      }
+
+      // Without checkHardcoded flag
+      const resultsWithout = validate(config, tempDir)
+      expect(resultsWithout.hardcodedStrings).toBeUndefined()
+
+      // With checkHardcoded flag
+      const resultsWith = validate(config, tempDir, { checkHardcoded: true })
+      expect(resultsWith.hardcodedStrings).toBeDefined()
+      expect(resultsWith.hardcodedStrings).toHaveLength(4)
+
+      const findings = (resultsWith.hardcodedStrings ?? [])
+        .map((f) => f.text)
+        .sort()
+      expect(findings).toEqual([
+        "Enter text",
+        "Goodbye",
+        "Hello World",
+        "Template String"
+      ])
+
+      // Markdown report generated with hardcoded strings table
+      validate({ ...config, outputReport: "report.md" }, tempDir, {
+        checkHardcoded: true
+      })
+      const report = fs.readFileSync(path.join(tempDir, "report.md"), "utf8")
+      expect(report).toContain("## Hardcoded Strings")
+      expect(report).toContain("Hello World")
+      expect(report).toContain("Enter text")
+      expect(report).toContain("Goodbye")
+      expect(report).toContain("Template String")
+    })
+  })
 })

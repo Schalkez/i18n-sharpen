@@ -61,6 +61,18 @@ export function printValidationResults(
     log.success("Zero active placeholder keys detected in the source code!")
   }
 
+  // 2.5. Hardcoded strings
+  if (results.hardcodedStrings && results.hardcodedStrings.length > 0) {
+    log.info(
+      `\n${pc.bold(pc.red(`❌ Hardcoded Strings found (${results.hardcodedStrings.length}):`))}`
+    )
+    results.hardcodedStrings.forEach((f) => {
+      log.info(`  - ${pc.cyan(`${f.file}:${f.line}`)}  "${pc.red(f.text)}"`)
+    })
+  } else if (results.hardcodedStrings !== undefined) {
+    log.success("\nZero un-translated hardcoded strings detected!")
+  }
+
   // 3. Locale alignment
   if (keysOnlyInLanguages.length > 0) {
     log.info(`\n${pc.bold(pc.red("❌ Locale Alignment Mismatches:"))}`)

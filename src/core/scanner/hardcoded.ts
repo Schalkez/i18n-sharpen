@@ -23,7 +23,8 @@ const SKIP_TAGS = [
  * Strips out script, style, comments, and complex brace expressions.
  */
 export function scanTemplateTextNodes(
-  source: string
+  source: string,
+  isJsx = false
 ): HardcodedTextCandidate[] {
   const candidates: HardcodedTextCandidate[] = []
   let mode: "TEXT" | "TAG" | "EXPR" | "BLOCK_SKIP" = "TEXT"
@@ -42,12 +43,19 @@ export function scanTemplateTextNodes(
 
   let skipTargetClose = ""
 
+  // Track HTML/JSX tag nesting depth.
+  // For TSX/JSX, we start at 0 (JS context). We only enter template land when tagDepth > 0.
+  // For Vue/Svelte/Astro, we start at 1 (Template context).
+  let tagDepth = isJsx ? 0 : 1
+
   while (i < n) {
     const ch = source[i]
 
     if (mode === "TEXT") {
       if (source.slice(i, i + 4) === "<!--") {
-        flushTextNode(currentText, currentTextStartOffset)
+        if (tagDepth > 0) {
+          flushTextNode(currentText, currentTextStartOffset)
+        }
         currentText = ""
         mode = "BLOCK_SKIP"
         skipTargetClose = "-->"
@@ -55,8 +63,16 @@ export function scanTemplateTextNodes(
         continue
       }
 
-      if (ch === "<") {
-        flushTextNode(currentText, currentTextStartOffset)
+      // Check if it's a tag start
+      if (
+        ch === "<" &&
+        /^\/?[a-zA-Z_$][a-zA-Z0-9_\-:]*(\s|>|\/>)/.test(
+          source.slice(i + 1, i + 50)
+        )
+      ) {
+        if (tagDepth > 0) {
+          flushTextNode(currentText, currentTextStartOffset)
+        }
         currentText = ""
         mode = "TAG"
         currentTagStartOffset = i
@@ -65,7 +81,7 @@ export function scanTemplateTextNodes(
         continue
       }
 
-      if (ch === "{") {
+      if (ch === "{" && tagDepth > 0) {
         flushTextNode(currentText, currentTextStartOffset)
         currentText = ""
         mode = "EXPR"
@@ -85,6 +101,14 @@ export function scanTemplateTextNodes(
     }
 
     if (mode === "TAG") {
+      // Abort tag mode if we hit a statement separator (semicolon) — it means it's a comparison, not a tag.
+      if (ch === ";") {
+        mode = "TEXT"
+        currentText = ""
+        i++
+        continue
+      }
+
       if (ch === ">") {
         const isSelfClosing = currentTagContent.trim().endsWith("/")
         const tagInner = isSelfClosing
@@ -96,12 +120,22 @@ export function scanTemplateTextNodes(
 
         const matchTagName = /^\/?([a-zA-Z0-9_\-:]+)/.exec(tagInner.trim())
         const tagName = matchTagName ? matchTagName[1].toLowerCase() : ""
+        const isClosing = tagInner.trim().startsWith("/")
+
+        // Update tag depth
+        if (!isSelfClosing && tagName) {
+          if (isClosing) {
+            tagDepth = Math.max(0, tagDepth - 1)
+          } else {
+            tagDepth++
+          }
+        }
 
         if (
           tagName &&
           SKIP_TAGS.includes(tagName) &&
           !isSelfClosing &&
-          !tagInner.trim().startsWith("/")
+          !isClosing
         ) {
           mode = "BLOCK_SKIP"
           skipTargetClose = `</${tagName}>`
@@ -143,6 +177,15 @@ export function scanTemplateTextNodes(
     const matchClose = source.slice(i, i + skipTargetClose.length)
     if (matchClose.toLowerCase() === skipTargetClose.toLowerCase()) {
       i += skipTargetClose.length
+
+      // If we skipped a block like script/style, we also decremented tagDepth because of the closing tag.
+      // Wait, inside BLOCK_SKIP, we consumed the closing tag like </script>.
+      // The closing tag has already been consumed here, so we must decrement tagDepth accordingly!
+      const tagName = skipTargetClose.replace(/[</>]/g, "").toLowerCase()
+      if (tagName && tagName !== "--") {
+        tagDepth = Math.max(0, tagDepth - 1)
+      }
+
       mode = "TEXT"
       currentTextStartOffset = i
       currentText = ""
@@ -151,7 +194,7 @@ export function scanTemplateTextNodes(
     i++
   }
 
-  if (mode === "TEXT") {
+  if (mode === "TEXT" && tagDepth > 0) {
     flushTextNode(currentText, currentTextStartOffset)
   }
 
@@ -230,7 +273,11 @@ export function isHardcodedIgnored(
   const numbersRegex = /^[0-9\s.,%-]+$/
   if (numbersRegex.test(trimmed)) return true
 
-  // 3. Custom ignores
+  // 3. HTML entities (e.g., &nbsp;, &times;, &#39;)
+  const htmlEntityRegex = /^&[a-zA-Z0-9#]+;$/
+  if (htmlEntityRegex.test(trimmed)) return true
+
+  // 4. Custom ignores
   for (const pattern of customIgnores) {
     if (pattern === trimmed) return true
     try {

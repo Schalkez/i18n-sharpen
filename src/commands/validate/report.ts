@@ -62,9 +62,29 @@ export function renderMarkdownReport(args: {
     utilizationPercent,
     totalDefinedKeys,
     usedDefinedKeysCount,
-    dynamicKeys
+    dynamicKeys,
+    hardcodedStrings
   } = args.results
   const { keyToFilesMap, getBaseKey, defaultBasename } = args
+
+  // Render Quality Metrics table rows
+  const metricsRows = [
+    `| **Code Translation Coverage** | ${codeKeyCoverage}% | ${codeKeyCoverage === "100.00" ? "🟢 100% Perfect" : "🔴 Missing Translations"} |`,
+    `| **Locales Key Utilization** | ${utilizationPercent}% | ${Number(utilizationPercent) > 90 ? "🟢 High" : "🟡 Medium"} |`,
+    `| **Total Defined Keys** | ${totalDefinedKeys} | - |`,
+    `| **Actually Used Keys** | ${usedDefinedKeysCount} | - |`,
+    `| **Missing Keys** | ${missingKeys.length} | ${missingKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |`,
+    `| **Active Placeholders** | ${activePlaceholderKeys.length} | ${activePlaceholderKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |`,
+    `| **Unused Keys** | ${unusedKeys.length} | ${unusedKeys.length === 0 ? "🟢 Optimized" : "🟡 Can be pruned"} |`,
+    `| **Locale Alignment** | ${keysOnlyInLanguages.length === 0 ? "Align'd" : "Mismatch"} | ${keysOnlyInLanguages.length === 0 ? "🟢 Perfect" : "🔴 Action Required"} |`,
+    `| **Dynamic Keys** | fully-dynamic: ${dynamicKeys.fullyDynamic.length}, structured-concat: ${dynamicKeys.structuredConcat.length} | ${dynamicKeys.fullyDynamic.length + dynamicKeys.structuredConcat.length === 0 ? "🟢 None" : "🟡 Review"} |`
+  ]
+
+  if (hardcodedStrings !== undefined) {
+    metricsRows.push(
+      `| **Hardcoded Strings** | ${hardcodedStrings.length} | ${hardcodedStrings.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |`
+    )
+  }
 
   return `# i18n Quality and Coverage Report
 
@@ -74,15 +94,7 @@ Generated on: ${new Date().toISOString()}
 
 | Metric | Value | Status |
 | :--- | :--- | :--- |
-| **Code Translation Coverage** | ${codeKeyCoverage}% | ${codeKeyCoverage === "100.00" ? "🟢 100% Perfect" : "🔴 Missing Translations"} |
-| **Locales Key Utilization** | ${utilizationPercent}% | ${Number(utilizationPercent) > 90 ? "🟢 High" : "🟡 Medium"} |
-| **Total Defined Keys** | ${totalDefinedKeys} | - |
-| **Actually Used Keys** | ${usedDefinedKeysCount} | - |
-| **Missing Keys** | ${missingKeys.length} | ${missingKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |
-| **Active Placeholders** | ${activePlaceholderKeys.length} | ${activePlaceholderKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |
-| **Unused Keys** | ${unusedKeys.length} | ${unusedKeys.length === 0 ? "🟢 Optimized" : "🟡 Can be pruned"} |
-| **Locale Alignment** | ${keysOnlyInLanguages.length === 0 ? "Align'd" : "Mismatch"} | ${keysOnlyInLanguages.length === 0 ? "🟢 Perfect" : "🔴 Action Required"} |
-| **Dynamic Keys** | fully-dynamic: ${dynamicKeys.fullyDynamic.length}, structured-concat: ${dynamicKeys.structuredConcat.length} | ${dynamicKeys.fullyDynamic.length + dynamicKeys.structuredConcat.length === 0 ? "🟢 None" : "🟡 Review"} |
+${metricsRows.join("\n")}
 
 ${renderMissingKeysSection(missingKeys, keyToFilesMap, defaultBasename)}
 
@@ -95,6 +107,8 @@ ${renderUnusedKeysSection(unusedKeys)}
 ${renderUnusedPlaceholdersSection(unusedPlaceholderKeys)}
 
 ${renderDynamicKeysSection(dynamicKeys)}
+
+${renderHardcodedSection(hardcodedStrings)}
 `
 }
 
@@ -282,6 +296,34 @@ function renderDynamicKeysSection(dynamicKeys: {
       )
     }
     parts.push("")
+  }
+
+  return parts.join("\n")
+}
+
+function renderHardcodedSection(
+  hardcodedStrings?: { file: string; line: number; text: string }[]
+): string {
+  if (hardcodedStrings === undefined) return ""
+  if (hardcodedStrings.length === 0) {
+    return "## ✅ Hardcoded Strings\n\nNo un-translated hardcoded strings detected."
+  }
+
+  const sorted = hardcodedStrings
+    .slice()
+    .sort((a, b) =>
+      a.file === b.file ? a.line - b.line : a.file.localeCompare(b.file)
+    )
+
+  const parts = [
+    "## Hardcoded Strings",
+    "",
+    "| File | Line | Snippet |",
+    "| :--- | :--- | :--- |"
+  ]
+
+  for (const f of sorted) {
+    parts.push(`| ${wrapCode(f.file)} | ${f.line} | ${wrapCode(f.text)} |`)
   }
 
   return parts.join("\n")

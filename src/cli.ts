@@ -67,17 +67,26 @@ program
   .description(
     "Validate translation keys, active placeholders, and cross-locale alignment."
   )
-  .action(() => {
+  .option(
+    "--check-hardcoded",
+    "Check for untranslated hardcoded strings in source code"
+  )
+  .action((cmdOpts: { checkHardcoded?: boolean }) => {
     const opts = program.opts()
     const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
     const configPath = typeof opts.config === "string" ? opts.config : undefined
     try {
       const config = loadConfig(cwd, configPath)
-      const results = validate(config, cwd)
+      const results = validate(config, cwd, {
+        checkHardcoded: !!cmdOpts.checkHardcoded
+      })
       const hasErrors =
         results.missingKeys.length > 0 ||
         results.activePlaceholderKeys.length > 0 ||
-        results.keysOnlyInLanguages.length > 0
+        results.keysOnlyInLanguages.length > 0 ||
+        (cmdOpts.checkHardcoded &&
+          results.hardcodedStrings &&
+          results.hardcodedStrings.length > 0)
       // LO-01: set exitCode and let Node drain stdout naturally instead
       // of calling process.exit() which can truncate buffered output
       // when stdout is piped.

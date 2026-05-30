@@ -14,13 +14,16 @@ import {
   classifyDynamicCall,
   computeLineOffsets,
   offsetToLine,
-  matchWildcard
+  matchWildcard,
+  scanTemplateTextNodes,
+  isHardcodedIgnored
 } from "@/core/scanner"
 import type {
   I18nSharpenConfig,
   ValidationResults,
   DynamicKeyFinding,
-  StructuredConcatFinding
+  StructuredConcatFinding,
+  HardcodedFinding
 } from "@/types"
 import { log } from "@/utils"
 import {
@@ -37,7 +40,8 @@ import { writeMarkdownReport } from "./validate/report"
 
 export function validate(
   config: I18nSharpenConfig,
-  cwd: string = process.cwd()
+  cwd: string = process.cwd(),
+  options?: { checkHardcoded?: boolean }
 ): ValidationResults {
   log.header("I18N-SHARPEN VALIDATOR")
 
@@ -212,6 +216,38 @@ export function validate(
     `Found ${pc.green(usedKeys.size)} unique translation keys used in source code.`
   )
 
+  // --- Scan hardcoded strings ---
+  const hardcodedFindings: HardcodedFinding[] = []
+  if (options?.checkHardcoded) {
+    log.info("Checking for un-translated hardcoded strings...")
+    const eligibleExtensions = [".tsx", ".jsx", ".vue", ".svelte", ".astro"]
+    for (const file of files) {
+      const ext = path.extname(file)
+      if (eligibleExtensions.includes(ext)) {
+        try {
+          const content = fs.readFileSync(file, "utf8")
+          const relativePath = normalizeDisplayPath(path.relative(cwd, file))
+          const isJsx = [".tsx", ".jsx"].includes(ext)
+          const candidates = scanTemplateTextNodes(content, isJsx)
+          const lineOffsets = computeLineOffsets(content)
+          const customIgnores = config.hardcoded?.ignore ?? []
+
+          for (const cand of candidates) {
+            if (!isHardcodedIgnored(cand.text, customIgnores)) {
+              hardcodedFindings.push({
+                file: relativePath,
+                line: offsetToLine(lineOffsets, cand.offset),
+                text: cand.text
+              })
+            }
+          }
+        } catch {
+          // ignore read error
+        }
+      }
+    }
+  }
+
   // --- Pure checks ---
   const suffixes = config.pluralSuffixes ?? []
   const missingKeys = findMissingKeys(usedKeys, defaultKeySet, config)
@@ -254,7 +290,8 @@ export function validate(
     dynamicKeys: {
       fullyDynamic: fullyDynamicFindings,
       structuredConcat: structuredConcatFindings
-    }
+    },
+    hardcodedStrings: options?.checkHardcoded ? hardcodedFindings : undefined
   }
 
   // --- Output ---
@@ -275,11 +312,12 @@ export function validate(
   const hasError =
     missingKeys.length > 0 ||
     activePlaceholderKeys.length > 0 ||
-    keysOnlyInLanguages.length > 0
+    keysOnlyInLanguages.length > 0 ||
+    (options?.checkHardcoded && hardcodedFindings.length > 0)
 
   if (hasError) {
     log.error(
-      "Validation failed. Please fix the missing keys, active placeholders, or locale mismatches."
+      "Validation failed. Please fix the missing keys, active placeholders, locale mismatches, or hardcoded strings."
     )
   } else {
     log.success("i18n Quality Validation passed successfully!\n")
