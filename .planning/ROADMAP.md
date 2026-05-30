@@ -13,7 +13,7 @@
 
 - [x] **Phase 1: Auto-Sorting Keys + Namespace Hardening** — users can control key ordering on every locale write; configurable `defaultNamespace`; `--clean-empty` flag; cross-file atomicity for prune (completed 2026-05-28)
 - [x] **Phase 2: Dynamic Key Warnings** — validator distinguishes fully-dynamic vs structured-concat keys and reports them separately (completed 2026-05-28)
-- [ ] **Phase 3: Interactive Pruning** — `prune --interactive` lets users pick which unused keys to delete via TUI
+- [x] **Phase 3: Interactive Pruning** — `prune --interactive` lets users pick which unused keys to delete via TUI (completed 2026-05-30)
 - [ ] **Phase 4: Hardcoded String Detection** — `validate --check-hardcoded` finds un-translated text nodes across all supported file extensions
 - [ ] **Phase 5: Deprecation Cleanup** — `I18nCopConfig` removed; clean breaking-change release prep
 
@@ -66,9 +66,10 @@
   4. With `--force` passed alongside `--interactive`, confirmed selections are written to disk; without `--force`, the run stays in dry-run preview even after confirmation.
   5. Running `prune --interactive` in a non-TTY environment (piped input, CI) skips the TUI, prints a warning, and falls back to standard dry-run behavior.
 **Plans**: 3 plans
-- [ ] 03-01-PLAN-cli-flag-and-types.md — PruneOptions.interactive surface + CLI --interactive flag wiring (IPRUNE-01 surface)
-- [ ] 03-02-PLAN-tui-renderer.md — hand-rolled raw-mode TUI runInteractivePrune + unit tests + property test (IPRUNE-02, IPRUNE-03, IPRUNE-04)
-- [ ] 03-03-PLAN-integration-and-fallback.md — integration into prune.ts with TTY detection, non-TTY fallback (D-14/D-15), summary preamble, CHANGELOG, 6 integration tests (IPRUNE-01, IPRUNE-05, IPRUNE-06)
+- [x] 03-01-PLAN-cli-flag-and-types.md — PruneOptions.interactive surface + CLI --interactive flag wiring (IPRUNE-01 surface)
+- [x] 03-02-PLAN-tui-renderer.md — hand-rolled raw-mode TUI runInteractivePrune + unit tests + property test (IPRUNE-02, IPRUNE-03, IPRUNE-04)
+- [x] 03-03-PLAN-integration-and-fallback.md — integration into prune.ts with TTY detection, non-TTY fallback (D-14/D-15), summary preamble, CHANGELOG, integration tests (IPRUNE-01, IPRUNE-05, IPRUNE-06)
+- [x] Hardening (D-19/D-20): row truncation + `~` indicator, resize listener, injectable escDelay, split/Alt/double-Esc handling, viewport-height guard fallback
 **UI hint**: yes
 
 ### Phase 4: Hardcoded String Detection
@@ -103,7 +104,7 @@
 |-------|----------------|--------|-----------|
 | 1. Auto-Sorting Keys + Namespace Hardening | 4/4 | Complete    | 2026-05-28 |
 | 2. Dynamic Key Warnings | 0/3 | Complete    | 2026-05-28 |
-| 3. Interactive Pruning | 0/? | Not started | - |
+| 3. Interactive Pruning | 3/3 | Complete    | 2026-05-30 |
 | 4. Hardcoded String Detection | 0/? | Not started | - |
 | 5. Deprecation Cleanup | 0/? | Not started | - |
 
