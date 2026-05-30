@@ -43,6 +43,10 @@ export function scanTemplateTextNodes(
 
   let skipTargetClose = ""
 
+  let exprQuote: "'" | '"' | "`" | null = null
+  let exprEscaped = false
+  let exprInComment: "single" | "multi" | null = null
+
   // Track HTML/JSX tag nesting depth.
   // For TSX/JSX, we start at 0 (JS context). We only enter template land when tagDepth > 0.
   // For Vue/Svelte/Astro, we start at 1 (Template context).
@@ -88,6 +92,9 @@ export function scanTemplateTextNodes(
         currentExprStartOffset = i
         currentExprContent = ""
         braceDepth = 1
+        exprQuote = null
+        exprEscaped = false
+        exprInComment = null
         i++
         continue
       }
@@ -112,7 +119,9 @@ export function scanTemplateTextNodes(
       if (ch === ">") {
         const isSelfClosing = currentTagContent.trim().endsWith("/")
         const tagInner = isSelfClosing
-          ? currentTagContent.slice(0, currentTagContent.length - 1)
+          ? currentTagContent
+              .trim()
+              .slice(0, currentTagContent.trim().length - 1)
           : currentTagContent
 
         // Parse attributes
@@ -154,6 +163,63 @@ export function scanTemplateTextNodes(
     }
 
     if (mode === "EXPR") {
+      const nextCh = i + 1 < n ? source[i + 1] : ""
+
+      if (exprInComment === "single") {
+        if (ch === "\n") {
+          exprInComment = null
+        }
+        currentExprContent += ch
+        i++
+        continue
+      }
+
+      if (exprInComment === "multi") {
+        if (ch === "*" && nextCh === "/") {
+          exprInComment = null
+          currentExprContent += "*/"
+          i += 2
+          continue
+        }
+        currentExprContent += ch
+        i++
+        continue
+      }
+
+      if (exprQuote) {
+        if (exprEscaped) {
+          exprEscaped = false
+        } else if (ch === "\\") {
+          exprEscaped = true
+        } else if (ch === exprQuote) {
+          exprQuote = null
+        }
+        currentExprContent += ch
+        i++
+        continue
+      }
+
+      // Check for start of comments or string literals
+      if (ch === "/" && nextCh === "/") {
+        exprInComment = "single"
+        currentExprContent += "//"
+        i += 2
+        continue
+      }
+      if (ch === "/" && nextCh === "*") {
+        exprInComment = "multi"
+        currentExprContent += "/*"
+        i += 2
+        continue
+      }
+      if (ch === "'" || ch === '"' || ch === "`") {
+        exprQuote = ch
+        exprEscaped = false
+        currentExprContent += ch
+        i++
+        continue
+      }
+
       if (ch === "{") {
         braceDepth++
       } else if (ch === "}") {

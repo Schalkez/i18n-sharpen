@@ -62,6 +62,17 @@ describe("scanTemplateTextNodes", () => {
     ])
   })
 
+  it("handles braces inside string literals and comments in JSX expressions", () => {
+    const jsx =
+      "<div>{ /* comment with } brace */ 'Welcome }' } and { \"}\" }</div>"
+    const result = scanTemplateTextNodes(jsx)
+    expect(result).toEqual([
+      { text: "Welcome }", offset: 35 },
+      { text: "and", offset: 48 },
+      { text: "}", offset: 55 }
+    ])
+  })
+
   it("ignores dynamic or complex JSX expressions", () => {
     const jsx = `
       <div>{t("key")}</div>
