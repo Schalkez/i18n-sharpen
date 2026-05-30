@@ -448,7 +448,7 @@ describe("interactive TUI renderer", () => {
     expect(io.exitCalls).toEqual([])
   })
 
-  it("cắt dòng dài hơn columns, không wrap (D-19)", async () => {
+  it("cắt dòng dài hơn columns, không wrap, thêm chỉ báo ~ (D-19)", async () => {
     const io = mockStdio()
     io.stdout.columns = 20
     const p = runInteractivePrune(["deeply.nested.namespace.very.long.key"], {
@@ -460,11 +460,12 @@ describe("interactive TUI renderer", () => {
     await tick()
     io.stdin.write("\r")
     await p
-    for (const line of io.getStrippedOutput().split("\n")) {
-      if (line.includes("[ ]")) {
-        expect(line.length).toBeLessThanOrEqual(20)
-      }
-    }
+    const lines = io.getStrippedOutput().split("\n")
+    const candidateLine = lines.find((line) => line.includes("[ ]"))
+    expect(candidateLine).toBeDefined()
+    const line = candidateLine ?? ""
+    expect(line.length).toBeLessThanOrEqual(20)
+    expect(line.endsWith("~")).toBe(true) // check truncate indicator
   })
 
   it("vẽ lại ở width mới khi có sự kiện resize (D-19)", async () => {
@@ -491,5 +492,39 @@ describe("interactive TUI renderer", () => {
         expect(line.length).toBeLessThanOrEqual(30)
       }
     }
+  })
+
+  it("Alt-key combos (\\x1b followed by non-control character) are dropped cleanly (D-20)", async () => {
+    const io = mockStdio()
+    const p = runInteractivePrune(["a", "b"], {
+      stdin: io.stdin,
+      stdout: io.stdout,
+      exit: io.exit,
+      escDelay: 10
+    })
+    await tick()
+    io.stdin.write("\x1ba") // Alt+a
+    await tick()
+    io.stdin.write("\r")
+    const r = await p
+    // Alt+a should NOT trigger check-all (toDelete remains empty) and should NOT cancel
+    expect(r.cancelled).toBe(false)
+    expect(r.toDelete.size).toBe(0)
+  })
+
+  it("double-Esc (\\x1b\\x1b) cancels the TUI picker (D-20)", async () => {
+    const io = mockStdio()
+    const p = runInteractivePrune(["a", "b"], {
+      stdin: io.stdin,
+      stdout: io.stdout,
+      exit: io.exit,
+      escDelay: 20
+    })
+    await tick()
+    io.stdin.write("\x1b\x1b") // double-Esc
+    await tick()
+    const r = await p
+    expect(r.cancelled).toBe(true)
+    expect(r.toDelete.size).toBe(0)
   })
 })

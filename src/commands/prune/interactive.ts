@@ -107,7 +107,7 @@ export function runInteractivePrune(
 
       const glyphs = getGlyphs()
       const width = stdout.columns ?? 80
-      const prefixLen = 6 // "> " (2) + "[x] " (4)
+      const prefixLen = 6 // "> " (2) + "[x] " (4) — assumes ASCII key identifiers
       const maxLabel = Math.max(0, width - prefixLen - 1)
 
       for (let i = 0; i < totalRows; i++) {
@@ -121,7 +121,7 @@ export function runInteractivePrune(
 
         let label = candidates[i]
         if (label.length > maxLabel) {
-          label = label.slice(0, maxLabel)
+          label = maxLabel > 1 ? label.slice(0, maxLabel - 1) + "~" : "~"
         }
         const labelStr = isCursor ? pc.cyan(label) : label
 
