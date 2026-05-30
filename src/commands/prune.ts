@@ -137,6 +137,26 @@ export async function prune(
     return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
   }
 
+  const stdoutStream = _interactiveIOOverride?.stdout ?? process.stdout
+  const termRows = stdoutStream.rows ?? 24
+  if (candidates.length + 1 > termRows) {
+    log.warn(
+      `Interactive picker needs ${candidates.length + 1} rows but the terminal has ${termRows}. ` +
+        `Falling back to dry-run preview — resize the terminal taller, or narrow the scope, then re-run.`
+    )
+    dryRun = true
+    if (isNamespaced) {
+      return pruneNamespaced(
+        config,
+        localesDirAbs,
+        usedKeys,
+        fileContents,
+        dryRun
+      )
+    }
+    return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+  }
+
   // Launch the TUI
   let tuiResult
   try {

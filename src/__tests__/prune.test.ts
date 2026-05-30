@@ -801,5 +801,52 @@ describe("prune: integration", () => {
         false
       ) // deleted empty ns
     })
+
+    it("interactive with insufficient terminal height falls back to dry-run preview and warns", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `t('used.key')`,
+        "locales/en.json": JSON.stringify({
+          "used.key": "Used",
+          "stale.a": "A",
+          "stale.b": "B"
+        })
+      })
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"]
+      }
+
+      const io = mockInteractiveIO()
+      io.stdout.rows = 2 // needs 3 rows (2 candidates + 1)
+      __setInteractiveIOForTests({
+        stdin: io.stdin,
+        stdout: io.stdout,
+        exit: io.exit
+      })
+
+      const result = await prune(config, tempDir, {
+        interactive: true,
+        force: true
+      })
+      __setInteractiveIOForTests(undefined)
+
+      expect(result.written).toBe(false)
+      expect(result.dryRun).toBe(true)
+      expect(result.totalPruned).toBe(2)
+
+      const warnLog = stripAnsi(
+        logSpy.mock.calls.map((c) => String(c[0] ?? "")).join("\n")
+      )
+      expect(warnLog).toContain(
+        "Interactive picker needs 3 rows but the terminal has 2."
+      )
+      expect(warnLog).toContain(
+        "Falling back to dry-run preview — resize the terminal taller"
+      )
+    })
   })
 })

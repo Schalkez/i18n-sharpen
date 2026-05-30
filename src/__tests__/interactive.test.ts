@@ -45,6 +45,7 @@ function mockStdio() {
     captured,
     exitCalls,
     exit,
+    stripAnsi,
     getOutput: () => captured.join(""),
     getStrippedOutput: () => stripAnsi(captured.join(""))
   }
@@ -406,5 +407,89 @@ describe("interactive TUI renderer", () => {
       ),
       { numRuns: 100 }
     )
+  })
+
+  const tick = () => new Promise((r) => setImmediate(r))
+
+  it("split arrow (\\x1b then [B in two data events) → Arrow-Down, không phải Esc (D-20)", async () => {
+    const io = mockStdio()
+    const p = runInteractivePrune(["a", "b", "c"], {
+      stdin: io.stdin,
+      stdout: io.stdout,
+      exit: io.exit,
+      escDelay: 20
+    })
+    await tick()
+    io.stdin.write("\x1b")
+    io.stdin.write("[B") // tách 2 chunk, trong escDelay
+    await tick()
+    io.stdin.write("\r")
+    const r = await p
+    expect(r.cancelled).toBe(false)
+    const last = io
+      .getOutput()
+      .substring(io.getOutput().lastIndexOf("\x1b[?25l"))
+    expect(io.stripAnsi(last)).toMatch(/[>→]\s*\[ \]\s*b/) // cursor đã xuống row 1
+  })
+
+  it("bare Esc sau escDelay → cancelled, không gọi exit (D-20)", async () => {
+    const io = mockStdio()
+    const p = runInteractivePrune(["a", "b"], {
+      stdin: io.stdin,
+      stdout: io.stdout,
+      exit: io.exit,
+      escDelay: 5
+    })
+    await tick()
+    io.stdin.write("\x1b")
+    await new Promise((r) => setTimeout(r, 10)) // đợi lâu hơn escDelay
+    const r = await p
+    expect(r.cancelled).toBe(true)
+    expect(io.exitCalls).toEqual([])
+  })
+
+  it("cắt dòng dài hơn columns, không wrap (D-19)", async () => {
+    const io = mockStdio()
+    io.stdout.columns = 20
+    const p = runInteractivePrune(["deeply.nested.namespace.very.long.key"], {
+      stdin: io.stdin,
+      stdout: io.stdout,
+      exit: io.exit,
+      escDelay: 5
+    })
+    await tick()
+    io.stdin.write("\r")
+    await p
+    for (const line of io.getStrippedOutput().split("\n")) {
+      if (line.includes("[ ]")) {
+        expect(line.length).toBeLessThanOrEqual(20)
+      }
+    }
+  })
+
+  it("vẽ lại ở width mới khi có sự kiện resize (D-19)", async () => {
+    const io = mockStdio()
+    io.stdout.columns = 80
+    const p = runInteractivePrune(["alpha.one", "beta.two"], {
+      stdin: io.stdin,
+      stdout: io.stdout,
+      exit: io.exit,
+      escDelay: 5
+    })
+    await tick()
+    const before = io.getOutput().length
+    io.stdout.columns = 30
+    io.stdout.emit("resize")
+    await tick()
+    expect(io.getOutput().length).toBeGreaterThan(before)
+    io.stdin.write("\r")
+    const r = await p
+    expect(r.cancelled).toBe(false)
+    const newOutput = io.getOutput().substring(before)
+    for (const line of io.stripAnsi(newOutput).split("\n")) {
+      if (line.trim().length > 0) {
+        expect(line.length).toBeLessThanOrEqual(30)
+      }
+    }
   })
 })

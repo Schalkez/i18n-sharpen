@@ -11,6 +11,7 @@ export interface InteractivePruneOptions {
     rows?: number
   }
   exit?: (code: number) => void
+  escDelay?: number
 }
 
 export interface InteractivePruneResult {
@@ -49,6 +50,7 @@ export function runInteractivePrune(
   const stdin = options.stdin ?? process.stdin
   const stdout = options.stdout ?? process.stdout
   const exitHook = options.exit ?? ((code) => process.exit(code))
+  const escDelay = options.escDelay ?? 50
 
   return new Promise<InteractivePruneResult>((resolve, reject) => {
     // Setup state
@@ -57,6 +59,7 @@ export function runInteractivePrune(
     let isFinished = false
     let initialRender = true
     let escTimeout: NodeJS.Timeout | undefined
+    let pending = Buffer.alloc(0)
 
     const totalRows = candidates.length
     // Header log or metadata
@@ -103,6 +106,9 @@ export function runInteractivePrune(
       }
 
       const glyphs = getGlyphs()
+      const width = stdout.columns ?? 80
+      const prefixLen = 6 // "> " (2) + "[x] " (4)
+      const maxLabel = Math.max(0, width - prefixLen - 1)
 
       for (let i = 0; i < totalRows; i++) {
         const isCursor = i === cursorIndex
@@ -112,13 +118,24 @@ export function runInteractivePrune(
         const checkboxStr = isChecked
           ? pc.green(glyphs.checked)
           : pc.dim(glyphs.unchecked)
-        const labelStr = isCursor ? pc.cyan(candidates[i]) : candidates[i]
+
+        let label = candidates[i]
+        if (label.length > maxLabel) {
+          label = label.slice(0, maxLabel)
+        }
+        const labelStr = isCursor ? pc.cyan(label) : label
 
         output += `${cursorStr} ${checkboxStr} ${labelStr}\x1b[K\n`
       }
 
       // Add footer
-      output += `${footerText}\x1b[K\n`
+      let footer = footerText
+      const plainFooter =
+        "Space toggle  Enter confirm  Esc cancel  a all  n none  i invert"
+      if (plainFooter.length > width - 1) {
+        footer = pc.dim(plainFooter.slice(0, width - 1))
+      }
+      output += `${footer}\x1b[K\n`
 
       writeToStdout(output)
     }
@@ -145,6 +162,9 @@ export function runInteractivePrune(
       stdin.pause()
       stdin.removeListener("data", handleData)
       process.removeListener("SIGINT", handleSigInt)
+      if (typeof stdout.removeListener === "function") {
+        stdout.removeListener("resize", onResize)
+      }
     }
 
     function handleSigInt() {
@@ -169,89 +189,131 @@ export function runInteractivePrune(
       const len = chunk.length
       if (len === 0) return
 
-      // Ctrl+C (0x03)
-      if (chunk[0] === 0x03) {
-        handleSigInt()
-        return
-      }
+      pending = Buffer.concat([pending, chunk])
 
-      // Enter / Carriage Return (0x0d) / Line Feed (0x0a)
-      if (chunk[0] === 0x0d || chunk[0] === 0x0a) {
-        cleanup()
-        const toDelete = new Set<string>()
-        for (const idx of checkedIndices) {
-          toDelete.add(candidates[idx])
-        }
-        resolve({ toDelete, cancelled: false })
-        return
-      }
-
-      // Esc sequence (0x1b)
-      if (chunk[0] === 0x1b) {
-        if (len === 1) {
-          // Lookahead to make sure it's not a split sequence
-          escTimeout = setTimeout(() => {
-            cleanup()
-            resolve({ toDelete: new Set(), cancelled: true })
-          }, 15)
+      while (pending.length > 0) {
+        // Ctrl+C (0x03)
+        if (pending[0] === 0x03) {
+          pending = pending.subarray(1)
+          handleSigInt()
           return
         }
 
-        // Parse ANSI sequences starting with 0x1b 0x5b ([)
-        if (chunk[1] === 0x5b) {
-          const code = chunk.toString("utf8", 2)
-          if (code === "A") {
-            // Arrow Up
-            cursorIndex = Math.max(0, cursorIndex - 1)
-          } else if (code === "B") {
-            // Arrow Down
-            cursorIndex = Math.min(totalRows - 1, cursorIndex + 1)
-          } else if (code === "5~") {
-            // PageUp
-            const pageSize = Math.max(1, (stdout.rows ?? 12) - 2)
-            cursorIndex = Math.max(0, cursorIndex - pageSize)
-          } else if (code === "6~") {
-            // PageDown
-            const pageSize = Math.max(1, (stdout.rows ?? 12) - 2)
-            cursorIndex = Math.min(totalRows - 1, cursorIndex + pageSize)
+        // Enter / Carriage Return (0x0d) / Line Feed (0x0a)
+        if (pending[0] === 0x0d || pending[0] === 0x0a) {
+          pending = pending.subarray(1)
+          cleanup()
+          const toDelete = new Set<string>()
+          for (const idx of checkedIndices) {
+            toDelete.add(candidates[idx])
+          }
+          resolve({ toDelete, cancelled: false })
+          return
+        }
+
+        // Space (0x20)
+        if (pending[0] === 0x20) {
+          pending = pending.subarray(1)
+          if (checkedIndices.has(cursorIndex)) {
+            checkedIndices.delete(cursorIndex)
+          } else {
+            checkedIndices.add(cursorIndex)
+          }
+          render()
+          continue
+        }
+
+        // Esc sequence (0x1b)
+        if (pending[0] === 0x1b) {
+          if (pending.length === 1) {
+            // Lookahead to make sure it's not a split sequence
+            escTimeout = setTimeout(() => {
+              pending = Buffer.alloc(0)
+              cleanup()
+              resolve({ toDelete: new Set(), cancelled: true })
+            }, escDelay)
+            return
+          }
+
+          // Double Esc
+          if (pending[1] === 0x1b) {
+            pending = pending.subarray(1)
+            continue
+          }
+
+          // Parse ANSI sequences starting with 0x1b 0x5b ([)
+          if (pending[1] === 0x5b) {
+            let endIdx = -1
+            for (let idx = 2; idx < pending.length; idx++) {
+              const charCode = pending[idx]
+              if (charCode >= 0x40 && charCode <= 0x7e) {
+                endIdx = idx
+                break
+              }
+            }
+
+            if (endIdx === -1) {
+              // Sequence is not complete, wait for more data
+              return
+            }
+
+            const sequence = pending.toString("utf8", 2, endIdx + 1)
+            pending = pending.subarray(endIdx + 1)
+
+            if (sequence === "A") {
+              // Arrow Up
+              cursorIndex = Math.max(0, cursorIndex - 1)
+            } else if (sequence === "B") {
+              // Arrow Down
+              cursorIndex = Math.min(totalRows - 1, cursorIndex + 1)
+            } else if (sequence === "5~") {
+              // PageUp
+              const pageSize = Math.max(1, (stdout.rows ?? 12) - 2)
+              cursorIndex = Math.max(0, cursorIndex - pageSize)
+            } else if (sequence === "6~") {
+              // PageDown
+              const pageSize = Math.max(1, (stdout.rows ?? 12) - 2)
+              cursorIndex = Math.min(totalRows - 1, cursorIndex + pageSize)
+            }
+            render()
+            continue
+          }
+
+          // Alt/meta not supported (0x1b followed by non-[ non-1b byte)
+          pending = pending.subarray(2)
+          continue
+        }
+
+        // Standard keyboard shortcuts
+        const char = String.fromCharCode(pending[0]).toLowerCase()
+        pending = pending.subarray(1)
+
+        if (char === "a") {
+          // Check all
+          for (let i = 0; i < totalRows; i++) {
+            checkedIndices.add(i)
+          }
+          render()
+        } else if (char === "n") {
+          // Uncheck all
+          checkedIndices.clear()
+          render()
+        } else if (char === "i") {
+          // Invert selection
+          for (let i = 0; i < totalRows; i++) {
+            if (checkedIndices.has(i)) {
+              checkedIndices.delete(i)
+            } else {
+              checkedIndices.add(i)
+            }
           }
           render()
         }
-        return
       }
+    }
 
-      // Space (0x20)
-      if (chunk[0] === 0x20) {
-        if (checkedIndices.has(cursorIndex)) {
-          checkedIndices.delete(cursorIndex)
-        } else {
-          checkedIndices.add(cursorIndex)
-        }
-        render()
-        return
-      }
-
-      // Standard keyboard shortcuts
-      const char = String.fromCharCode(chunk[0]).toLowerCase()
-      if (char === "a") {
-        // Check all
-        for (let i = 0; i < totalRows; i++) {
-          checkedIndices.add(i)
-        }
-        render()
-      } else if (char === "n") {
-        // Uncheck all
-        checkedIndices.clear()
-        render()
-      } else if (char === "i") {
-        // Invert selection
-        for (let i = 0; i < totalRows; i++) {
-          if (checkedIndices.has(i)) {
-            checkedIndices.delete(i)
-          } else {
-            checkedIndices.add(i)
-          }
-        }
+    function onResize() {
+      if (!isFinished) {
         render()
       }
     }
@@ -259,5 +321,8 @@ export function runInteractivePrune(
     // Attach listeners
     stdin.on("data", handleData)
     process.on("SIGINT", handleSigInt)
+    if (typeof stdout.on === "function") {
+      stdout.on("resize", onResize)
+    }
   })
 }
