@@ -44,19 +44,19 @@ Follow conventional commits:
 
 ## PR Workflow
 
-1. **Create feature branch** from `develop`
+1. **Create feature branch** from `master`
 2. **Make commits** with clear messages
 3. **Run pre-checks**: `pnpm lint && pnpm test`
 4. **Push to remote**: `git push`
 5. **Create PR** via `gh pr create` or GitHub UI
-6. **Squash merge** when merging to `develop`
+6. **Squash merge** when merging to `master`
 
 ## Branch Naming
 
-Format: `<type>/<JIRA-ID>-<description>`
+Format: `<type>/<description>`
 
 Examples:
 
-- `feature/DIFFAPP-635-project-detail-responsive`
-- `fix/DIFFAPP-640-cancel-commit-quota-bug`
-- `refactor/DIFFAPP-641-cleanup-constants`
+- `feature/hardcoded-string-detection`
+- `fix/cancel-commit-quota-bug`
+- `refactor/cleanup-constants`

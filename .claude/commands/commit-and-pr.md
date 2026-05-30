@@ -10,8 +10,8 @@ Use this workflow when the user asks to "finalize", "push", or "create a PR" for
 
 Before committing, ensure the codebase is healthy.
 
-- **Lint**: Run `pnpm lint` (frontend/backend).
-- **Test**: Run `pnpm test` or `pnpm exec vitest run`.
+- **Lint**: Run `pnpm lint`.
+- **Test**: Run `pnpm test`.
 
 ## 2. Commit on Feature Branch
 
@@ -21,9 +21,9 @@ Commit all changes on the current feature branch.
 - **Stage**: `git add .` (or specific files).
 - **Commit**: Use a semantic commit message (e.g., `feat: ...`, `fix: ...`, `refactor: ...`).
 
-## 3. Merge to Develop & Build (Local Verification)
+## 3. Merge to Master & Build (Local Verification)
 
-**Critical**: This step verifies the merge will succeed on develop by actually merging and building locally.
+**Critical**: This step verifies the merge will succeed on `master` by actually merging and building locally.
 
 **Command Sequence:**
 
@@ -31,8 +31,8 @@ Commit all changes on the current feature branch.
 # Save current branch
 CURRENT_BRANCH=$(git branch --show-current)
 
-# Checkout develop and merge
-git checkout develop
+# Checkout master and merge
+git checkout master
 git merge --no-ff "$CURRENT_BRANCH"
 
 # Run build and capture output
@@ -51,7 +51,7 @@ DIFF_PREVIEW=$(git diff HEAD~1 --stat | tail -n 10)
 ### ✅ If Build Succeeds (`$BUILD_EXIT_CODE == 0`)
 
 ```bash
-# Reset develop to previous state
+# Reset master to previous state
 git reset --hard HEAD~1
 
 # Return to feature branch
@@ -67,7 +67,7 @@ git push
 ### ❌ If Build Fails (`$BUILD_EXIT_CODE != 0`)
 
 ```bash
-# Reset develop to previous state
+# Reset master to previous state
 git reset --hard HEAD~1
 
 # Return to feature branch
@@ -90,23 +90,16 @@ Use the `gh` CLI to create the PR efficiently.
 
 **PR Title Convention:**
 
-- **If branch has ID (e.g. `feature/DIFFAPP-123-...`)**: `[DIFFAPP-123] <Description>`
-- **Otherwise**: `<type>: <description>`
+- Title format: `<type>: <description>` (e.g. `feat: add hardcoded string scanner`)
 
 **Command Template:**
 
 ```bash
-# Extract ID from branch name if possible
 BRANCH_NAME=$(git branch --show-current)
-if [[ "$BRANCH_NAME" =~ DIFFAPP-[0-9]+ ]]; then
-  ID=${BASH_REMATCH[0]}
-  TITLE="[$ID] <Semantic Title>"
-else
-  TITLE="<type>: <Semantic Title>"
-fi
+TITLE="<type>: <Semantic Description>"
 
 gh pr create \
-  --base develop \
+  --base master \
   --head "$BRANCH_NAME" \
   --title "$TITLE" \
   --body "## Description
@@ -134,14 +127,14 @@ $BUILD_OUTPUT
 
 ### Build Verification
 
-3.  [ ] Did I merge to develop locally?
+3.  [ ] Did I merge to master locally?
 4.  [ ] Did I run `pnpm build` and capture the exit code?
 5.  [ ] Did I capture diff stats and build output (last 10 lines)?
 
 ### Conditional Branch
 
-6.  [ ] **If build succeeded**: Did I reset develop, push feature branch, and create PR?
-7.  [ ] **If build failed**: Did I reset develop, return to feature branch, and inform user?
+6.  [ ] **If build succeeded**: Did I reset master, push feature branch, and create PR?
+7.  [ ] **If build failed**: Did I reset master, return to feature branch, and inform user?
 
 ---
 
@@ -152,24 +145,12 @@ $BUILD_OUTPUT
 **Agent (Success Path)**:
 
 1. ✅ Runs `pnpm lint` and `pnpm test` → All pass
-2. ✅ Commits changes: `git commit -m "feat: add VIP icon and unit tests"`
-3. ✅ Merges to develop: `git checkout develop && git merge --no-ff feature/DIFFAPP-XXX`
+2. ✅ Commits changes: `git commit -m "feat: add hardcoded string scanner"`
+3. ✅ Merges to master: `git checkout master && git merge --no-ff feature/hardcoded-string-detection`
 4. ✅ Builds: `pnpm build` → Success (exit code 0)
 5. ✅ Captures diff stats and build output
-6. ✅ Resets develop: `git reset --hard HEAD~1`
-7. ✅ Returns to feature branch: `git checkout feature/DIFFAPP-XXX`
+6. ✅ Resets master: `git reset --hard HEAD~1`
+7. ✅ Returns to feature branch: `git checkout feature/hardcoded-string-detection`
 8. ✅ Pushes: `git push`
 9. ✅ Creates PR: `gh pr create` with diff and build output
 10. ✅ Responds: "PR created successfully: [link]"
-
-**Agent (Failure Path)**:
-
-1. ✅ Runs `pnpm lint` and `pnpm test` → All pass
-2. ✅ Commits changes
-3. ✅ Merges to develop
-4. ❌ Builds: `pnpm build` → **FAIL** (exit code 1)
-5. ❌ Resets develop: `git reset --hard HEAD~1`
-6. ❌ Returns to feature branch
-7. ❌ Responds: "Build failed after merge to develop. Please review the build errors below and fix them. Once fixed, I'll restart the workflow."
-8. ❌ Shows build log to user
-9. ⏸️ Waits for user to fix issues

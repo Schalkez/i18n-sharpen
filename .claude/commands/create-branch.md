@@ -8,10 +8,10 @@ Use this workflow when the user asks to "start a new task", "create a branch", o
 
 ## 1. Naming Convention
 
-The project follows a strict naming convention:
-`javascript
-<type>/DIFFAPP-<ID>-<short-description>
-`
+The project follows a standard branch naming convention:
+```
+<type>/<description>
+```
 
 ### Components:
 
@@ -19,44 +19,39 @@ The project follows a strict naming convention:
   - `feature`: New functionality.
   - `fix`: Bug fixes.
   - `hotfix`: Urgent production fixes.
-  - `chore`: Maintenance, config changes (optional, but `feature` or `fix` is preferred if it tracks a ticket).
-- **ID**: The Jira/Ticket ID (e.g., `633`, `102`). **Always Required**.
-  - _If the user doesn't provide an ID, ASK FOR IT._
-- **short-description**: Kebab-case summary (e.g., `responsive-grid-system`, `fix-login-error`).
+  - `chore`: Maintenance, config changes.
+- **description**: Kebab-case summary of the task (e.g., `hardcoded-string-detection`, `fix-sorting-bug`).
 
 ### Examples:
 
-- ✅ `feature/DIFFAPP-633-responsive-grid-system`
-- ✅ `fix/DIFFAPP-469-checksum-null-pointer`
-- ❌ `feature/responsive-grid` (Missing ID)
-- ❌ `DIFFAPP-633` (Missing type)
+- ✅ `feature/hardcoded-string-detection`
+- ✅ `fix/missing-keys-sorting`
 
 ## 2. Workflow Steps
 
-1.  **Sync with Base**: Ensure you are on the latest `develop` (or `master` if it's a hotfix).
+1.  **Sync with Base**: Ensure you are on the latest `master` branch.
     ```bash
-    git checkout develop
-    git pull origin develop
+    git checkout master
+    git pull origin master
     ```
 2.  **Create Branch**:
     ```bash
-    git checkout -b <type>/DIFFAPP-<ID>-<description>
+    git checkout -b <type>/<description>
     ```
 3.  **Confirm**: Notify the user that the branch is created and active.
 
 ## 3. Example Interaction
 
-**User**: "Create a branch for user profile UI, ticket 700."
+**User**: "Create a branch for hardcoded string detection."
 
 **Agent**:
 
 1.  Identifies Type: `feature` (implied).
-2.  Identifies ID: `700` (so `DIFFAPP-700`).
-3.  Identifies Slug: `user-profile-ui`.
-4.  Runs:
+2.  Identifies Slug: `hardcoded-string-detection`.
+3.  Runs:
     ```bash
-    git checkout develop
-    git pull origin develop
-    git checkout -b feature/DIFFAPP-700-user-profile-ui
+    git checkout master
+    git pull origin master
+    git checkout -b feature/hardcoded-string-detection
     ```
-5.  Responds: "Created branch `feature/DIFFAPP-700-user-profile-ui` from `develop`."
+4.  Responds: "Created branch `feature/hardcoded-string-detection` from `master`."

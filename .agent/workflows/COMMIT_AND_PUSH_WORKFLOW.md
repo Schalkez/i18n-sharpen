@@ -22,14 +22,14 @@ description: Commit and push changes to existing PR (no new PR creation)
 
 **Agent must verify:**
 
-- [ ] Current branch is NOT `main` or `develop`
+- [ ] Current branch is NOT `master`
 - [ ] Changes are staged or ready to commit
 
 **Run checks BEFORE any git commands:**
 
 - [ ] Build passes: `pnpm build` (**capture/save output**, at least last 10-15 lines)
 - [ ] Lint passes: `pnpm lint`
-- [ ] Tests pass: `pnpm test` (if applicable)
+- [ ] Tests pass: `pnpm test`
 
 ### 2. Commit Changes
 
@@ -47,10 +47,10 @@ git commit -m "<type>: <description>
 **Example:**
 
 ```bash
-git commit -m "fix: resolve responsive layout issue on mobile
+git commit -m "fix: resolve tag attributes parsing issue
 
-- Adjusted padding for ViewTestHistoryBuy
-- Fixed button width on small screens"
+- Fixed regex to handle multiple attributes correctly
+- Added unit tests for empty attribute values"
 ```
 
 ### 3. Push to Remote
@@ -71,9 +71,9 @@ git push --set-upstream origin <branch-name>
 
 ## Agent Checklist
 
-- [ ] Verified not on `main` or `develop`
+- [ ] Verified not on `master`
 - [ ] Ran `pnpm lint` - 0 errors
-- [ ] Ran `pnpm test` - all passing (if applicable)
+- [ ] Ran `pnpm test` - all passing
 - [ ] Created semantic commit message
 - [ ] Pushed with regular `git push` (NO force push)
 - [ ] Confirmed push successful
@@ -82,14 +82,14 @@ git push --set-upstream origin <branch-name>
 
 ## Example Interaction
 
-**USER:** "fix cái bug responsive và push lên"
+**USER:** "fix cái bug và push lên"
 
 **AGENT:**
 
 ```bash
 # 1. Check current branch
 git branch --show-current
-# Output: feature/DIFFAPP-635-project-detail-responsive
+# Output: feature/hardcoded-string-detection
 
 # 2. Run pre-checks
 pnpm lint
@@ -97,14 +97,14 @@ pnpm lint
 
 # 3. Commit
 git add -A
-git commit -m "fix: resolve responsive layout issue on mobile"
+git commit -m "fix: resolve tag attributes parsing issue"
 
 # 4. Push
 git push
 # ✅ Pushed successfully
 ```
 
-**AGENT:** "✅ Changes committed and pushed to `feature/DIFFAPP-635-project-detail-responsive`"
+**AGENT:** "✅ Changes committed and pushed to `feature/hardcoded-string-detection`"
 
 ---
 
@@ -113,7 +113,7 @@ git push
 ❌ **NEVER:**
 
 - Force push (`git push --force` or `--force-with-lease`)
-- Push to `main` or `develop` directly
+- Push to `master` directly
 - Skip lint/test checks
 
 ✅ **ALWAYS:**
