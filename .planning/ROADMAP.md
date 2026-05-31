@@ -24,7 +24,7 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 
 **Milestone Goal:** Replace the regex/state-machine scanner with real per-framework AST parsers (TypeScript Compiler API for JS/TS; dynamic workspace compilers for Vue/Svelte/Astro) so key extraction, dynamic-key classification, and hardcoded-string detection reach near-100% accuracy — without regressing safety, CI-friendliness, framework coverage, or performance.
 
-- [ ] **Phase 1: Foundation & Error Model** - Shared types, workspace dep resolver, and the fatal-vs-collected error-kind split that every parser depends on
+- [x] **Phase 1: Foundation & Error Model** - Shared types, workspace dep resolver, and the fatal-vs-collected error-kind split that every parser depends on (1/1 plan — 2026-05-31)
 - [ ] **Phase 2: JS/TS Parser Core + Golden Cases** - TypeScript Compiler API parser producing a unified `ParsedFileResult` in a single traversal, plus the two golden edge-case tests
 - [ ] **Phase 3: Framework Parsers + Dispatcher** - Vue/Svelte/Astro compilers, embedded-block offset rebasing, and the extension-based `parseFile()` dispatcher
 - [ ] **Phase 4: Async Migration (shadow mode on, regex still default)** - Async `detectUsedKeys` with bounded-concurrency pool and `useAst` flag; full async cascade to public API; regex remains the default
@@ -44,7 +44,7 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
   4. Process exit codes are documented and verified: missing-compiler exits differently from a pure i18n-key validation failure
   5. The parser is not imported until the first JS/TS file is encountered — a validate run on a JSON-only locale project pays zero parser cold-start cost
 **Plans**: 1 plan
-- [ ] 01-01-PLAN.md — Foundation: ParsedFileResult/FileParseError contracts, missing-dependency error kind, workspace dep resolver, 0/1/2 exit codes, typescript optional peer dep
+- [x] 01-01-PLAN.md — Foundation: ParsedFileResult/FileParseError contracts, missing-dependency error kind, workspace dep resolver, 0/1/2 exit codes, typescript optional peer dep ✅ 2026-05-31
 
 ### Phase 2: JS/TS Parser Core + Golden Cases
 **Goal**: A single TypeScript Compiler API traversal extracts static used keys, attribute keys, dynamic-call candidates, and hardcoded-text candidates from `.ts/.tsx/.js/.jsx` files with correct document-absolute offsets — and the two golden edge cases that motivated the rewrite both pass
