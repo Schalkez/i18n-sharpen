@@ -43,7 +43,8 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
   3. The `I18nSharpenError` discriminated union has distinct `kind` values for missing-compiler (fatal) vs file-parse-error (collected); the two code paths are exercised in unit tests
   4. Process exit codes are documented and verified: missing-compiler exits differently from a pure i18n-key validation failure
   5. The parser is not imported until the first JS/TS file is encountered — a validate run on a JSON-only locale project pays zero parser cold-start cost
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 01-01-PLAN.md — Foundation: ParsedFileResult/FileParseError contracts, missing-dependency error kind, workspace dep resolver, 0/1/2 exit codes, typescript optional peer dep
 
 ### Phase 2: JS/TS Parser Core + Golden Cases
 **Goal**: A single TypeScript Compiler API traversal extracts static used keys, attribute keys, dynamic-call candidates, and hardcoded-text candidates from `.ts/.tsx/.js/.jsx` files with correct document-absolute offsets — and the two golden edge cases that motivated the rewrite both pass
@@ -111,7 +112,7 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 | 3. Interactive Pruning | v0.3.0 | 3/3 | Complete | 2026-05-30 |
 | 4. Hardcoded String Detection | v0.3.0 | 2/2 | Complete | 2026-05-30 |
 | 5. Deprecation Cleanup | v0.3.0 | 1/1 | Complete | 2026-05-30 |
-| 1. Foundation & Error Model | v0.4.0 | 0/? | Not started | - |
+| 1. Foundation & Error Model | v0.4.0 | 1/1 | Complete | 2026-05-31 |
 | 2. JS/TS Parser Core + Golden Cases | v0.4.0 | 0/? | Not started | - |
 | 3. Framework Parsers + Dispatcher | v0.4.0 | 0/? | Not started | - |
 | 4. Async Migration | v0.4.0 | 0/? | Not started | - |

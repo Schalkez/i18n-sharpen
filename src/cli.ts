@@ -23,6 +23,23 @@ function reportError(error: unknown): void {
   }
 }
 
+/**
+ * Maps a caught error to the process exit code (D-03, ESLint-style).
+ *   2 = tool-fatal (missing dependency/compiler) — user must install a package.
+ *   1 = all other caught errors.
+ * The i18n-findings path (hasErrors ? 1 : 0) is handled separately per command (D-04).
+ * Never calls process.exit() — callers do `process.exitCode = fatalExitCode(e)` (LO-01).
+ */
+export function fatalExitCode(error: unknown): 1 | 2 {
+  if (
+    error instanceof I18nSharpenError &&
+    error.error.kind === "missing-dependency"
+  ) {
+    return 2
+  }
+  return 1
+}
+
 // LO-09: read the version dynamically from package.json so it never
 // drifts from `npm version` / release tooling. Falls back to "0.0.0"
 // if the package.json can't be read (e.g. unusual install layouts).
@@ -93,7 +110,7 @@ program
       process.exitCode = hasErrors ? 1 : 0
     } catch (error) {
       reportError(error)
-      process.exitCode = 1
+      process.exitCode = fatalExitCode(error)
     }
   })
 
@@ -128,7 +145,7 @@ program
       process.exitCode = 0
     } catch (error) {
       reportError(error)
-      process.exitCode = 1
+      process.exitCode = fatalExitCode(error)
     }
   })
 
@@ -194,9 +211,9 @@ program
         process.exitCode = 0
       } catch (error) {
         reportError(error)
-        process.exitCode = 1
+        process.exitCode = fatalExitCode(error)
       }
     }
   )
 
-program.parse(process.argv)
+if (process.env.NODE_ENV !== "test") program.parse(process.argv)

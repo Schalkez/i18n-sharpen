@@ -11,6 +11,12 @@ export type I18nError =
   | { kind: "filesystem"; message: string; path: string; cause?: unknown }
   | { kind: "parse"; message: string; path: string; line?: number }
   | { kind: "validation"; message: string; details?: unknown }
+  | {
+      kind: "missing-dependency"
+      packageName: string
+      installCommand: string
+      message: string
+    }
 
 /**
  * Single error class thrown by i18n-sharpen. `error` is a discriminated

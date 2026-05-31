@@ -48,13 +48,37 @@ describe("I18nSharpenError", () => {
       { kind: "config", message: "c" },
       { kind: "filesystem", message: "f", path: "/" },
       { kind: "parse", message: "p", path: "/" },
-      { kind: "validation", message: "v" }
+      { kind: "validation", message: "v" },
+      {
+        kind: "missing-dependency",
+        packageName: "typescript",
+        installCommand: "pnpm add -D typescript",
+        message: "m"
+      }
     ]
     for (const c of cases) {
       const e = new I18nSharpenError(c)
-      expect(["config", "filesystem", "parse", "validation"]).toContain(
-        e.error.kind
-      )
+      expect([
+        "config",
+        "filesystem",
+        "parse",
+        "validation",
+        "missing-dependency"
+      ]).toContain(e.error.kind)
+    }
+  })
+
+  it("carries missing-dependency fields (packageName + installCommand)", () => {
+    const err = new I18nSharpenError({
+      kind: "missing-dependency",
+      packageName: "@vue/compiler-sfc",
+      installCommand: "pnpm add -D @vue/compiler-sfc",
+      message: "Cannot scan .vue files"
+    })
+    expect(err.error.kind).toBe("missing-dependency")
+    if (err.error.kind === "missing-dependency") {
+      expect(err.error.packageName).toBe("@vue/compiler-sfc")
+      expect(err.error.installCommand).toContain("pnpm add -D")
     }
   })
 })
