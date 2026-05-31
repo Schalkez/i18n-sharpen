@@ -49,19 +49,22 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 ### Phase 2: JS/TS Parser Core + Golden Cases
 **Goal**: A single TypeScript Compiler API traversal extracts static used keys, attribute keys, dynamic-call candidates, and hardcoded-text candidates from `.ts/.tsx/.js/.jsx` files with correct document-absolute offsets — and the two golden edge cases that motivated the rewrite both pass
 **Depends on**: Phase 1
-**Requirements**: PARSE-01, PARSE-02, PARSE-03, PARSE-04, PARSE-05, PARSE-06, OFFSET-01, TEST-01, TEST-02, TEST-03
+**Requirements**: PARSE-01, PARSE-02, PARSE-03, PARSE-04, PARSE-05, OFFSET-01, TEST-01, TEST-02, TEST-03
 **Success Criteria** (what must be TRUE):
   1. `.ts/.tsx/.js/.jsx` files are parsed via `ts.createSourceFile` (parser-only, no `Program`/type-checker); the TypeScript module is resolved from the user's workspace, not bundled
   2. A single traversal returns `ParsedFileResult { usedKeys, dynamicCalls, hardcodedCandidates }` with all offsets document-absolute; no second pass is required by callers
   3. `<m.div>Hello world</m.div>` — inner text `"Hello world"` appears in `hardcodedCandidates` (dot-notation JSX member-expression tag handled correctly)
   4. `forwardRef<HTMLInputElement, InputProps>(...)` — no spurious keys or hardcoded candidates are extracted from the type parameters; `hardcodedCandidates` contains only `placeholder` attribute values from inside the JSX
   5. All behavioral input/output cases from `scanner.test`, `dynamic.test`, and `hardcoded.test` pass against the new parser (tests ported, not deleted)
-**Plans**: TBD
+**Plans**: 3 plans (3 waves)
+- [ ] 02-01-PLAN.md — types.ts dynamicCalls refinement (D-01) + parser spine: createSourceFile, ScriptKind-per-extension map, lazy loadWorkspaceDep, forEachChild visitor skeleton, LOCKED parseTypeScriptFile signature (PARSE-01, OFFSET-01)
+- [ ] 02-02-PLAN.md — detection logic in the visitor: callee matching (D-07), static keys (PARSE-02), attribute keys incl. D-08 container gain (PARSE-03), structural dynamic classification incl. chained concat (PARSE-04), hardcoded candidates + SKIP_TAGS (PARSE-05)
+- [ ] 02-03-PLAN.md — ported v0.3.0 corpus (TEST-01) + golden cases `<m.div>` (TEST-02) and `forwardRef<A,B>` (TEST-03) + D-08 gain test + full-suite gate
 
 ### Phase 3: Framework Parsers + Dispatcher
 **Goal**: Vue SFCs, Svelte 5 (with Svelte 4 gate), and Astro files are each parsed by their workspace compiler; embedded `<script>` blocks are delegated to the Phase 2 JS/TS parser with correct offset rebasing; the extension-based `parseFile()` dispatcher routes all supported extensions to the right parser
 **Depends on**: Phase 2
-**Requirements**: FW-01, FW-02, FW-03, FW-04, FW-05, TEST-04
+**Requirements**: PARSE-06, FW-01, FW-02, FW-03, FW-04, FW-05, TEST-04
 **Success Criteria** (what must be TRUE):
   1. A `.vue` file with `<script setup>` produces the same used-key extraction as one with legacy `<script>`; template attribute keys (e.g. `i18nKey="..."`) are also extracted
   2. A `.svelte` file parses correctly under both Svelte 5 (`ast.fragment`, `modern: true`) and Svelte 4 (`ast.html`) without crashing or returning empty results
@@ -113,7 +116,7 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 | 4. Hardcoded String Detection | v0.3.0 | 2/2 | Complete | 2026-05-30 |
 | 5. Deprecation Cleanup | v0.3.0 | 1/1 | Complete | 2026-05-30 |
 | 1. Foundation & Error Model | v0.4.0 | 1/1 | Complete | 2026-05-31 |
-| 2. JS/TS Parser Core + Golden Cases | v0.4.0 | 0/? | Not started | - |
+| 2. JS/TS Parser Core + Golden Cases | v0.4.0 | 0/3 | Planned | - |
 | 3. Framework Parsers + Dispatcher | v0.4.0 | 0/? | Not started | - |
 | 4. Async Migration | v0.4.0 | 0/? | Not started | - |
 | 5. Shadow Comparison, Perf Gate & Default Flip | v0.4.0 | 0/? | Not started | - |
