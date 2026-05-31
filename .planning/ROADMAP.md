@@ -116,7 +116,7 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 | 4. Hardcoded String Detection | v0.3.0 | 2/2 | Complete | 2026-05-30 |
 | 5. Deprecation Cleanup | v0.3.0 | 1/1 | Complete | 2026-05-30 |
 | 1. Foundation & Error Model | v0.4.0 | 1/1 | Complete | 2026-05-31 |
-| 2. JS/TS Parser Core + Golden Cases | v0.4.0 | 0/3 | Planned | - |
+| 2. JS/TS Parser Core + Golden Cases | v0.4.0 | 3/3 | Complete | 2026-06-01 |
 | 3. Framework Parsers + Dispatcher | v0.4.0 | 0/? | Not started | - |
 | 4. Async Migration | v0.4.0 | 0/? | Not started | - |
 | 5. Shadow Comparison, Perf Gate & Default Flip | v0.4.0 | 0/? | Not started | - |

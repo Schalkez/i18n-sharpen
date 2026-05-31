@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: — AST Parser Rewrite
 status: executing
-stopped_at: Phase 1 complete
-last_updated: "2026-05-31T12:19:00.000Z"
-last_activity: 2026-05-31 -- Phase 1 executed (Antigravity worker)
+stopped_at: Phase 2 complete
+last_updated: "2026-05-31T17:21:00.000Z"
+last_activity: 2026-06-01 -- Phase 2 executed (Antigravity worker)
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 17
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
+  percent: 33
 ---
 
 # STATE — i18n-sharpen
@@ -21,30 +21,31 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-31)
 
 **Core value:** Keep translation files sharp, tidy, and synchronized — without losing data.
-**Current focus:** v0.4.0 — Phase 1: Foundation & Error Model
+**Current focus:** v0.4.0 — Phase 2: JS/TS Parser Core
 
 ## Current Position
 
-Phase: 1 of 6 (Foundation & Error Model)
-Plan: 01-01 complete
-Status: Phase 1 executed — ready for Phase 2 planning
-Last activity: 2026-05-31 -- Phase 1 executed by Antigravity worker
+Phase: 2 of 6 (JS/TS Parser Core + Golden Cases)
+Plan: 02-03 complete (3/3 plans done)
+Status: Phase 2 executed — ready for Phase 3 planning
+Last activity: 2026-06-01 -- Phase 2 executed by Antigravity worker
 
-Progress: [██░░░░░░░░] 17%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: —
+- Total plans completed: 4
+- Average duration: ~8min
+- Total execution time: ~30min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation & Error Model | 1/1 | ~15min | ~15min |
+| 2. JS/TS Parser Core | 3/3 | ~10min | ~3min |
 
 *Updated after each plan completion*
 
@@ -69,6 +70,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-31T12:19:00.000Z
-Stopped at: Phase 1 complete
-Resume file: .planning/phases/01-foundation-error-model/01-01-SUMMARY.md
+Last session: 2026-05-31T17:21:00.000Z
+Stopped at: Phase 2 complete
+Resume file: .planning/phases/02-js-ts-parser-core-golden-cases/02-03-SUMMARY.md

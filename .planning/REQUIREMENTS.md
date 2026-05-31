@@ -104,7 +104,7 @@
 | PARSE-03 | Phase 2 | Pending |
 | PARSE-04 | Phase 2 | Pending |
 | PARSE-05 | Phase 2 | Pending |
-| PARSE-06 | Phase 2 | Pending |
+| PARSE-06 | Phase 3 | Pending |
 | DEP-01 | Phase 1 | Pending |
 | DEP-02 | Phase 1 | Pending |
 | FW-01 | Phase 3 | Pending |
