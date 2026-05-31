@@ -23,7 +23,7 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 - Resilient error model (collect-and-continue on file syntax errors; fatal on missing compiler) + a shadow-mode differential-testing harness to prove accuracy before flipping the default.
 - Async public API migration (`validate`/`extract`/`prune` → `Promise`) with bounded-concurrency parsing.
 
-> **Note:** v0.4.0 deliberately revisits two long-standing constraints below — the "regex-only scanner" engine choice and the "no heavy AST deps" rule. Those decisions were correct for v0.2–v0.3 but the accumulating edge-case patches (e.g. `<Foo.Bar>` tags, `forwardRef<A,B>` generics misread as JSX) now justify the trade-off. Dependency strategy (mandatory Babel vs the TypeScript Compiler API as an optional peer dep) is an open decision for the requirements/research step. Implementation detail seed: `.planning/v0.4.0-SEED-PLAN.md`.
+> **Note:** v0.4.0 deliberately revisits two long-standing constraints below — the "regex-only scanner" engine choice and the "no heavy AST deps" rule. Those decisions were correct for v0.2–v0.3 but the accumulating edge-case patches (e.g. `<Foo.Bar>` tags, `forwardRef<A,B>` generics misread as JSX) now justify the trade-off. Dependency strategy is **decided**: the JS/TS/JSX parser is the **TypeScript Compiler API** (parser-only) resolved as an optional peer dependency — chosen over Babel (revising the seed) for ~0 added bundle, native TS+JSX, and to dodge the `@babel/traverse` ESM trap. Implementation detail seed: `.planning/v0.4.0-SEED-PLAN.md` (note: its Babel-mandatory choice is superseded).
 
 ## Requirements
 
@@ -80,7 +80,7 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 
 ## Constraints
 
-- **Dependencies:** Keep the CLI dep tree tiny. **Revised for v0.4.0:** AST parsing requires a parser dependency — strategy (mandatory Babel ~4.7MB vs the TypeScript Compiler API as an optional peer dep vs a `@babel/types` hand-walk) is an open decision for requirements/research. Framework compilers (Vue/Svelte/Astro) stay **dynamically loaded** from the user's workspace, never bundled. No other heavy deps; optional peer deps (like `jiti`) only when strictly necessary.
+- **Dependencies:** Keep the CLI dep tree tiny. **Revised + decided for v0.4.0:** JS/TS/JSX parsing uses the **TypeScript Compiler API** (`ts.createSourceFile`, parser-only) resolved as an **optional peer dependency** — ~0 added bundle weight (`typescript` already present in target projects), no bundled `@babel/*` runtime dep, and avoids the `@babel/traverse` ESM `.default` interop crash. Framework compilers (Vue/Svelte/Astro) stay **dynamically loaded** from the user's workspace, never bundled. No other heavy deps; optional peer deps (like `jiti`) only when strictly necessary.
 - **Safety:** `prune` must remain safe-by-default (dry-run). Any feature that touches locale files on disk must use atomic writes (`.tmp` + rename, already in `locale-io`).
 - **Framework-agnostic:** No assumption of React/Vue/Next/etc. **Revised for v0.4.0:** per-framework AST parsers replace the regex scanner as the engine; config-driven `matchFunctions`/`matchAttributes` stay the detection mechanism (no hardcoded i18n-function names). New features must work across all supported file extensions.
 - **Performance:** End-to-end run on a medium repo must stay sub-second; no regression past 100ms baseline overhead.
@@ -99,6 +99,7 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 | Sync → async public API (v0.4.0) | Dynamic compiler `import()` forces `await`; project < 1.0 ⇒ minor bump → 0.4.0 | — Pending |
 | Collect-and-continue on file syntax errors (v0.4.0) | A CI scanner must not crash on one bad file; missing *compiler* stays fatal | — Pending |
 | Shadow-mode before deleting regex (v0.4.0) | Prove AST parity on a real corpus before flipping default; delete old code in a later phase | — Pending |
+| JS/TS parser = TypeScript Compiler API, not Babel (v0.4.0) | `typescript` already present ⇒ ~0 bundle; native TS+JSX; always-on error recovery; avoids `@babel/traverse` ESM crash; read-only scan needs no traverse path API. Supersedes the seed's Babel choice. | — Pending |
 
 ## Evolution
 
