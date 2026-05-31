@@ -97,49 +97,47 @@
 
 ## Traceability
 
-Populated during roadmap creation (each requirement maps to exactly one phase).
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PARSE-01 | — | Pending |
-| PARSE-02 | — | Pending |
-| PARSE-03 | — | Pending |
-| PARSE-04 | — | Pending |
-| PARSE-05 | — | Pending |
-| PARSE-06 | — | Pending |
-| DEP-01 | — | Pending |
-| DEP-02 | — | Pending |
-| FW-01 | — | Pending |
-| FW-02 | — | Pending |
-| FW-03 | — | Pending |
-| FW-04 | — | Pending |
-| FW-05 | — | Pending |
-| ERR-01 | — | Pending |
-| ERR-02 | — | Pending |
-| ERR-03 | — | Pending |
-| OFFSET-01 | — | Pending |
-| OFFSET-02 | — | Pending |
-| ASYNC-01 | — | Pending |
-| ASYNC-02 | — | Pending |
-| ASYNC-03 | — | Pending |
-| ASYNC-04 | — | Pending |
-| SHADOW-01 | — | Pending |
-| SHADOW-02 | — | Pending |
-| SHADOW-03 | — | Pending |
-| PERF-01 | — | Pending |
-| PERF-02 | — | Pending |
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| TEST-03 | — | Pending |
-| TEST-04 | — | Pending |
-| CLEAN-01 | — | Pending |
-| CLEAN-02 | — | Pending |
+| PARSE-01 | Phase 2 | Pending |
+| PARSE-02 | Phase 2 | Pending |
+| PARSE-03 | Phase 2 | Pending |
+| PARSE-04 | Phase 2 | Pending |
+| PARSE-05 | Phase 2 | Pending |
+| PARSE-06 | Phase 2 | Pending |
+| DEP-01 | Phase 1 | Pending |
+| DEP-02 | Phase 1 | Pending |
+| FW-01 | Phase 3 | Pending |
+| FW-02 | Phase 3 | Pending |
+| FW-03 | Phase 3 | Pending |
+| FW-04 | Phase 3 | Pending |
+| FW-05 | Phase 3 | Pending |
+| ERR-01 | Phase 1 | Pending |
+| ERR-02 | Phase 1 | Pending |
+| ERR-03 | Phase 1 | Pending |
+| OFFSET-01 | Phase 2 | Pending |
+| OFFSET-02 | Phase 1 | Pending |
+| ASYNC-01 | Phase 4 | Pending |
+| ASYNC-02 | Phase 4 | Pending |
+| ASYNC-03 | Phase 4 | Pending |
+| ASYNC-04 | Phase 4 | Pending |
+| SHADOW-01 | Phase 4 | Pending |
+| SHADOW-02 | Phase 5 | Pending |
+| SHADOW-03 | Phase 5 | Pending |
+| PERF-01 | Phase 5 | Pending |
+| PERF-02 | Phase 1 | Pending |
+| TEST-01 | Phase 2 | Pending |
+| TEST-02 | Phase 2 | Pending |
+| TEST-03 | Phase 2 | Pending |
+| TEST-04 | Phase 3 | Pending |
+| CLEAN-01 | Phase 6 | Pending |
+| CLEAN-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 33 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 33 ⚠️ (roadmapper will resolve to 0)
+- Mapped to phases: 33
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-31*
-*Last updated: 2026-05-31 after initial definition (parser dependency = TypeScript Compiler API, ratified)*
+*Last updated: 2026-05-31 — traceability populated after roadmap creation (33/33 mapped, 0 unmapped)*
