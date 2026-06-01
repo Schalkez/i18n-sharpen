@@ -53,16 +53,30 @@
     "zod": "^4.4.3"
   },
   "peerDependencies": {
+    "@astrojs/compiler": ">=4.0.0",
+    "@vue/compiler-sfc": ">=3.0.0",
+    "svelte": ">=4.0.0",
     "typescript": ">=5.0"
   },
   "peerDependenciesMeta": {
+    "@astrojs/compiler": {
+      "optional": true
+    },
+    "@vue/compiler-sfc": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    },
     "typescript": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@astrojs/compiler": "^4.0.0",
     "@eslint/js": "^9.39.4",
     "@types/node": "^20.12.7",
+    "@vue/compiler-sfc": "^3.5.35",
     "eslint": "^9.39.4",
     "eslint-plugin-import-x": "^4.16.2",
     "eslint-plugin-unused-imports": "^4.4.1",
@@ -71,6 +85,7 @@
     "lint-staged": "^17.0.5",
     "prettier": "3.7.4",
     "simple-git-hooks": "^2.13.1",
+    "svelte": "^5.56.0",
     "tsup": "^8.0.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.3",

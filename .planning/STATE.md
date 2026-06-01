@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: — AST Parser Rewrite
-status: planning
+status: executing
 stopped_at: Phase 3 context gathered
-last_updated: "2026-06-01T11:37:40.051Z"
-last_activity: 2026-06-01 -- Phase 2 executed by Antigravity worker
+last_updated: "2026-06-01T14:13:23.307Z"
+last_activity: 2026-06-01 -- Phase 3 planning complete
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  completed_phases: 3
+  total_plans: 9
+  completed_plans: 9
+  percent: 66
 ---
 
 # STATE — i18n-sharpen
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-05-31)
 
 ## Current Position
 
-Phase: 2 of 6 (JS/TS Parser Core + Golden Cases)
-Plan: 02-03 complete (3/3 plans done)
-Status: Phase 2 executed — ready for Phase 3 planning
-Last activity: 2026-06-01 -- Phase 2 executed by Antigravity worker
+Phase: 3 of 6 (Framework Parsers + Dispatcher)
+Plan: 03-05 complete (5/5 plans done)
+Status: Phase 3 complete. Ready for Phase 4.
+Last activity: 2026-06-01 -- Phase 3 execution complete
 
-Progress: [███░░░░░░░] 33%
+Progress: [██████░░░░] 66%
 
 ## Performance Metrics
 
@@ -46,6 +46,7 @@ Progress: [███░░░░░░░] 33%
 |-------|-------|-------|----------|
 | 1. Foundation & Error Model | 1/1 | ~15min | ~15min |
 | 2. JS/TS Parser Core | 3/3 | ~10min | ~3min |
+| 3. Framework Parsers | 5/5 | ~45min | ~9min |
 
 *Updated after each plan completion*
 

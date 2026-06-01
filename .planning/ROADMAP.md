@@ -26,7 +26,7 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 
 - [x] **Phase 1: Foundation & Error Model** - Shared types, workspace dep resolver, and the fatal-vs-collected error-kind split that every parser depends on (1/1 plan — 2026-05-31)
 - [ ] **Phase 2: JS/TS Parser Core + Golden Cases** - TypeScript Compiler API parser producing a unified `ParsedFileResult` in a single traversal, plus the two golden edge-case tests
-- [ ] **Phase 3: Framework Parsers + Dispatcher** - Vue/Svelte/Astro compilers, embedded-block offset rebasing, and the extension-based `parseFile()` dispatcher
+- [x] **Phase 3: Framework Parsers + Dispatcher** - Vue/Svelte/Astro compilers, embedded-block offset rebasing, and the extension-based `parseFile()` dispatcher
 - [ ] **Phase 4: Async Migration (shadow mode on, regex still default)** - Async `detectUsedKeys` with bounded-concurrency pool and `useAst` flag; full async cascade to public API; regex remains the default
 - [ ] **Phase 5: Shadow Comparison, Perf Gate & Default Flip** - Differential harness proves zero false-negatives on a real corpus; perf gate passes; `useAst` default flipped to true
 - [ ] **Phase 6: Cleanup & Release** - Delete regex/dynamic/hardcoded modules, remove shadow flag, BREAKING CHANGELOG, version bump to 0.4.0
@@ -71,7 +71,12 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
   3. An `.astro` file parses correctly when 10 Astro files are parsed concurrently — no WASM initialization race; all return consistent results
   4. Offsets for keys found in embedded `<script>` blocks map to the correct line in the original file (not the line within the block); integration tests assert this with specific line-number expectations
   5. A missing framework compiler (e.g. `@vue/compiler-sfc` not installed) produces a fatal `I18nSharpenError` naming the package and the exact `pnpm add -D` install command; a single file with a syntax error does not abort the run — other files continue processing
-**Plans**: TBD
+**Plans**: 5 plans (3 waves)
+- [ ] 03-01-PLAN.md — Wave 1: declare framework compilers as optional peer deps + install devDeps, RED test scaffolds + fixtures for vue/svelte/astro/dispatcher (TEST-04)
+- [ ] 03-02-PLAN.md — Wave 2: parseVueFile — SFC parse, script delegation + offset rebasing, template walk (FW-01, FW-04, FW-05, TEST-04)
+- [ ] 03-03-PLAN.md — Wave 2: parseSvelteFile — v4/v5 version gate, script delegation + rebasing, template walk + svelte:head skip (FW-02, FW-04, FW-05, TEST-04)
+- [ ] 03-04-PLAN.md — Wave 2: parseAstroFile — WASM initPromise singleton, frontmatter delegation + rebasing, template walk (FW-03, FW-04, FW-05, TEST-04)
+- [ ] 03-05-PLAN.md — Wave 3: parseFile() extension dispatcher in parsers/index.ts + barrel exports (PARSE-06, TEST-04)
 
 ### Phase 4: Async Migration (shadow mode on, regex still default)
 **Goal**: `detectUsedKeys` becomes async with a bounded-concurrency parse pool and a `useAst` flag (default false); the full async cascade (`validate`/`extract`/`prune`, public API, `cli.ts`) is complete; the regex engine remains the default so no behavioral change is observable to end users; `fileContents` is preserved for `looseKeyMatch`
@@ -117,7 +122,7 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 | 5. Deprecation Cleanup | v0.3.0 | 1/1 | Complete | 2026-05-30 |
 | 1. Foundation & Error Model | v0.4.0 | 1/1 | Complete | 2026-05-31 |
 | 2. JS/TS Parser Core + Golden Cases | v0.4.0 | 3/3 | Complete | 2026-06-01 |
-| 3. Framework Parsers + Dispatcher | v0.4.0 | 0/? | Not started | - |
+| 3. Framework Parsers + Dispatcher | v0.4.0 | 5/5 | Complete | 2026-06-01 |
 | 4. Async Migration | v0.4.0 | 0/? | Not started | - |
 | 5. Shadow Comparison, Perf Gate & Default Flip | v0.4.0 | 0/? | Not started | - |
 | 6. Cleanup & Release | v0.4.0 | 0/? | Not started | - |
