@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: — AST Parser Rewrite
-status: executing
-stopped_at: Phase 2 complete
-last_updated: "2026-05-31T17:21:00.000Z"
-last_activity: 2026-06-01 -- Phase 2 executed (Antigravity worker)
+status: planning
+stopped_at: Phase 3 context gathered
+last_updated: "2026-06-01T11:37:40.051Z"
+last_activity: 2026-06-01 -- Phase 2 executed by Antigravity worker
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 4
   completed_plans: 4
-  percent: 33
+  percent: 100
 ---
 
 # STATE — i18n-sharpen
@@ -70,6 +70,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-31T17:21:00.000Z
-Stopped at: Phase 2 complete
-Resume file: .planning/phases/02-js-ts-parser-core-golden-cases/02-03-SUMMARY.md
+Last session: 2026-06-01T11:37:40.048Z
+Stopped at: Phase 3 context gathered
+Resume file: .planning/phases/03-framework-parsers-dispatcher/03-CONTEXT.md
