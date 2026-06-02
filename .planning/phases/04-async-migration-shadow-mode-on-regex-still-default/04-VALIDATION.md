@@ -42,15 +42,15 @@ created: 2026-06-01
 
 | Task ID    | Plan | Wave | Requirement | Secure Behavior | Test Type             | Automated Command                                          | Status      |
 |------------|------|------|-------------|-----------------|------------------------|-----------------------------------------------------------|-------------|
-| 04-01-T1   | 01   | 1    | ASYNC-04    | N/A             | unit (concurrency-peak) | `pnpm vitest run src/__tests__/scanner-pool.test.ts`      | ⬜ pending  |
-| 04-01-T2   | 01   | 1    | ASYNC-02    | N/A             | type                   | `pnpm typecheck`                                          | ⬜ pending  |
-| 04-01-T3   | 01   | 1    | ASYNC-03    | N/A             | unit (regression)      | `pnpm vitest run src/core/scanner`                        | ⬜ pending  |
-| 04-01-T3   | 01   | 1    | ASYNC-01    | N/A             | unit + type            | `pnpm typecheck && pnpm vitest run src/core/scanner`      | ⬜ pending  |
-| 04-02-T1   | 02   | 2    | ASYNC-01    | N/A             | type                   | `pnpm typecheck`                                          | ⬜ pending  |
-| 04-02-T2   | 02   | 2    | SHADOW-01   | N/A             | type + suite            | `pnpm typecheck && pnpm test`                             | ⬜ pending  |
-| 04-02-T3   | 02   | 2    | ASYNC-04    | N/A             | type + suite            | `pnpm typecheck && pnpm test`                             | ⬜ pending  |
-| 04-03-T1   | 03   | 3    | SHADOW-01   | N/A             | integration (e2e AST)  | `pnpm vitest run src/__tests__/ast-shadow.test.ts`        | ⬜ pending  |
-| 04-03-T1   | 03   | 3    | ASYNC-02    | N/A             | suite                  | `pnpm test`                                               | ⬜ pending  |
+| 04-01-T1   | 01   | 1    | ASYNC-04    | N/A             | unit (concurrency-peak) | `pnpm vitest run src/__tests__/scanner-pool.test.ts`      | ✅ green    |
+| 04-01-T2   | 01   | 1    | ASYNC-02    | N/A             | type                   | `pnpm typecheck`                                          | ✅ green    |
+| 04-01-T3   | 01   | 1    | ASYNC-03    | N/A             | unit (regression)      | `pnpm vitest run src/core/scanner`                        | ✅ green    |
+| 04-01-T3   | 01   | 1    | ASYNC-01    | N/A             | unit + type            | `pnpm typecheck && pnpm vitest run src/core/scanner`      | ✅ green    |
+| 04-02-T1   | 02   | 2    | ASYNC-01    | N/A             | type                   | `pnpm typecheck`                                          | ✅ green    |
+| 04-02-T2   | 02   | 2    | SHADOW-01   | N/A             | type + suite            | `pnpm typecheck && pnpm test`                             | ✅ green    |
+| 04-02-T3   | 02   | 2    | ASYNC-04    | N/A             | type + suite            | `pnpm typecheck && pnpm test`                             | ✅ green    |
+| 04-03-T1   | 03   | 3    | SHADOW-01   | N/A             | integration (e2e AST)  | `pnpm vitest run src/__tests__/ast-shadow.test.ts`        | ✅ green    |
+| 04-03-T1   | 03   | 3    | ASYNC-02    | N/A             | suite                  | `pnpm test`                                               | ✅ green    |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -72,10 +72,10 @@ created: 2026-06-01
 
 New test scaffolding to create before/with the implementation tasks:
 
-- [ ] **looseKeyMatch-after-async regression** (ASYNC-03) — asserts `fileContents` populated and bare-string inclusion still works post-`await`.
-- [ ] **Worker-pool concurrency-peak test** (ASYNC-04) — instrumented `fakeParse` tracking peak in-flight count ≤ 4 (and ≤ 2 with override).
+- [x] **looseKeyMatch-after-async regression** (ASYNC-03) — asserts `fileContents` populated and bare-string inclusion still works post-`await`.
+- [x] **Worker-pool concurrency-peak test** (ASYNC-04) — instrumented `fakeParse` tracking peak in-flight count ≤ 4 (and ≤ 2 with override).
 - [x] **`useAst:true` end-to-end integration test** (SHADOW-01, criterion #5) — `src/__tests__/ast-shadow.test.ts` (04-03-T1).
-- [ ] Existing `detectUsedKeys` call sites in tests ported to `await` (`src/core/scanner.test.ts:168` + any others found during planning).
+- [x] Existing `detectUsedKeys` call sites in tests ported to `await` (`src/core/scanner.test.ts:168` + any others found during planning).
 
 *Existing vitest infrastructure covers the rest — no framework install needed.*
 
