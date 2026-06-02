@@ -9,10 +9,11 @@
  * import { loadConfig, validate, extract, prune } from "i18n-sharpen"
  *
  * const config = loadConfig()
- * const report = validate(config)
- * if (report.missingKeys.length === 0) {
- *   prune(config, process.cwd(), { force: true })
- * }
+ * const report = await validate(config)
+ *
+ * await extract(config)
+ *
+ * await prune(config, process.cwd(), { force: true })
  * ```
  */
 

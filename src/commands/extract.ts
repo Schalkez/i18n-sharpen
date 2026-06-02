@@ -17,10 +17,11 @@ import type { I18nSharpenConfig } from "@/types"
 import { log } from "@/utils"
 import { warnLegacyDefaultNamespace } from "./_shared/migration-warnings"
 
-export function extract(
+export async function extract(
   config: I18nSharpenConfig,
-  cwd: string = process.cwd()
-): void {
+  cwd: string = process.cwd(),
+  options?: { useAst?: boolean }
+): Promise<void> {
   log.header("I18N-SHARPEN EXTRACTOR")
 
   const localesDirAbs = path.resolve(cwd, config.localesDir)
@@ -37,7 +38,18 @@ export function extract(
   const files = scanSourceFiles(config, cwd)
   const matchFunctions = config.matchFunctions ?? ["t", "getTranslation"]
   const matchAttributes = config.matchAttributes ?? ["i18nKey", "id"]
-  const { usedKeys } = detectUsedKeys(files, matchFunctions, matchAttributes)
+  const { usedKeys, parseErrors } = await detectUsedKeys(
+    files,
+    matchFunctions,
+    matchAttributes,
+    { cwd, useAst: options?.useAst ?? false }
+  )
+
+  for (const err of parseErrors) {
+    log.warn(
+      `Parse warning: ${err.file}${err.line ? `:${err.line}` : ""}: ${err.message}`
+    )
+  }
 
   log.info(
     `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`

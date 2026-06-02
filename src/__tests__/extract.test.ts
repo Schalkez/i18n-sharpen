@@ -58,7 +58,7 @@ describe("extract: integration", () => {
     }
   })
 
-  it("extract with namespaced layout writes into namespace files [gap-1]", () => {
+  it("extract with namespaced layout writes into namespace files [gap-1]", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('common:greeting')
@@ -79,7 +79,7 @@ describe("extract: integration", () => {
       localesLayout: "namespaced" as const
     }
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
 
     const commonLocale = readLocaleFile(
       path.join(tempDir, "locales/en/common.json")
@@ -98,7 +98,7 @@ describe("extract: integration", () => {
     })
   })
 
-  it("extract with custom defaultNamespace writes un-prefixed keys to custom namespace", () => {
+  it("extract with custom defaultNamespace writes un-prefixed keys to custom namespace", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('noprefix.key')
@@ -117,7 +117,7 @@ describe("extract: integration", () => {
       defaultNamespace: "auth"
     }
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
 
     const authLocale = readLocaleFile(
       path.join(tempDir, "locales/en/auth.json")
@@ -127,7 +127,7 @@ describe("extract: integration", () => {
     })
   })
 
-  it("extract with legacy defaultNamespace: 'default' writes un-prefixed keys to default.json", () => {
+  it("extract with legacy defaultNamespace: 'default' writes un-prefixed keys to default.json", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('noprefix.key')
@@ -146,7 +146,7 @@ describe("extract: integration", () => {
       defaultNamespace: "default"
     }
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
 
     const defaultLocale = readLocaleFile(
       path.join(tempDir, "locales/en/default.json")
@@ -156,7 +156,7 @@ describe("extract: integration", () => {
     })
   })
 
-  it("warns about legacy default namespace when default.json exists, common.json is absent, and defaultNamespace is unset", () => {
+  it("warns about legacy default namespace when default.json exists, common.json is absent, and defaultNamespace is unset", async () => {
     createMockProject(tempDir, {
       "src/index.ts": "t('noprefix.key')",
       "locales/en/default.json": JSON.stringify({ old: "val" })
@@ -172,7 +172,7 @@ describe("extract: integration", () => {
       localesLayout: "namespaced" as const
     }
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
 
     // Filter logSpy calls to find the one containing the warning message
     const warningCall = logSpy.mock.calls.find(
@@ -186,7 +186,7 @@ describe("extract: integration", () => {
     expect(warningMessage).toContain("defaultNamespace")
   })
 
-  it("does not warn if common.json exists alongside default.json", () => {
+  it("does not warn if common.json exists alongside default.json", async () => {
     createMockProject(tempDir, {
       "src/index.ts": "t('noprefix.key')",
       "locales/en/default.json": JSON.stringify({ old: "val" }),
@@ -203,14 +203,14 @@ describe("extract: integration", () => {
       localesLayout: "namespaced" as const
     }
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
     const hasLegacyWarning = logSpy.mock.calls.some(
       (call) => typeof call[0] === "string" && call[0].includes("legacy")
     )
     expect(hasLegacyWarning).toBe(false)
   })
 
-  it("does not warn if defaultNamespace is explicitly set to default", () => {
+  it("does not warn if defaultNamespace is explicitly set to default", async () => {
     createMockProject(tempDir, {
       "src/index.ts": "t('noprefix.key')",
       "locales/en/default.json": JSON.stringify({ old: "val" })
@@ -227,14 +227,14 @@ describe("extract: integration", () => {
       defaultNamespace: "default"
     }
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
     const hasLegacyWarning = logSpy.mock.calls.some(
       (call) => typeof call[0] === "string" && call[0].includes("legacy")
     )
     expect(hasLegacyWarning).toBe(false)
   })
 
-  it("does not warn if layout is flat", () => {
+  it("does not warn if layout is flat", async () => {
     createMockProject(tempDir, {
       "src/index.ts": "t('noprefix.key')",
       "locales/en.json": JSON.stringify({ old: "val" })
@@ -249,14 +249,14 @@ describe("extract: integration", () => {
       matchFunctions: ["t"]
     }
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
     const hasLegacyWarning = logSpy.mock.calls.some(
       (call) => typeof call[0] === "string" && call[0].includes("legacy")
     )
     expect(hasLegacyWarning).toBe(false)
   })
 
-  it("should ignore translation keys ending with a dot in extract", () => {
+  it("should ignore translation keys ending with a dot in extract", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('normal.key')
@@ -274,13 +274,13 @@ describe("extract: integration", () => {
       matchFunctions: ["t"]
     }
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
     const extracted = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(extracted)).toEqual({ "normal.key": "Normal Key" })
     expect(extracted["dynamic.prefix."]).toBeUndefined()
   })
 
-  it("sorts extracted keys alphabetically on disk when sortKeys is alpha", () => {
+  it("sorts extracted keys alphabetically on disk when sortKeys is alpha", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('z_key')
@@ -300,7 +300,7 @@ describe("extract: integration", () => {
       sortKeys: "alpha" as const
     }
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
 
     const rawFileContent = fs.readFileSync(
       path.join(tempDir, "locales/en.json"),

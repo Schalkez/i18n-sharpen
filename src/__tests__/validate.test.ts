@@ -60,7 +60,7 @@ describe("validate: integration", () => {
     }
   })
 
-  it("should ignore translation keys ending with a dot in validate and extract", () => {
+  it("should ignore translation keys ending with a dot in validate and extract", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `
         t('normal.key')
@@ -79,11 +79,11 @@ describe("validate: integration", () => {
       matchFunctions: ["t"]
     }
 
-    const validateRes = validate(config, tempDir)
+    const validateRes = await validate(config, tempDir)
     expect(validateRes.missingKeys).toContain("normal.missing")
     expect(validateRes.missingKeys).not.toContain("dynamic.prefix.")
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
     const extractedLocale = readLocaleFile(
       path.join(tempDir, "locales/en.json")
     )
@@ -94,7 +94,7 @@ describe("validate: integration", () => {
     expect(extractedLocale["dynamic.prefix."]).toBeUndefined()
   })
 
-  it("should support wildcard bypass using ignoreKeys", () => {
+  it("should support wildcard bypass using ignoreKeys", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `t('normal.key')`,
       "locales/en.json": JSON.stringify({
@@ -115,13 +115,13 @@ describe("validate: integration", () => {
       ignoreKeys: ["status.*"]
     }
 
-    const validateRes = validate(config, tempDir)
+    const validateRes = await validate(config, tempDir)
     expect(validateRes.unusedKeys).toContain("unused.key")
     expect(validateRes.unusedKeys).not.toContain("status.success")
     expect(validateRes.unusedKeys).not.toContain("status.error")
   })
 
-  it("should handle plural suffix alignment", () => {
+  it("should handle plural suffix alignment", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `t('count')`,
       "locales/en.json": JSON.stringify({
@@ -141,14 +141,14 @@ describe("validate: integration", () => {
       pluralSuffixes: ["_one", "_other"]
     }
 
-    const validateRes = validate(config, tempDir)
+    const validateRes = await validate(config, tempDir)
     expect(validateRes.unusedKeys).toContain("unrelated_other")
     expect(validateRes.unusedKeys).not.toContain("count_one")
     expect(validateRes.unusedKeys).not.toContain("count_other")
     expect(validateRes.missingKeys).not.toContain("count")
   })
 
-  it("should scan JSX/HTML attributes for translation keys", () => {
+  it("should scan JSX/HTML attributes for translation keys", async () => {
     createMockProject(tempDir, {
       "src/index.tsx": `
         export function App() {
@@ -173,12 +173,12 @@ describe("validate: integration", () => {
       matchAttributes: ["i18nKey", "id"]
     }
 
-    const validateRes = validate(config, tempDir)
+    const validateRes = await validate(config, tempDir)
     expect(validateRes.missingKeys).toContain("header.title")
     expect(validateRes.missingKeys).toContain("paragraph.body")
     expect(validateRes.missingKeys).not.toContain("ignored.key")
 
-    extract(config, tempDir)
+    await extract(config, tempDir)
     const extractedLocale = readLocaleFile(
       path.join(tempDir, "locales/en.json")
     )
@@ -188,7 +188,7 @@ describe("validate: integration", () => {
     })
   })
 
-  it("should scan .vue / .svelte / .astro files with framework attributes [phase-8]", () => {
+  it("should scan .vue / .svelte / .astro files with framework attributes [phase-8]", async () => {
     createMockProject(tempDir, {
       "src/Hello.vue": `<template>
         <h1 :label="vue.label">{{ $t('vue.greeting') }}</h1>
@@ -214,7 +214,7 @@ describe("validate: integration", () => {
       matchAttributes: ["i18n", ":label", "v-t"]
     }
 
-    const validateRes = validate(config, tempDir)
+    const validateRes = await validate(config, tempDir)
     expect(validateRes.missingKeys).toContain("vue.greeting")
     expect(validateRes.missingKeys).toContain("svelte.body")
     expect(validateRes.missingKeys).toContain("astro.greet")
@@ -244,12 +244,12 @@ describe("validate: integration", () => {
         ...extra
       }) as I18nSharpenConfig
 
-    it("classifies a mixed source into fully-dynamic and structured-concat (DKEY-01)", () => {
+    it("classifies a mixed source into fully-dynamic and structured-concat (DKEY-01)", async () => {
       createMockProject(tempDir, {
         "src/auth.ts": mixedSource,
         "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
       })
-      const results = validate(baseConfig(), tempDir)
+      const results = await validate(baseConfig(), tempDir)
 
       expect(results.dynamicKeys.fullyDynamic.length).toBe(3)
       expect(results.dynamicKeys.structuredConcat.length).toBe(2)
@@ -267,12 +267,12 @@ describe("validate: integration", () => {
       }
     })
 
-    it("ignoreDynamicKeys: ['*'] silences every finding (D-11)", () => {
+    it("ignoreDynamicKeys: ['*'] silences every finding (D-11)", async () => {
       createMockProject(tempDir, {
         "src/auth.ts": mixedSource,
         "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
       })
-      const results = validate(
+      const results = await validate(
         baseConfig({ ignoreDynamicKeys: ["*"] }),
         tempDir
       )
@@ -280,12 +280,12 @@ describe("validate: integration", () => {
       expect(results.dynamicKeys.structuredConcat.length).toBe(0)
     })
 
-    it("ignoreDynamicKeys: ['error.*'] suppresses only matching prefixes (D-10)", () => {
+    it("ignoreDynamicKeys: ['error.*'] suppresses only matching prefixes (D-10)", async () => {
       createMockProject(tempDir, {
         "src/auth.ts": mixedSource,
         "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
       })
-      const results = validate(
+      const results = await validate(
         baseConfig({ ignoreDynamicKeys: ["error.*"] }),
         tempDir
       )
@@ -297,12 +297,12 @@ describe("validate: integration", () => {
       expect(results.dynamicKeys.fullyDynamic.length).toBe(3)
     })
 
-    it("dynamic findings never contribute to the failure boolean (DKEY-03 / D-16)", () => {
+    it("dynamic findings never contribute to the failure boolean (DKEY-03 / D-16)", async () => {
       createMockProject(tempDir, {
         "src/auth.ts": mixedSource,
         "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
       })
-      const results = validate(baseConfig(), tempDir)
+      const results = await validate(baseConfig(), tempDir)
 
       // The CLI catch-site (validate.ts:227-230) constructs hasError from
       // these three; dynamic findings MUST NOT be added.
@@ -317,12 +317,12 @@ describe("validate: integration", () => {
       ).toBeGreaterThan(0)
     })
 
-    it("markdown report contains '## Dynamic Keys' with both sub-tables (DKEY-05)", () => {
+    it("markdown report contains '## Dynamic Keys' with both sub-tables (DKEY-05)", async () => {
       createMockProject(tempDir, {
         "src/auth.ts": mixedSource,
         "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
       })
-      validate(baseConfig({ outputReport: "report.md" }), tempDir)
+      await validate(baseConfig({ outputReport: "report.md" }), tempDir)
       const report = fs.readFileSync(path.join(tempDir, "report.md"), "utf8")
 
       expect(report).toContain("## Dynamic Keys")
@@ -330,12 +330,12 @@ describe("validate: integration", () => {
       expect(report).toContain("### Structured-concat keys (2)")
     })
 
-    it("markdown report surfaces the leading prefix in structured-concat rows (DKEY-02)", () => {
+    it("markdown report surfaces the leading prefix in structured-concat rows (DKEY-02)", async () => {
       createMockProject(tempDir, {
         "src/auth.ts": mixedSource,
         "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
       })
-      validate(baseConfig({ outputReport: "report.md" }), tempDir)
+      await validate(baseConfig({ outputReport: "report.md" }), tempDir)
       const report = fs.readFileSync(path.join(tempDir, "report.md"), "utf8")
 
       expect(report).toMatch(/\|\s*`error\.`\s*\|/)
@@ -343,7 +343,7 @@ describe("validate: integration", () => {
     })
 
     // FIX-1 regression coverage — i18next-style options-object usage
-    it("does NOT misclassify t('key', { options }) as dynamic (FIX-1)", () => {
+    it("does NOT misclassify t('key', { options }) as dynamic (FIX-1)", async () => {
       createMockProject(tempDir, {
         "locales/en.json": JSON.stringify({
           "user.greeting": "Hello {{name}}"
@@ -355,7 +355,7 @@ describe("validate: integration", () => {
         ].join("\n")
       })
 
-      const results = validate(baseConfig(), tempDir)
+      const results = await validate(baseConfig(), tempDir)
 
       expect(results.dynamicKeys.fullyDynamic).toHaveLength(0)
       expect(results.dynamicKeys.structuredConcat).toHaveLength(0)
@@ -363,7 +363,7 @@ describe("validate: integration", () => {
       expect(results.missingKeys).toHaveLength(0)
     })
 
-    it("still classifies concat-WITH-options as structured-concat (FIX-1)", () => {
+    it("still classifies concat-WITH-options as structured-concat (FIX-1)", async () => {
       createMockProject(tempDir, {
         "locales/en.json": JSON.stringify({}),
         "src/a.ts": [
@@ -372,7 +372,7 @@ describe("validate: integration", () => {
         ].join("\n")
       })
 
-      const results = validate(baseConfig(), tempDir)
+      const results = await validate(baseConfig(), tempDir)
 
       expect(results.dynamicKeys.structuredConcat).toHaveLength(2)
       const prefixes = results.dynamicKeys.structuredConcat
@@ -382,13 +382,13 @@ describe("validate: integration", () => {
     })
 
     // FIX-2 regression coverage — backticks in template-literal expressions
-    it("renders backtick-containing expressions as valid CommonMark inline code (FIX-2)", () => {
+    it("renders backtick-containing expressions as valid CommonMark inline code (FIX-2)", async () => {
       createMockProject(tempDir, {
         "locales/en.json": JSON.stringify({}),
         "src/a.ts": "t(`error.${code}`)\n"
       })
 
-      validate(baseConfig({ outputReport: "report.md" }), tempDir)
+      await validate(baseConfig({ outputReport: "report.md" }), tempDir)
       const report = fs.readFileSync(path.join(tempDir, "report.md"), "utf8")
 
       // Expression cell must use DOUBLE-backtick wrap (with padding spaces) because
@@ -400,7 +400,7 @@ describe("validate: integration", () => {
   })
 
   describe("hardcoded string checks", () => {
-    it("detects untranslated text nodes, attributes, and JSX literals", () => {
+    it("detects untranslated text nodes, attributes, and JSX literals", async () => {
       createMockProject(tempDir, {
         "locales/en.json": JSON.stringify({ welcome: "Welcome" }),
         "src/App.tsx": `
@@ -427,11 +427,13 @@ describe("validate: integration", () => {
       }
 
       // Without checkHardcoded flag
-      const resultsWithout = validate(config, tempDir)
+      const resultsWithout = await validate(config, tempDir)
       expect(resultsWithout.hardcodedStrings).toBeUndefined()
 
       // With checkHardcoded flag
-      const resultsWith = validate(config, tempDir, { checkHardcoded: true })
+      const resultsWith = await validate(config, tempDir, {
+        checkHardcoded: true
+      })
       expect(resultsWith.hardcodedStrings).toBeDefined()
       expect(resultsWith.hardcodedStrings).toHaveLength(4)
 
@@ -446,7 +448,7 @@ describe("validate: integration", () => {
       ])
 
       // Markdown report generated with hardcoded strings table
-      validate({ ...config, outputReport: "report.md" }, tempDir, {
+      await validate({ ...config, outputReport: "report.md" }, tempDir, {
         checkHardcoded: true
       })
       const report = fs.readFileSync(path.join(tempDir, "report.md"), "utf8")

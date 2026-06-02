@@ -35,7 +35,7 @@ export function __setInteractiveIOForTests(
 export async function prune(
   config: I18nSharpenConfig,
   cwd: string = process.cwd(),
-  options: PruneOptions = {}
+  options: PruneOptions & { useAst?: boolean } = {}
 ): Promise<PruneResult> {
   log.header("I18N-SHARPEN PRUNER")
 
@@ -58,11 +58,18 @@ export async function prune(
   const files = scanSourceFiles(config, cwd)
   const matchFunctions = config.matchFunctions ?? ["t", "getTranslation"]
   const matchAttributes = config.matchAttributes ?? ["i18nKey", "id"]
-  const { usedKeys, fileContents } = detectUsedKeys(
+  const { usedKeys, fileContents, parseErrors } = await detectUsedKeys(
     files,
     matchFunctions,
-    matchAttributes
+    matchAttributes,
+    { cwd, useAst: options.useAst ?? false }
   )
+
+  for (const err of parseErrors) {
+    log.warn(
+      `Parse warning: ${err.file}${err.line ? `:${err.line}` : ""}: ${err.message}`
+    )
+  }
 
   log.info(
     `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`

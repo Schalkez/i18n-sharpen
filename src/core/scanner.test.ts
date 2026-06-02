@@ -151,7 +151,7 @@ describe("scanner: detectUsedKeys", () => {
     `../../scratch/scanner-${Math.random().toString(36).slice(2, 9)}`
   )
 
-  it("returns the set of statically-resolvable keys and ignores comments", () => {
+  it("returns the set of statically-resolvable keys and ignores comments", async () => {
     fs.mkdirSync(tmpDir, { recursive: true })
     const f = path.join(tmpDir, "a.ts")
     fs.writeFileSync(
@@ -165,13 +165,29 @@ describe("scanner: detectUsedKeys", () => {
       `,
       "utf8"
     )
-    const { usedKeys } = detectUsedKeys([f], ["t"], [])
+    const { usedKeys } = await detectUsedKeys([f], ["t"], [])
     expect(usedKeys.has("used.one")).toBe(true)
     expect(usedKeys.has("used.two")).toBe(true)
     expect(usedKeys.has("used.three")).toBe(true)
     expect(usedKeys.has("commented.out")).toBe(false)
     // 'prefix.' ends with a dot — should be excluded
     expect([...usedKeys].some((k) => k.endsWith("."))).toBe(false)
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  it("looseKeyMatch still finds a key present only in stripped content after async refactor", async () => {
+    fs.mkdirSync(tmpDir, { recursive: true })
+    const f = path.join(tmpDir, "loose.ts")
+    fs.writeFileSync(
+      f,
+      `const KEY = "feature.flag" // referenced but not via t()`,
+      "utf8"
+    )
+    const { usedKeys, fileContents } = await detectUsedKeys([f], ["t"], [])
+    expect(usedKeys.has("feature.flag")).toBe(false)
+    expect(fileContents[0]).toContain('"feature.flag"')
+    expect(fileContents[0].includes('"feature.flag"')).toBe(true)
     fs.rmSync(tmpDir, { recursive: true, force: true })
   })
 })

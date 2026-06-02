@@ -38,11 +38,11 @@ import {
 } from "./validate/output"
 import { writeMarkdownReport } from "./validate/report"
 
-export function validate(
+export async function validate(
   config: I18nSharpenConfig,
   cwd: string = process.cwd(),
-  options?: { checkHardcoded?: boolean }
-): ValidationResults {
+  options?: { checkHardcoded?: boolean; useAst?: boolean }
+): Promise<ValidationResults> {
   log.header("I18N-SHARPEN VALIDATOR")
 
   const localesDirAbs = path.resolve(cwd, config.localesDir)
@@ -101,11 +101,19 @@ export function validate(
   const matchFunctions = config.matchFunctions ?? ["t", "getTranslation"]
   const matchAttributes = config.matchAttributes ?? ["i18nKey", "id"]
 
-  const { usedKeys, fileContents } = detectUsedKeys(
-    files,
-    matchFunctions,
-    matchAttributes
-  )
+  const useAst = options?.useAst ?? false
+
+  const { usedKeys, fileContents, parsedResults, parseErrors } =
+    await detectUsedKeys(files, matchFunctions, matchAttributes, {
+      cwd,
+      useAst
+    })
+
+  for (const err of parseErrors) {
+    log.warn(
+      `Parse warning: ${err.file}${err.line ? `:${err.line}` : ""}: ${err.message}`
+    )
+  }
 
   // Build key->files map for output/report and dynamic key warnings
   const keyToFilesSet = new Map<string, Set<string>>()
@@ -127,63 +135,103 @@ export function validate(
     }
   }
 
-  const keyRegex = buildKeyRegex(matchFunctions)
-  const attrRegex = buildAttrRegex(matchAttributes)
-  const dynamicCallRegex = buildDynamicCallRegex(matchFunctions)
-
   const fullyDynamicFindings: DynamicKeyFinding[] = []
   const structuredConcatFindings: StructuredConcatFinding[] = []
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i]
-    const cleanContent = fileContents[i]
-    const relativePath = normalizeDisplayPath(path.relative(cwd, file))
+  if (!useAst) {
+    const keyRegex = buildKeyRegex(matchFunctions)
+    const attrRegex = buildAttrRegex(matchAttributes)
+    const dynamicCallRegex = buildDynamicCallRegex(matchFunctions)
 
-    for (const match of cleanContent.matchAll(keyRegex)) {
-      const key = match[2]
-      if (key.endsWith(".")) continue
-      keyToFilesMap.add(key, relativePath)
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const cleanContent = fileContents[i]
+      const relativePath = normalizeDisplayPath(path.relative(cwd, file))
+
+      for (const match of cleanContent.matchAll(keyRegex)) {
+        const key = match[2]
+        if (key.endsWith(".")) continue
+        keyToFilesMap.add(key, relativePath)
+      }
+      for (const match of cleanContent.matchAll(attrRegex)) {
+        const key = match[2]
+        if (key.endsWith(".")) continue
+        keyToFilesMap.add(key, relativePath)
+      }
+      // Phase 2: collect dynamic-key findings into accumulators. Per D-13
+      // the per-call log.warn is removed — a grouped summary is printed
+      // at the end of validate via printDynamicKeysSummary.
+      const lineOffsets = computeLineOffsets(cleanContent)
+      for (const match of cleanContent.matchAll(dynamicCallRegex)) {
+        const arg = match[1].trim()
+        if (arg.length === 0) continue
+        if (isStaticStringLiteral(arg)) continue
+        const matchIndex = match.index
+        const line = offsetToLine(lineOffsets, matchIndex)
+        const classification = classifyDynamicCall(arg)
+        const expression = match[0]
+        const prefix =
+          classification.kind === "structured-concat"
+            ? classification.prefix
+            : ""
+
+        // D-10 / D-11 / D-12: ignoreDynamicKeys patterns match against the
+        // prefix (empty string for fully-dynamic). The universal "*"
+        // suppresses everything. Ignored entries are removed entirely.
+        const patterns = config.ignoreDynamicKeys ?? []
+        const suppressed = patterns.some((p) => matchWildcard(p, prefix))
+        if (suppressed) continue
+
+        if (classification.kind === "fully-dynamic") {
+          fullyDynamicFindings.push({
+            file: relativePath,
+            line,
+            expression
+          })
+        } else {
+          structuredConcatFindings.push({
+            prefix: classification.prefix,
+            file: relativePath,
+            line,
+            expression
+          })
+        }
+      }
     }
-    for (const match of cleanContent.matchAll(attrRegex)) {
-      const key = match[2]
-      if (key.endsWith(".")) continue
-      keyToFilesMap.add(key, relativePath)
-    }
-    // Phase 2: collect dynamic-key findings into accumulators. Per D-13
-    // the per-call log.warn is removed — a grouped summary is printed
-    // at the end of validate via printDynamicKeysSummary.
-    const lineOffsets = computeLineOffsets(cleanContent)
-    for (const match of cleanContent.matchAll(dynamicCallRegex)) {
-      const arg = match[1].trim()
-      if (arg.length === 0) continue
-      if (isStaticStringLiteral(arg)) continue
-      const matchIndex = match.index
-      const line = offsetToLine(lineOffsets, matchIndex)
-      const classification = classifyDynamicCall(arg)
-      const expression = match[0]
-      const prefix =
-        classification.kind === "structured-concat" ? classification.prefix : ""
+  } else {
+    for (let i = 0; i < files.length; i++) {
+      const relativePath = normalizeDisplayPath(path.relative(cwd, files[i]))
+      const parsed = parsedResults[i]
 
-      // D-10 / D-11 / D-12: ignoreDynamicKeys patterns match against the
-      // prefix (empty string for fully-dynamic). The universal "*"
-      // suppresses everything. Ignored entries are removed entirely.
-      const patterns = config.ignoreDynamicKeys ?? []
-      const suppressed = patterns.some((p) => matchWildcard(p, prefix))
-      if (suppressed) continue
+      for (const { key } of parsed.usedKeys) {
+        if (key.endsWith(".")) continue
+        keyToFilesMap.add(key, relativePath)
+      }
 
-      if (classification.kind === "fully-dynamic") {
-        fullyDynamicFindings.push({
-          file: relativePath,
-          line,
-          expression
-        })
-      } else {
-        structuredConcatFindings.push({
-          prefix: classification.prefix,
-          file: relativePath,
-          line,
-          expression
-        })
+      const lineOffsets = computeLineOffsets(fileContents[i])
+      for (const dc of parsed.dynamicCalls) {
+        const prefix =
+          dc.classification === "structured-concat" ? (dc.prefix ?? "") : ""
+        const suppressed = (config.ignoreDynamicKeys ?? []).some((p) =>
+          matchWildcard(p, prefix)
+        )
+        if (suppressed) continue
+
+        const line = offsetToLine(lineOffsets, dc.offset)
+        if (dc.classification === "fully-dynamic") {
+          fullyDynamicFindings.push({
+            file: relativePath,
+            line,
+            expression: dc.expression
+          })
+        } else {
+          structuredConcatFindings.push({
+            prefix,
+            file: relativePath,
+            line,
+            expression: dc.expression
+          })
+        }
       }
     }
   }
@@ -219,30 +267,57 @@ export function validate(
   // --- Scan hardcoded strings ---
   const hardcodedFindings: HardcodedFinding[] = []
   if (options?.checkHardcoded) {
-    log.info("Checking for un-translated hardcoded strings...")
-    const eligibleExtensions = [".tsx", ".jsx", ".vue", ".svelte", ".astro"]
-    for (const file of files) {
-      const ext = path.extname(file)
-      if (eligibleExtensions.includes(ext)) {
-        try {
-          const content = fs.readFileSync(file, "utf8")
-          const relativePath = normalizeDisplayPath(path.relative(cwd, file))
-          const isJsx = [".tsx", ".jsx"].includes(ext)
-          const candidates = scanTemplateTextNodes(content, isJsx)
-          const lineOffsets = computeLineOffsets(content)
-          const customIgnores = config.hardcoded?.ignore ?? []
+    if (!useAst) {
+      log.info("Checking for un-translated hardcoded strings...")
+      const eligibleExtensions = [".tsx", ".jsx", ".vue", ".svelte", ".astro"]
+      for (const file of files) {
+        const ext = path.extname(file)
+        if (eligibleExtensions.includes(ext)) {
+          try {
+            const content = fs.readFileSync(file, "utf8")
+            const relativePath = normalizeDisplayPath(path.relative(cwd, file))
+            const isJsx = [".tsx", ".jsx"].includes(ext)
+            const candidates = scanTemplateTextNodes(content, isJsx)
+            const lineOffsets = computeLineOffsets(content)
+            const customIgnores = config.hardcoded?.ignore ?? []
 
-          for (const cand of candidates) {
-            if (!isHardcodedIgnored(cand.text, customIgnores)) {
-              hardcodedFindings.push({
-                file: relativePath,
-                line: offsetToLine(lineOffsets, cand.offset),
-                text: cand.text
-              })
+            for (const cand of candidates) {
+              if (!isHardcodedIgnored(cand.text, customIgnores)) {
+                hardcodedFindings.push({
+                  file: relativePath,
+                  line: offsetToLine(lineOffsets, cand.offset),
+                  text: cand.text
+                })
+              }
             }
+          } catch {
+            // ignore read error
           }
+        }
+      }
+    } else {
+      log.info("Checking for un-translated hardcoded strings...")
+      for (let i = 0; i < files.length; i++) {
+        const relativePath = normalizeDisplayPath(path.relative(cwd, files[i]))
+        const parsed = parsedResults[i]
+
+        let rawContent = ""
+        try {
+          rawContent = fs.readFileSync(files[i], "utf8")
         } catch {
-          // ignore read error
+          rawContent = ""
+        }
+        const rawLineOffsets = computeLineOffsets(rawContent)
+
+        for (const cand of parsed.hardcodedCandidates) {
+          const customIgnores = config.hardcoded?.ignore ?? []
+          if (!isHardcodedIgnored(cand.text, customIgnores)) {
+            hardcodedFindings.push({
+              file: relativePath,
+              line: offsetToLine(rawLineOffsets, cand.offset),
+              text: cand.text
+            })
+          }
         }
       }
     }

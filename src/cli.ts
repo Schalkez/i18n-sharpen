@@ -88,13 +88,13 @@ program
     "--check-hardcoded",
     "Check for untranslated hardcoded strings in source code"
   )
-  .action((cmdOpts: { checkHardcoded?: boolean }) => {
+  .action(async (cmdOpts: { checkHardcoded?: boolean }) => {
     const opts = program.opts()
     const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
     const configPath = typeof opts.config === "string" ? opts.config : undefined
     try {
       const config = loadConfig(cwd, configPath)
-      const results = validate(config, cwd, {
+      const results = await validate(config, cwd, {
         checkHardcoded: !!cmdOpts.checkHardcoded
       })
       const hasErrors =
@@ -123,7 +123,7 @@ program
     "--sort <mode>",
     "Override key sorting mode (alpha | source | preserve)"
   )
-  .action((cmdOpts: { sort?: string }) => {
+  .action(async (cmdOpts: { sort?: string }) => {
     const opts = program.opts()
     const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
     const configPath = typeof opts.config === "string" ? opts.config : undefined
@@ -141,7 +141,7 @@ program
         }
         config.sortKeys = cmdOpts.sort
       }
-      extract(config, cwd)
+      await extract(config, cwd)
       process.exitCode = 0
     } catch (error) {
       reportError(error)

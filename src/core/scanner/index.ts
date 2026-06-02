@@ -1,4 +1,7 @@
 import * as fs from "fs"
+import { parseFile } from "./parsers"
+import type { ParsedFileResult, FileParseError } from "./parsers/types"
+import { runBoundedPool } from "./pool"
 import { buildKeyRegex, buildAttrRegex } from "./regex"
 import { stripComments } from "./text"
 
@@ -20,11 +23,69 @@ export * from "./hardcoded"
  * (e.g. `t('status.' + code)` -> `t('status.'`) and would otherwise
  * pollute the used-key set.
  */
-export function detectUsedKeys(
+export async function detectUsedKeys(
   files: string[],
   matchFunctions: string[],
-  matchAttributes: string[]
-): { usedKeys: Set<string>; fileContents: string[] } {
+  matchAttributes: string[],
+  opts?: { cwd?: string; useAst?: boolean; maxConcurrency?: number }
+): Promise<{
+  usedKeys: Set<string>
+  fileContents: string[]
+  parsedResults: ParsedFileResult[]
+  parseErrors: FileParseError[]
+}> {
+  const useAst = opts?.useAst ?? false
+  const cwd = opts?.cwd ?? process.cwd()
+  const maxConcurrency = opts?.maxConcurrency ?? 4
+
+  if (useAst) {
+    const fileContents: string[] = []
+    const parsedResults: (ParsedFileResult | undefined)[] = []
+    const parseErrors: FileParseError[] = []
+    const usedKeys = new Set<string>()
+
+    fileContents.length = files.length
+    parsedResults.length = files.length
+
+    await runBoundedPool(
+      files.length,
+      async (i) => {
+        let source = ""
+        try {
+          source = await fs.promises.readFile(files[i], "utf8")
+        } catch {
+          source = ""
+        }
+        fileContents[i] = stripComments(source)
+        const { result, errors } = await parseFile(
+          source,
+          files[i],
+          matchFunctions,
+          matchAttributes,
+          cwd
+        )
+        parsedResults[i] = result
+        if (errors.length) parseErrors.push(...errors)
+      },
+      maxConcurrency
+    )
+
+    for (const r of parsedResults) {
+      if (!r) continue
+      for (const { key } of r.usedKeys) {
+        if (key.endsWith(".")) continue
+        usedKeys.add(key)
+      }
+    }
+
+    return {
+      usedKeys,
+      fileContents,
+      parsedResults: parsedResults as ParsedFileResult[],
+      parseErrors
+    }
+  }
+
   const keyRegex = buildKeyRegex(matchFunctions)
   const attrRegex = buildAttrRegex(matchAttributes)
 
@@ -51,5 +112,5 @@ export function detectUsedKeys(
     }
   }
 
-  return { usedKeys, fileContents }
+  return { usedKeys, fileContents, parsedResults: [], parseErrors: [] }
 }
