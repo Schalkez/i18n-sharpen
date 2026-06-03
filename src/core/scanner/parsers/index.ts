@@ -13,7 +13,8 @@ export async function parseFile(
   filePath: string,
   matchFunctions: string[],
   matchAttributes: string[],
-  cwd: string
+  cwd: string,
+  hardcodedAttributes: string[] = []
 ): Promise<{ result: ParsedFileResult; errors: FileParseError[] }> {
   const ext = path.extname(filePath).toLowerCase()
   switch (ext) {
@@ -23,7 +24,8 @@ export async function parseFile(
         filePath,
         matchFunctions,
         matchAttributes,
-        cwd
+        cwd,
+        hardcodedAttributes
       )
     case ".svelte":
       return parseSvelteFile(
@@ -31,7 +33,8 @@ export async function parseFile(
         filePath,
         matchFunctions,
         matchAttributes,
-        cwd
+        cwd,
+        hardcodedAttributes
       )
     case ".astro":
       return parseAstroFile(
@@ -39,7 +42,8 @@ export async function parseFile(
         filePath,
         matchFunctions,
         matchAttributes,
-        cwd
+        cwd,
+        hardcodedAttributes
       )
     case ".ts":
     case ".tsx":
@@ -51,7 +55,8 @@ export async function parseFile(
           filePath,
           matchFunctions,
           matchAttributes,
-          cwd
+          cwd,
+          hardcodedAttributes
         )
       )
     default:

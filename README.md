@@ -43,6 +43,14 @@ pnpm add -D svelte              # .svelte scanning
 pnpm add -D @astrojs/compiler   # .astro scanning
 ```
 
+### Zero-Cost Framework Support
+
+`i18n-sharpen` uses an **Optional Peer Dependencies** architecture. Out of the box, the package is extremely lightweight (~720 kB) and requires zero configuration.
+It dynamically lazy-loads the compiler for your framework only when it encounters that file type.
+
+- If you use React/TypeScript, you already have `typescript` installed. `i18n-sharpen` will use it directly.
+- It will **not** force you to download Vue or Svelte compilers unless you actually have `.vue` or `.svelte` files in your project.
+
 ---
 
 ## Configuration

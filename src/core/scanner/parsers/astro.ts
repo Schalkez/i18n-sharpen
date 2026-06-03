@@ -38,6 +38,7 @@ function walkAstroAst(
   filePath: string,
   cwd: string,
   errors: FileParseError[],
+  hardcodedAttributes: string[],
   source: string
 ): void {
   if (!node) return
@@ -55,7 +56,8 @@ function walkAstroAst(
       filePath,
       matchFunctions,
       matchAttributes,
-      cwd
+      cwd,
+      hardcodedAttributes
     )
     mergeWithRebase(out, result, anchor)
     errors.push(...tsErrors)
@@ -75,7 +77,8 @@ function walkAstroAst(
         filePath,
         matchFunctions,
         matchAttributes,
-        cwd
+        cwd,
+        hardcodedAttributes
       )
       mergeWithRebase(out, result, offset)
       errors.push(...tsErrors)
@@ -138,6 +141,7 @@ function walkAstroAst(
       filePath,
       cwd,
       errors,
+      hardcodedAttributes,
       source
     )
   }
@@ -154,7 +158,8 @@ export async function parseAstroFile(
   filePath: string,
   matchFunctions: string[],
   matchAttributes: string[],
-  cwd: string
+  cwd: string,
+  hardcodedAttributes: string[] = []
 ): Promise<{ result: ParsedFileResult; errors: FileParseError[] }> {
   const astroCompiler = loadWorkspaceDep(
     "@astrojs/compiler",
@@ -200,6 +205,7 @@ export async function parseAstroFile(
     filePath,
     cwd,
     collectedErrors,
+    hardcodedAttributes,
     source
   )
 

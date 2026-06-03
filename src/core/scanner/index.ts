@@ -8,6 +8,12 @@ export * from "./files"
 export * from "./text"
 export * from "./lines"
 
+export interface DetectUsedKeysOptions {
+  cwd?: string
+  maxConcurrency?: number
+  hardcodedAttributes?: string[]
+}
+
 /**
  * Read every file in `files`, strip comments, then run the function/attr
  * regex over each cleaned source. Returns:
@@ -23,7 +29,7 @@ export async function detectUsedKeys(
   files: string[],
   matchFunctions: string[],
   matchAttributes: string[],
-  opts?: { cwd?: string; maxConcurrency?: number }
+  opts?: DetectUsedKeysOptions
 ): Promise<{
   usedKeys: Set<string>
   fileContents: string[]
@@ -56,7 +62,8 @@ export async function detectUsedKeys(
         files[i],
         matchFunctions,
         matchAttributes,
-        cwd
+        cwd,
+        opts?.hardcodedAttributes ?? []
       )
       parsedResults[i] = result
       if (errors.length) parseErrors.push(...errors)

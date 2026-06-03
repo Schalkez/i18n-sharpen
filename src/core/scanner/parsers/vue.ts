@@ -51,7 +51,8 @@ function walkVueTemplateAst(
   out: ParsedFileResult,
   filePath: string,
   cwd: string,
-  errors: FileParseError[]
+  errors: FileParseError[],
+  hardcodedAttributes: string[]
 ): void {
   if (!node) return
 
@@ -74,7 +75,8 @@ function walkVueTemplateAst(
       filePath,
       matchFunctions,
       matchAttributes,
-      cwd
+      cwd,
+      hardcodedAttributes
     )
     mergeWithRebase(out, result, node.content.loc.start.offset)
     errors.push(...tsErrors)
@@ -130,7 +132,8 @@ function walkVueTemplateAst(
           filePath,
           matchFunctions,
           matchAttributes,
-          cwd
+          cwd,
+          hardcodedAttributes
         )
         mergeWithRebase(out, result, prop.exp.loc.start.offset)
         errors.push(...tsErrors)
@@ -144,7 +147,8 @@ function walkVueTemplateAst(
         out,
         filePath,
         cwd,
-        errors
+        errors,
+        hardcodedAttributes
       )
     }
     return
@@ -160,7 +164,8 @@ function walkVueTemplateAst(
           out,
           filePath,
           cwd,
-          errors
+          errors,
+          hardcodedAttributes
         )
       }
     }
@@ -172,7 +177,8 @@ export async function parseVueFile(
   filePath: string,
   matchFunctions: string[],
   matchAttributes: string[],
-  cwd: string
+  cwd: string,
+  hardcodedAttributes: string[] = []
 ): Promise<{ result: ParsedFileResult; errors: FileParseError[] }> {
   const compiler = loadWorkspaceDep("@vue/compiler-sfc", cwd) as VueSfcModule
   let descriptor: any = null
@@ -211,7 +217,8 @@ export async function parseVueFile(
           filePath,
           matchFunctions,
           matchAttributes,
-          cwd
+          cwd,
+          hardcodedAttributes
         )
         mergeWithRebase(merged, result, anchor)
         collectedErrors.push(...errors)
@@ -226,7 +233,8 @@ export async function parseVueFile(
         merged,
         filePath,
         cwd,
-        collectedErrors
+        collectedErrors,
+        hardcodedAttributes
       )
     }
   }

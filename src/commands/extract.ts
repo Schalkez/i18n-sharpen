@@ -41,7 +41,7 @@ export async function extract(
     files,
     matchFunctions,
     matchAttributes,
-    { cwd }
+    { cwd, hardcodedAttributes: config.hardcoded?.attributes ?? [] }
   )
 
   for (const err of parseErrors) {

@@ -48,6 +48,7 @@ function walkSvelteTemplate(
   filePath: string,
   cwd: string,
   errors: FileParseError[],
+  hardcodedAttributes: string[],
   source: string,
   isV5: boolean
 ): void {
@@ -80,7 +81,8 @@ function walkSvelteTemplate(
       filePath,
       matchFunctions,
       matchAttributes,
-      cwd
+      cwd,
+      hardcodedAttributes
     )
     mergeWithRebase(out, result, node.expression.start)
     errors.push(...tsErrors)
@@ -125,6 +127,7 @@ function walkSvelteTemplate(
       filePath,
       cwd,
       errors,
+      hardcodedAttributes,
       source,
       isV5
     )
@@ -140,7 +143,8 @@ export async function parseSvelteFile(
   filePath: string,
   matchFunctions: string[],
   matchAttributes: string[],
-  cwd: string
+  cwd: string,
+  hardcodedAttributes: string[] = []
 ): Promise<{ result: ParsedFileResult; errors: FileParseError[] }> {
   await Promise.resolve()
   const svelteCompiler = loadWorkspaceDep(
@@ -177,7 +181,8 @@ export async function parseSvelteFile(
         filePath,
         matchFunctions,
         matchAttributes,
-        cwd
+        cwd,
+        hardcodedAttributes
       )
       mergeWithRebase(merged, result, block.start)
       collectedErrors.push(...errors)
@@ -194,6 +199,7 @@ export async function parseSvelteFile(
       filePath,
       cwd,
       collectedErrors,
+      hardcodedAttributes,
       source,
       isV5
     )

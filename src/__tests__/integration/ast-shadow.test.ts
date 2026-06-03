@@ -214,7 +214,10 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
       localesDir: "locales",
       defaultLanguage: "en",
       supportedLanguages: ["en"],
-      fileExtensions: [".tsx"]
+      fileExtensions: [".tsx"],
+      hardcoded: {
+        attributes: ["placeholder"]
+      }
     }
 
     // Without checkHardcoded: hardcodedStrings is undefined

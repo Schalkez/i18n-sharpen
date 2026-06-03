@@ -97,7 +97,8 @@ export async function validate(
 
   const { usedKeys, fileContents, parsedResults, parseErrors } =
     await detectUsedKeys(files, matchFunctions, matchAttributes, {
-      cwd
+      cwd,
+      hardcodedAttributes: config.hardcoded?.attributes ?? []
     })
 
   for (const err of parseErrors) {

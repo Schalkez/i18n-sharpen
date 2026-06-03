@@ -112,7 +112,17 @@ export function loadConfig(
     pluralSuffixes: fileConfig.pluralSuffixes ?? DEFAULT_CONFIG.pluralSuffixes,
     looseKeyMatch: fileConfig.looseKeyMatch ?? false,
     localesLayout: fileConfig.localesLayout ?? DEFAULT_CONFIG.localesLayout,
-    prune: fileConfig.prune ?? { force: false }
+    prune: fileConfig.prune ?? { force: false },
+    hardcoded: {
+      attributes: fileConfig.hardcoded?.attributes ?? [
+        "placeholder",
+        "label",
+        "title",
+        "alt",
+        "aria-label"
+      ],
+      ignore: fileConfig.hardcoded?.ignore
+    }
   }
 
   // Zod validation

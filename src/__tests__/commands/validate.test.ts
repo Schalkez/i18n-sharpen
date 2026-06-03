@@ -423,7 +423,10 @@ describe("validate: integration", () => {
         localesDir: "locales",
         defaultLanguage: "en",
         supportedLanguages: ["en"],
-        fileExtensions: [".tsx"]
+        fileExtensions: [".tsx"],
+        hardcoded: {
+          attributes: ["placeholder"]
+        }
       }
 
       // Without checkHardcoded flag

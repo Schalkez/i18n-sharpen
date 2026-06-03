@@ -15,14 +15,8 @@ const SKIP_TAGS = new Set([
   "iframe"
 ])
 
-// D-10: hardcoded-attribute allowlist (parser emits raw candidates; caller filters via isHardcodedIgnored)
-const HARDCODED_ATTRS = new Set([
-  "placeholder",
-  "label",
-  "title",
-  "alt",
-  "aria-label"
-])
+// D-10: hardcoded-attribute list is now driven by config
+// caller passes it via hardcodedAttributes, filtering remains via isHardcodedIgnored
 
 /**
  * Parse a single JS/TS/JSX/TSX file using TypeScript Compiler API (parser-only,
@@ -39,10 +33,13 @@ export function parseTypeScriptFile(
   filePath: string,
   matchFunctions: string[],
   matchAttributes: string[],
-  cwd: string
+  cwd: string,
+  hardcodedAttributes: string[] = []
 ): { result: ParsedFileResult; errors: FileParseError[] } {
   // PERF-02: lazy-load TypeScript from the USER's workspace, never bundled.
   const ts = loadWorkspaceDep("typescript", cwd) as typeof TS
+
+  const hardcodedAttrsSet = new Set(hardcodedAttributes)
 
   const ext = path.extname(filePath).toLowerCase()
   const scriptKindMap: Record<string, number> = {
@@ -212,7 +209,7 @@ export function parseTypeScriptFile(
           usedKeys.push({ key: strValue, offset: strOffset }) // D-09: '.'-terminated excluded
         }
         // Hardcoded attribute candidate (PARSE-05)
-        if (HARDCODED_ATTRS.has(attrName)) {
+        if (hardcodedAttrsSet.has(attrName)) {
           const trimmed = strValue.trim()
           if (trimmed.length > 0) {
             hardcodedCandidates.push({

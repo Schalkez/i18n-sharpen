@@ -9,7 +9,8 @@ function parse(src: string, file = "test.tsx") {
     file,
     ["t", "i18n.t"],
     ["i18nKey"],
-    process.cwd()
+    process.cwd(),
+    ["placeholder", "label", "title", "alt", "aria-label"]
   ).result
 }
 

@@ -90,6 +90,7 @@ export interface I18nSharpenConfig {
    */
   hardcoded?: {
     ignore?: string[]
+    attributes?: string[]
   }
 }
 

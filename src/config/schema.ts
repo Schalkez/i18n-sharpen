@@ -102,7 +102,8 @@ export const I18nSharpenConfigSchema = z.object({
     .optional(),
   hardcoded: z
     .object({
-      ignore: z.array(z.string()).optional()
+      ignore: z.array(z.string()).optional(),
+      attributes: z.array(z.string()).optional()
     })
     .optional()
 })
