@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { I18nSharpenError, type I18nError } from "./errors"
+import { I18nSharpenError, type I18nError } from "@/core/errors"
 
 describe("I18nSharpenError", () => {
   it("preserves the structured error union as a public property", () => {

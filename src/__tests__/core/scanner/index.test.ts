@@ -7,7 +7,7 @@ import {
   matchWildcard,
   isKeyUsed,
   detectUsedKeys
-} from "./scanner"
+} from "@/core/scanner"
 
 describe("scanner: stripComments edge cases", () => {
   it("preserves // inside a double-quoted URL", () => {

@@ -12,7 +12,7 @@ import {
   loadAllLocales,
   loadNamespacedLocales,
   FORBIDDEN_KEY_SEGMENTS
-} from "./locale-io"
+} from "@/core/locale-io"
 
 const tmp = (slug: string): string =>
   path.resolve(

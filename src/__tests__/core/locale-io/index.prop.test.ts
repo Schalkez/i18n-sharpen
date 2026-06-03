@@ -1,6 +1,6 @@
 import fc from "fast-check"
 import { describe, it, expect } from "vitest"
-import { flattenObject, unflattenObject } from "./locale-io"
+import { flattenObject, unflattenObject } from "@/core/locale-io"
 
 describe("locale-io: property-based tests", () => {
   const safeKey = fc

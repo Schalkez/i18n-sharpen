@@ -252,7 +252,7 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
 
   // ── H: D-09 structural invariant — useAst absent from public types ─────
   it("useAst is not present in src/types.ts (D-09 invariant)", () => {
-    const typesPath = path.resolve(__dirname, "../../src/types.ts")
+    const typesPath = path.resolve(__dirname, "../../types.ts")
     const content = fs.readFileSync(typesPath, "utf8")
     expect(content).not.toContain("useAst")
   })
