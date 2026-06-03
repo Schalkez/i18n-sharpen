@@ -173,7 +173,7 @@ export function parseTypeScriptFile(
           // PARSE-04 dynamic candidate.
           const { classification, prefix } = classifyArg(arg0)
           dynamicCalls.push({
-            expression: node.expression.getText(sourceFile),
+            expression: node.getText(sourceFile),
             arg: arg0.getText(sourceFile),
             offset: node.getStart(sourceFile),
             classification,

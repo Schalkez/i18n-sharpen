@@ -46,8 +46,12 @@ function mergeWithRebase(
 
 function walkVueTemplateAst(
   node: any,
+  matchFunctions: string[],
   matchAttributes: string[],
-  out: ParsedFileResult
+  out: ParsedFileResult,
+  filePath: string,
+  cwd: string,
+  errors: FileParseError[]
 ): void {
   if (!node) return
 
@@ -60,6 +64,20 @@ function walkVueTemplateAst(
         offset: node.loc.start.offset + node.content.indexOf(trimmed)
       })
     }
+    return
+  }
+
+  if (node.type === 5 && node.content?.type === 4) {
+    // INTERPOLATION
+    const { result, errors: tsErrors } = parseTypeScriptFile(
+      node.content.content,
+      filePath,
+      matchFunctions,
+      matchAttributes,
+      cwd
+    )
+    mergeWithRebase(out, result, node.content.loc.start.offset)
+    errors.push(...tsErrors)
     return
   }
 
@@ -81,10 +99,53 @@ function walkVueTemplateAst(
             offset: prop.value.loc.start.offset + 1
           })
         }
+      } else if (prop.type === 7 && prop.exp?.type === 4) {
+        // DIRECTIVE
+        const rawName =
+          prop.rawName ??
+          (prop.arg?.content ? `:${String(prop.arg.content)}` : prop.name)
+        if (matchAttributes.includes(rawName)) {
+          let val = prop.exp.content.trim()
+          if (
+            (val.startsWith("'") && val.endsWith("'")) ||
+            (val.startsWith('"') && val.endsWith('"'))
+          ) {
+            val = val.slice(1, -1)
+          }
+          if (val && !val.endsWith(".")) {
+            out.usedKeys.push({
+              key: val,
+              offset:
+                prop.exp.loc.start.offset +
+                (prop.exp.content.indexOf(val) !== -1
+                  ? prop.exp.content.indexOf(val)
+                  : 0)
+            })
+          }
+        }
+
+        // Always parse directive expressions for function calls like $t('...')
+        const { result, errors: tsErrors } = parseTypeScriptFile(
+          prop.exp.content,
+          filePath,
+          matchFunctions,
+          matchAttributes,
+          cwd
+        )
+        mergeWithRebase(out, result, prop.exp.loc.start.offset)
+        errors.push(...tsErrors)
       }
     }
     for (const child of node.children ?? []) {
-      walkVueTemplateAst(child, matchAttributes, out)
+      walkVueTemplateAst(
+        child,
+        matchFunctions,
+        matchAttributes,
+        out,
+        filePath,
+        cwd,
+        errors
+      )
     }
     return
   }
@@ -92,7 +153,15 @@ function walkVueTemplateAst(
   if (Array.isArray(node.children)) {
     for (const child of node.children) {
       if (typeof child !== "string") {
-        walkVueTemplateAst(child, matchAttributes, out)
+        walkVueTemplateAst(
+          child,
+          matchFunctions,
+          matchAttributes,
+          out,
+          filePath,
+          cwd,
+          errors
+        )
       }
     }
   }
@@ -150,7 +219,15 @@ export async function parseVueFile(
     }
 
     if (descriptor.template?.ast) {
-      walkVueTemplateAst(descriptor.template.ast, matchAttributes, merged)
+      walkVueTemplateAst(
+        descriptor.template.ast,
+        matchFunctions,
+        matchAttributes,
+        merged,
+        filePath,
+        cwd,
+        collectedErrors
+      )
     }
   }
 
