@@ -20,7 +20,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json --noEmit",
     "lint": "eslint src/",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run",
@@ -87,6 +87,7 @@
     "simple-git-hooks": "^2.13.1",
     "svelte": "^5.56.0",
     "tsup": "^8.0.2",
+    "tsx": "^4.22.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.3",
     "vite-tsconfig-paths": "^6.1.1",

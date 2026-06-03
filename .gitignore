@@ -7,6 +7,9 @@ dist
 # Claude Code: per-user/local overrides (shared config stays in settings.json)
 .claude/settings.local.json
 
+# Phase 5 gate-script reports + test temp projects (derived, never committed)
+scratch/
+
 # Python bytecode (skill scripts)
 __pycache__/
 *.pyc

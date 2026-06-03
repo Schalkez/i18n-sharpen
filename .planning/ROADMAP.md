@@ -99,7 +99,11 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
   2. The corpus diff shows zero false-negatives — every key found by the regex path is also found by the AST path; any AST-only gains are documented
   3. `pnpm bench` against a 50-file fixture corpus shows the AST path is no more than 100ms slower than the v0.3.0 regex baseline; the benchmark fails the build if this threshold is exceeded
   4. After flipping `useAst` default to true, the full test suite passes with the AST path as the driver — including all behavioral cases ported in Phase 2
-**Plans**: TBD
+**Plans**: 4 plans (4 waves)
+- [ ] 05-01-PLAN.md — Wave 1: foundation + corpus — gitignore scratch/, add tsx devDep, bring scripts under typecheck, vendor one real OSS project per framework + SOURCES.md (SHADOW-02)
+- [ ] 05-02-PLAN.md — Wave 2: shadow harness — scripts/shadow-compare.ts diffs regex vs AST over corpus+fixtures, JSON report to scratch/, exit 1 on any false-negative + `shadow` script (SHADOW-02, SHADOW-03)
+- [ ] 05-03-PLAN.md — Wave 3: perf gate — scripts/bench.ts live regex-vs-AST delta over deterministic ≤50-file slice, median, exit 1 past 100ms + `bench` script wired into CI (PERF-01)
+- [ ] 05-04-PLAN.md — Wave 4: flip — D-16 default-is-AST guard test, then flip the four `?? false`→`?? true` sites gated behind both green gates, isolated final commit (SHADOW-03, PERF-01)
 
 ### Phase 6: Cleanup & Release
 **Goal**: The regex scanner modules (`regex.ts`, `dynamic.ts`, `hardcoded.ts`, `scanner.ts` shim) and the shadow flag are deleted now that AST is the verified default; only regex-internal tests are dropped (behavioral cases already live in parser tests); the BREAKING CHANGELOG is written and the version is bumped to 0.4.0
@@ -124,7 +128,7 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 | 2. JS/TS Parser Core + Golden Cases | v0.4.0 | 3/3 | Complete | 2026-06-01 |
 | 3. Framework Parsers + Dispatcher | v0.4.0 | 5/5 | Complete | 2026-06-01 |
 | 4. Async Migration | v0.4.0 | 0/? | Not started | - |
-| 5. Shadow Comparison, Perf Gate & Default Flip | v0.4.0 | 0/? | Not started | - |
+| 5. Shadow Comparison, Perf Gate & Default Flip | v0.4.0 | 0/4 | Not started | - |
 | 6. Cleanup & Release | v0.4.0 | 0/? | Not started | - |
 
 ---

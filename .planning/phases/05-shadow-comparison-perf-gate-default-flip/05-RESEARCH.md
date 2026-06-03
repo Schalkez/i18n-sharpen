@@ -642,19 +642,19 @@ If padding to 50 is needed, the bench can repeat the fixture files in a loop unt
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Corpus total file count below 50**
+1. **Corpus total file count below 50** — RESOLVED in Plan 03 Task 1: use all corpus files (`files.sort().slice(0,50)`; all if <50) and print the actual count; the 100ms threshold is count-independent.
    - What we know: 4 existing fixtures + up to 11 vendored files = ~15 files total
    - What's unclear: Whether D-11's "50-file slice" requires padding, or whether all-corpus (≤50) is acceptable
    - Recommendation: Use all corpus files; document the actual count in bench output. The threshold (100ms) doesn't change.
 
-2. **`tsx` as devDependency vs `tsup` compile**
+2. **`tsx` as devDependency vs `tsup` compile** — RESOLVED in Plan 01 Task 1: add `tsx` as a devDependency and wire `pnpm shadow`/`pnpm bench` as `tsx scripts/*.ts`.
    - What we know: neither `tsx` nor `ts-node` is currently in devDeps
    - What's unclear: Project owner preference for script execution method
    - Recommendation: Add `tsx` as devDependency (one-line addition, zero runtime impact); most ergonomic for on-demand `pnpm shadow` runs
 
-3. **GitNexus impact analysis results**
+3. **GitNexus impact analysis results** — RESOLVED procedurally in Plan 04 Task 2: a runtime observation, not a pre-answerable design question. The executor runs `gitnexus_impact` on detectUsedKeys/validate/extract/prune and surfaces HIGH/CRITICAL risk to the user before the D-15 flip commit.
    - What we know: CLAUDE.md mandates `gitnexus_impact` before editing the four flip sites
    - What's unclear: Whether the impact analysis will return HIGH/CRITICAL risk for the flip
    - Recommendation: Executor runs `gitnexus_impact` for each flip site and reports results to user before proceeding with D-15 commit
