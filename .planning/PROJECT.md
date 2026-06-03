@@ -2,11 +2,17 @@
 
 ## What This Is
 
-A lightning-fast, framework-agnostic CLI and library to **validate**, **extract**, and **prune** i18n translation keys in JS/TS/Vue/Svelte/Astro codebases. Targets dev teams that want a tiny, dependency-light tool slotted into CI/CD that catches missing/stale translation keys before they ship.
+A **static analysis engine for localization** — not a JSON checker. Parses real ASTs across TS/JS/Vue/Svelte/Astro to build a usage graph (key → files → locales), then uses that graph to enforce translation correctness in CI/CD.
+
+The core asset is the AST usage graph. Everything — missing keys, unused keys, dynamic key detection, hardcoded string detection, and future features like impact analysis and key refactoring — derives from it.
+
+> **Positioning note (2026-06-03):** After v0.4.0 shipped AST parsing + dynamic key detection, the correct description is no longer "i18n utility" but *"static analysis engine specialised for the localization domain."* Cross-framework AST analysis (TS/JS/Vue/Svelte/Astro in one engine) is what differentiates this from the ~70% of tools that do locale file comparison only. — Validated by external review.
 
 ## Core Value
 
-**Keep translation files sharp, tidy, and synchronized — without losing data.** If everything else fails, `prune` must never silently destroy translation work, and `validate` must never miss a real key drift.
+**The AST graph is the moat.** Grep-based tools miss `t(\`auth.${action}\`)`. AST-based tools don't. That difference is what makes the tool worth using on large codebases (1000+ keys, 10+ locales, 50+ contributors) where locale drift, dead translations, and hardcoded strings become real costs — not theoretical ones.
+
+Safety invariant: `prune` must never silently destroy translation work; `validate` must never miss a real key drift.
 
 ## Current State
 
@@ -118,5 +124,34 @@ This document evolves at phase transitions and milestone boundaries.
 3. Audit Out of Scope — reasons still valid?
 4. Update Context with current state
 
+## Strategic Notes
+
+*Captured 2026-06-03 after v0.4.0 shipped. Use at milestone planning time.*
+
+### Positioning
+
+Don't market this as an "i18n utility" or "translation checker." The correct frame is:
+
+> **Static analysis engine specialised for localization, with the AST usage graph as the core asset.**
+
+This positioning unlocks the enterprise angle: teams with 1000+ keys and 50+ contributors don't need another JSON linter — they need a tool that understands their codebase the way a compiler does.
+
+### Roadmap direction
+
+Recommended milestone order — each builds on the AST graph rather than adding more locale-file rules:
+
+| Milestone | Feature | Why |
+|-----------|---------|-----|
+| v0.5 | **Impact Analysis** | 20% effort / 80% value. Reverse the existing key→files index. Enterprise ask #1 on key rename. |
+| v0.6 | **Key Refactor (AST write-back)** | Killer feature — no other i18n tool does this. Read path done; missing piece is write-back. |
+| v0.7 | **Translation Ownership** | Low effort, high monorepo value. Config-driven namespace→team mapping. |
+| v0.8 | **Coverage Dashboard** | Formatting layer on top of existing validate output. PM/stakeholder appeal. |
+
+**Defer indefinitely:** AI translation review, screenshot-based UI overflow detection — these pull the product into a different scope and would dilute the static analysis identity.
+
+### What to avoid
+
+Adding more locale-file comparison rules (more flavors of "key missing in locale X"). The grep-based competition already does that. New features should use the AST graph or they don't belong here.
+
 ---
-*Last updated: 2026-05-31 after starting milestone v0.4.0 (AST Parser Rewrite)*
+*Last updated: 2026-06-03 after v0.4.0 shipped and strategic positioning reviewed*
