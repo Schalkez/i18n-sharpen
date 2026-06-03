@@ -191,3 +191,41 @@ export function isKeyUsed(
 
   return false
 }
+
+/**
+ * Test whether a trimmed candidate string matches default filters
+ * (punctuation, numbers) or custom user ignore globs/regexes.
+ */
+export function isHardcodedIgnored(
+  text: string,
+  customIgnores: string[] = []
+): boolean {
+  const trimmed = text.trim()
+  if (trimmed.length === 0) return true
+
+  // 1. Punctuation-only
+  const punctuationRegex =
+    /^[!@#$%^&*()_+={}[\]|\\:;"'<>,.?/~` \-—–••…&bull;&nbsp;&middot;]+$/
+  if (punctuationRegex.test(trimmed)) return true
+
+  // 2. Numbers-only
+  const numbersRegex = /^[0-9\s.,%-]+$/
+  if (numbersRegex.test(trimmed)) return true
+
+  // 3. HTML entities (e.g., &nbsp;, &times;, &#39;)
+  const htmlEntityRegex = /^&[a-zA-Z0-9#]+;$/
+  if (htmlEntityRegex.test(trimmed)) return true
+
+  // 4. Custom ignores
+  for (const pattern of customIgnores) {
+    if (pattern === trimmed) return true
+    try {
+      const regex = new RegExp(pattern)
+      if (regex.test(trimmed)) return true
+    } catch {
+      // Skip invalid regexes
+    }
+  }
+
+  return false
+}

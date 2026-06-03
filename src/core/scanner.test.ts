@@ -3,12 +3,9 @@ import * as path from "path"
 import { describe, it, expect } from "vitest"
 import {
   stripComments,
-  isStaticStringLiteral,
   getBaseKey,
   matchWildcard,
   isKeyUsed,
-  buildKeyRegex,
-  buildAttrRegex,
   detectUsedKeys
 } from "./scanner"
 
@@ -47,47 +44,6 @@ describe("scanner: stripComments edge cases", () => {
   })
 })
 
-describe("scanner: isStaticStringLiteral", () => {
-  it("accepts plain double-quoted literal", () => {
-    expect(isStaticStringLiteral('"hello"')).toBe(true)
-  })
-  it("rejects concatenation", () => {
-    expect(isStaticStringLiteral('"hello" + x')).toBe(false)
-  })
-  it("rejects template literal with interpolation", () => {
-    expect(isStaticStringLiteral("`pre.${x}`")).toBe(false)
-  })
-  it("accepts template literal with no interpolation", () => {
-    expect(isStaticStringLiteral("`hello`")).toBe(true)
-  })
-  it("rejects unterminated literal", () => {
-    expect(isStaticStringLiteral('"unterm')).toBe(false)
-  })
-  it("treats string literal followed by options object as static (FIX-1)", () => {
-    expect(isStaticStringLiteral('"user.greeting", { name: "John" }')).toBe(
-      true
-    )
-    expect(isStaticStringLiteral("'user.greeting', { name: 'John' }")).toBe(
-      true
-    )
-    expect(isStaticStringLiteral("`user.greeting`, { name: 'John' }")).toBe(
-      true
-    )
-  })
-  it("treats string literal followed by minimal options as static (FIX-1)", () => {
-    expect(isStaticStringLiteral('"key",opts')).toBe(true)
-    expect(isStaticStringLiteral('"key"  ,  opts')).toBe(true)
-  })
-  it("still rejects concatenation with trailing option (regression check)", () => {
-    expect(isStaticStringLiteral('"error." + code, { option: true }')).toBe(
-      false
-    )
-  })
-  it("still rejects chained method calls as dynamic (FIX-1 boundary)", () => {
-    expect(isStaticStringLiteral('"key".trim()')).toBe(false)
-  })
-})
-
 describe("scanner: getBaseKey + isKeyUsed", () => {
   it("strips the matching plural suffix", () => {
     expect(getBaseKey("count_one", ["_one", "_other"])).toBe("count")
@@ -112,36 +68,6 @@ describe("scanner: matchWildcard", () => {
   })
   it("star is universal", () => {
     expect(matchWildcard("*", "anything.here")).toBe(true)
-  })
-})
-
-describe("scanner: regex builders", () => {
-  it("buildKeyRegex matches the configured function name", () => {
-    const re = buildKeyRegex(["t", "translate"])
-    const matches = [...`t("k.a") translate('k.b')`.matchAll(re)]
-    expect(matches.map((m) => m[2])).toEqual(["k.a", "k.b"])
-  })
-  it("buildAttrRegex matches the configured attributes", () => {
-    const re = buildAttrRegex(["i18nKey"])
-    const matches = [...`<h1 i18nKey="title.h">`.matchAll(re)]
-    expect(matches.map((m) => m[2])).toEqual(["title.h"])
-  })
-  it("buildKeyRegex escapes regex-meta in function names", () => {
-    // `t.x` is a legal identifier-ish in zod schema; ensure the `.` is
-    // matched literally, not as a wildcard.
-    const re = buildKeyRegex(["t.x"])
-    const matches = [...`tax("nope")`.matchAll(re)]
-    expect(matches).toHaveLength(0)
-  })
-  it("buildKeyRegex handles empty matchFunctions array", () => {
-    const re = buildKeyRegex([])
-    const matches = [...`t("k.a") translate('k.b')`.matchAll(re)]
-    expect(matches).toHaveLength(0)
-  })
-  it("buildAttrRegex handles empty matchAttributes array", () => {
-    const re = buildAttrRegex([])
-    const matches = [...`<h1 i18nKey="title.h">`.matchAll(re)]
-    expect(matches).toHaveLength(0)
   })
 })
 

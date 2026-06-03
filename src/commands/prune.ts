@@ -35,7 +35,7 @@ export function __setInteractiveIOForTests(
 export async function prune(
   config: I18nSharpenConfig,
   cwd: string = process.cwd(),
-  options: PruneOptions & { useAst?: boolean } = {}
+  options: PruneOptions = {}
 ): Promise<PruneResult> {
   log.header("I18N-SHARPEN PRUNER")
 
@@ -62,7 +62,7 @@ export async function prune(
     files,
     matchFunctions,
     matchAttributes,
-    { cwd, useAst: options.useAst ?? true }
+    { cwd }
   )
 
   for (const err of parseErrors) {

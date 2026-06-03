@@ -79,7 +79,7 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
       fileExtensions: [".ts"],
       matchFunctions: ["t"]
     }
-    const results = await validate(config, tempDir, { useAst: true })
+    const results = await validate(config, tempDir)
     expect(results.missingKeys).toContain("auth.login")
   })
 
@@ -100,7 +100,7 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
       fileExtensions: [".ts"],
       matchFunctions: ["t"]
     }
-    const results = await validate(config, tempDir, { useAst: true })
+    const results = await validate(config, tempDir)
     expect(results.unusedKeys).toContain("auth.unused")
     expect(results.missingKeys).not.toContain("auth.login")
   })
@@ -122,7 +122,7 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
       fileExtensions: [".ts"],
       matchFunctions: ["t"]
     }
-    const results = await validate(config, tempDir, { useAst: true })
+    const results = await validate(config, tempDir)
     expect(results.missingKeys).not.toContain("dynamic.prefix.")
     expect(results.unusedKeys).not.toContain("dynamic.prefix.")
   })
@@ -146,7 +146,7 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
       fileExtensions: [".ts"],
       matchFunctions: ["t"]
     }
-    const results = await validate(config, tempDir, { useAst: true })
+    const results = await validate(config, tempDir)
     expect(results.dynamicKeys.fullyDynamic.length).toBeGreaterThanOrEqual(3)
     for (const f of results.dynamicKeys.fullyDynamic) {
       expect(f.line).toBeGreaterThan(0)
@@ -176,7 +176,7 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
     })
 
     // Both prefixes detected
-    const resultsFull = await validate(baseConfig(), tempDir, { useAst: true })
+    const resultsFull = await validate(baseConfig(), tempDir)
     const prefixesFull = resultsFull.dynamicKeys.structuredConcat
       .map((f) => f.prefix)
       .sort()
@@ -186,8 +186,7 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
     // ignoreDynamicKeys: ["error.*"] suppresses only error. prefix
     const resultsSuppressed = await validate(
       baseConfig({ ignoreDynamicKeys: ["error.*"] }),
-      tempDir,
-      { useAst: true }
+      tempDir
     )
     const prefixesSuppressed =
       resultsSuppressed.dynamicKeys.structuredConcat.map((f) => f.prefix)
@@ -219,12 +218,11 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
     }
 
     // Without checkHardcoded: hardcodedStrings is undefined
-    const resultsWithout = await validate(config, tempDir, { useAst: true })
+    const resultsWithout = await validate(config, tempDir)
     expect(resultsWithout.hardcodedStrings).toBeUndefined()
 
     // With checkHardcoded: true — findings include the visible text nodes
     const resultsWith = await validate(config, tempDir, {
-      useAst: true,
       checkHardcoded: true
     })
     expect(resultsWith.hardcodedStrings).toBeDefined()
@@ -247,9 +245,7 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
       fileExtensions: [".ts"],
       matchFunctions: ["t"]
     }
-    await expect(
-      extract(config, tempDir, { useAst: true })
-    ).resolves.not.toThrow()
+    await expect(extract(config, tempDir)).resolves.not.toThrow()
     const locale = readLocaleFile(path.join(tempDir, "locales/en.json"))
     expect(flattenObject(locale)).toHaveProperty("nav.home")
   })

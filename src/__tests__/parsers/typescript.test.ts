@@ -140,6 +140,62 @@ describe("hardcoded text candidates (PARSE-05 parity)", () => {
     expect(texts).not.toContain("text")
     expect(texts).not.toContain("user")
   })
+
+  it("GAP-01: extracts all allowlisted attribute values", () => {
+    const src = `<input placeholder="P" label="L" title="T" alt="A" aria-label="AL" />`
+    const texts = parse(src).hardcodedCandidates.map((c) => c.text)
+    expect(texts).toContain("P")
+    expect(texts).toContain("L")
+    expect(texts).toContain("T")
+    expect(texts).toContain("A")
+    expect(texts).toContain("AL")
+  })
+
+  it("GAP-02: ignores dynamic attribute expressions", () => {
+    const src = `<input placeholder={t("name")} label={myLabel} />`
+    expect(parse(src).hardcodedCandidates).toHaveLength(0)
+  })
+
+  it("GAP-03: extracts multiple JSX string expressions", () => {
+    const src = `<div>{'Welcome'} and {"Goodbye"} and {\`Hello\`}</div>`
+    const texts = parse(src).hardcodedCandidates.map((c) => c.text)
+    expect(texts).toContain("Welcome")
+    expect(texts).toContain("Goodbye")
+    expect(texts).toContain("Hello")
+  })
+
+  it("GAP-04: handles brace and comment inside a JSX string expression", () => {
+    const src = `<div>{ /* comment */ 'Welcome }' }</div>`
+    const texts = parse(src).hardcodedCandidates.map((c) => c.text)
+    expect(texts).toContain("Welcome }")
+  })
+
+  it("GAP-05: ignores dynamic or complex JSX expressions", () => {
+    const src = `<div>{t("key")}</div><div>{"Hello " + user}</div><div>{1 + 2}</div>`
+    expect(parse(src).hardcodedCandidates).toHaveLength(0)
+  })
+
+  it("GAP-06: ignores comment region and extracts sibling real text", () => {
+    const src = `<>{/* leading */}<div>Keep Me</div></>`
+    const texts = parse(src).hardcodedCandidates.map((c) => c.text)
+    expect(texts).toContain("Keep Me")
+    expect(texts).not.toContain("leading")
+  })
+
+  it("GAP-07: ignores comparison operator in attribute expression but extracts inner text", () => {
+    const src = `<div title={x > 0}>hello</div>`
+    const texts = parse(src).hardcodedCandidates.map((c) => c.text)
+    expect(texts).toContain("hello")
+    expect(
+      texts.some((t) => t.includes("x > 0") || t.includes("x &gt; 0"))
+    ).toBe(false)
+  })
+
+  it("GAP-08: extracts text from nested JSX element inside an expression", () => {
+    const src = `<div>{isActive && <span>Hello</span>}</div>`
+    const texts = parse(src).hardcodedCandidates.map((c) => c.text)
+    expect(texts).toContain("Hello")
+  })
 })
 
 // =============================================================================

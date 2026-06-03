@@ -8,15 +8,11 @@ export {
   /** @deprecated Import from `./core/scanner` instead. */
   stripComments,
   /** @deprecated Import from `./core/scanner` instead. */
-  isStaticStringLiteral,
-  /** @deprecated Import from `./core/scanner` instead. */
   getBaseKey,
   /** @deprecated Import from `./core/scanner` instead. */
   isKeyUsed,
   /** @deprecated Import from `./core/scanner` instead. */
-  matchWildcard,
-  /** @deprecated Import from `./core/scanner` instead. */
-  escapeRegex
+  matchWildcard
 } from "./core/scanner"
 
 // Re-export locale-io primitives from core/locale-io for back-compat.

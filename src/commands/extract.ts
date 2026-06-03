@@ -19,8 +19,7 @@ import { warnLegacyDefaultNamespace } from "./_shared/migration-warnings"
 
 export async function extract(
   config: I18nSharpenConfig,
-  cwd: string = process.cwd(),
-  options?: { useAst?: boolean }
+  cwd: string = process.cwd()
 ): Promise<void> {
   log.header("I18N-SHARPEN EXTRACTOR")
 
@@ -42,7 +41,7 @@ export async function extract(
     files,
     matchFunctions,
     matchAttributes,
-    { cwd, useAst: options?.useAst ?? true }
+    { cwd }
   )
 
   for (const err of parseErrors) {
