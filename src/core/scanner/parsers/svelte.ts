@@ -22,6 +22,8 @@ export function readSvelteMajor(cwd: string): number {
   return parseInt(version.split(".")[0], 10)
 }
 
+export const svelteInternal = { readSvelteMajor }
+
 function mergeWithRebase(
   target: ParsedFileResult,
   src: ParsedFileResult,
@@ -110,8 +112,8 @@ export async function parseSvelteFile(
     cwd
   ) as SvelteCompilerModule
 
-  // Use module export so it can be spied on in tests
-  const isV5 = exports.readSvelteMajor(cwd) >= 5
+  // For ESM compatibility in tsx, we use an exported object
+  const isV5 = svelteInternal.readSvelteMajor(cwd) >= 5
 
   const merged: ParsedFileResult = {
     usedKeys: [],

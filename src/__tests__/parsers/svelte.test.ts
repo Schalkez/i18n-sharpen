@@ -38,16 +38,18 @@ describe("Svelte Parser", () => {
     expect(offsetToLine(offsets, pageKey.offset)).toBe(5)
   })
 
-  it("FW-02: v4 legacy mode (ast.html) extracts the same keys", async () => {
-    const spy = vi.spyOn(svelteParser, "readSvelteMajor").mockReturnValue(4)
+  it("should parse Svelte 4 files", async () => {
+    const spy = vi
+      .spyOn(svelteParser.svelteInternal, "readSvelteMajor")
+      .mockReturnValue(4)
+    const { result } = await svelteParser.parseSvelteFile(
+      compSrc,
+      compPath,
+      ["t", "i18n.t"],
+      ["i18nKey"],
+      cwd
+    )
     try {
-      const { result } = await svelteParser.parseSvelteFile(
-        compSrc,
-        compPath,
-        ["t", "i18n.t"],
-        ["i18nKey"],
-        cwd
-      )
       const keys = result.usedKeys.map((k) => k.key).sort()
       expect(keys).toEqual(["mod.init", "nav.home", "page.title"])
     } finally {

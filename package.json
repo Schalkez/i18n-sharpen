@@ -24,6 +24,7 @@
     "lint": "eslint src/",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run",
+    "shadow": "tsx scripts/shadow-compare.ts",
     "prepare": "simple-git-hooks",
     "prepublishOnly": "pnpm build"
   },
