@@ -35,6 +35,14 @@ npm install -D i18n-sharpen
 yarn add -D i18n-sharpen
 ```
 
+```bash
+# Optional: install the compiler for the frameworks you scan
+pnpm add -D typescript          # .ts/.tsx/.js/.jsx scanning
+pnpm add -D @vue/compiler-sfc   # .vue scanning
+pnpm add -D svelte              # .svelte scanning
+pnpm add -D @astrojs/compiler   # .astro scanning
+```
+
 ---
 
 ## Configuration
@@ -203,18 +211,18 @@ import {
 
 const config: I18nSharpenConfig = loadConfig(process.cwd())
 
-const results = validate(config, process.cwd())
+const results = await validate(config, process.cwd())
 console.log(`Coverage: ${results.codeKeyCoverage}%`)
 
-extract(config, process.cwd())
+await extract(config, process.cwd())
 
 // prune is dry-run by default — pass { force: true } to actually write.
-const result: PruneResult = prune(config, process.cwd(), { force: true })
+const result: PruneResult = await prune(config, process.cwd(), { force: true })
 console.log(`Pruned ${result.totalPruned} keys`)
 
 // Structured error handling
 try {
-  prune(config)
+  await prune(config)
 } catch (err) {
   if (err instanceof I18nSharpenError) {
     if (err.error.kind === "parse") {
@@ -225,6 +233,24 @@ try {
 ```
 
 ---
+
+## Migration to 0.4.0
+
+- **Async API**: `validate`, `extract`, and `prune` programmatic APIs now return Promises. Callers must `await` them.
+  ```typescript
+  // Before
+  const result = validate(config)
+  // After
+  const result = await validate(config)
+  ```
+- **Optional peer dependencies**: Framework scanning requires the workspace compiler per framework. If missing, `i18n-sharpen` will emit an actionable error naming the exact install command.
+  ```bash
+  pnpm add -D typescript          # .ts/.tsx/.js/.jsx scanning
+  pnpm add -D @vue/compiler-sfc   # .vue scanning
+  pnpm add -D svelte              # .svelte scanning
+  pnpm add -D @astrojs/compiler   # .astro scanning
+  ```
+- **Regex→AST engine**: The regex/state-machine scanner is replaced by per-framework AST parsers. Accuracy improves with no configuration change required.
 
 ## Migration from 0.0.x / 0.1.x
 

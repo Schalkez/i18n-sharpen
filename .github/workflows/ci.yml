@@ -37,7 +37,7 @@ jobs:
       - name: Run Tests
         run: pnpm test
 
-      - name: Benchmark (perf gate)
+      - name: Benchmark (AST perf report)
         run: pnpm bench
 
       - name: Build

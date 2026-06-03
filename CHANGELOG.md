@@ -5,11 +5,24 @@ All notable changes to `i18n-sharpen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - Unreleased
+## [0.4.0] - 2026-06-03
 
 ### Changed (BREAKING)
-- **Removed Regex Scanner**: The legacy RegExp-based scanner has been completely removed in favor of the AST parser.
-- **Removed \`useAst\` option**: \`validate\`, \`extract\`, and \`prune\` options no longer accept a \`useAst\` boolean flag.
+- **Async public API**: `validate()`, `extract()`, and `prune()` now return `Promise`. All callers must `await` their results.
+  ```ts
+  // Before
+  const result = validate(config)
+  // After
+  const result = await validate(config)
+  ```
+- **New optional peer dependencies**: Framework scanning now requires the workspace compiler for each framework. If a compiler is missing, an actionable error is emitted.
+  ```bash
+  pnpm add -D typescript          # .ts/.tsx/.js/.jsx scanning
+  pnpm add -D @vue/compiler-sfc   # .vue scanning
+  pnpm add -D svelte              # .svelte scanning
+  pnpm add -D @astrojs/compiler   # .astro scanning
+  ```
+- **AST engine**: The regex/state-machine scanner is replaced by per-framework AST parsers (TS Compiler API for JS/TS; workspace compilers for Vue/Svelte/Astro); accuracy improves; no configuration change required.
 
 ## [0.3.0] - Unreleased
 
