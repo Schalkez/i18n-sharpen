@@ -25,6 +25,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run",
     "shadow": "tsx scripts/shadow-compare.ts",
+    "bench": "tsx scripts/bench.ts",
     "prepare": "simple-git-hooks",
     "prepublishOnly": "pnpm build"
   },
