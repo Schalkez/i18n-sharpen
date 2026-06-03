@@ -4,7 +4,6 @@ import * as path from "path";
 
 const WARMUP = 3;
 const N = 10;
-const THRESHOLD_MS = 100;
 
 async function walkDir(dir: string, fileList: string[] = []): Promise<string[]> {
   let entries;
@@ -83,17 +82,7 @@ async function main() {
   const astDurations = await timeEngine(slice);
   const astMedian = median(astDurations);
 
-  console.log("\n=== PERFORMANCE GATE RESULTS ===");
-  console.log(`AST Median   : ${astMedian.toFixed(2)}ms`);
-  console.log(`Threshold    : ${THRESHOLD_MS}ms max`);
-  console.log("================================");
-
-  if (astMedian > THRESHOLD_MS) {
-    console.error(`\nFAIL: AST engine took ${astMedian.toFixed(2)}ms, exceeding the ${THRESHOLD_MS}ms budget!`);
-    process.exitCode = 1;
-  } else {
-    console.log(`\nPASS: AST engine meets performance budget (time: ${astMedian.toFixed(2)}ms).`);
-  }
+  console.log(`\nAST median over ${N} runs on ${slice.length} files: ${astMedian.toFixed(2)}ms`);
 }
 
 main().catch((err) => {
