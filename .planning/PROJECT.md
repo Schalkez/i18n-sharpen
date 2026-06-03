@@ -56,10 +56,10 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 - [ ] Babel AST parser core + extension dispatcher → unified `ParsedFileResult` (used keys, dynamic calls, hardcoded candidates, offsets)
 - [ ] Dynamically-loaded Vue / Svelte 5 / Astro framework compilers (missing compiler → actionable install error)
 - [ ] Resilient error model — collect-and-continue on file syntax errors, fatal missing-compiler, distinct exit codes
-- [ ] Shadow-mode differential accuracy harness (regex vs AST corpus diff) — gates the default flip
+- [x] Shadow-mode differential accuracy harness (regex vs AST corpus diff) — gates the default flip
 - [ ] Offset / line correctness across embedded script blocks
-- [ ] Async migration of `validate`/`extract`/`prune` + public API, bounded-concurrency parse pool
-- [ ] Performance budget vs v0.3.0 baseline (perf-regression gate)
+- [x] Async migration of `validate`/`extract`/`prune` + public API, bounded-concurrency parse pool
+- [x] Performance budget vs v0.3.0 baseline (perf-regression gate)
 - [ ] Port behavioral tests (incl. `<m.div>` dot-notation + `forwardRef<A,B>` generics golden cases)
 - [ ] Cleanup: delete regex scanner after AST is default & verified; BREAKING CHANGELOG entry
 
@@ -95,11 +95,11 @@ A lightning-fast, framework-agnostic CLI and library to **validate**, **extract*
 | Refuse to write JS/TS locales | Cannot safely preserve imports/JSDoc/types | ✓ Good (v0.2.3) |
 | Discriminated-union error type | Lets callers branch on `err.error.kind` without string matching | ✓ Good (v0.2.0) |
 | Property-based testing on core modules | Catches regex/parsing crashes on weird real-world files | ✓ Good (v0.2.0) |
-| AST parser per framework (v0.4.0) | Regex can't parse context-free grammars; hardcoded-string detection needs the document tree | — Pending (in progress) |
-| Sync → async public API (v0.4.0) | Dynamic compiler `import()` forces `await`; project < 1.0 ⇒ minor bump → 0.4.0 | — Pending |
-| Collect-and-continue on file syntax errors (v0.4.0) | A CI scanner must not crash on one bad file; missing *compiler* stays fatal | — Pending |
-| Shadow-mode before deleting regex (v0.4.0) | Prove AST parity on a real corpus before flipping default; delete old code in a later phase | — Pending |
-| JS/TS parser = TypeScript Compiler API, not Babel (v0.4.0) | `typescript` already present ⇒ ~0 bundle; native TS+JSX; always-on error recovery; avoids `@babel/traverse` ESM crash; read-only scan needs no traverse path API. Supersedes the seed's Babel choice. | — Pending |
+| AST parser per framework (v0.4.0) | Regex can't parse context-free grammars; hardcoded-string detection needs the document tree | ✓ Good (Phases 1-3) |
+| Sync → async public API (v0.4.0) | Dynamic compiler `import()` forces `await`; project < 1.0 ⇒ minor bump → 0.4.0 | ✓ Good (Phase 4) |
+| Collect-and-continue on file syntax errors (v0.4.0) | A CI scanner must not crash on one bad file; missing *compiler* stays fatal | ✓ Good (Phase 1) |
+| Shadow-mode before deleting regex (v0.4.0) | Prove AST parity on a real corpus before flipping default; delete old code in a later phase | ✓ Good (Phase 5) |
+| JS/TS parser = TypeScript Compiler API, not Babel (v0.4.0) | `typescript` already present ⇒ ~0 bundle; native TS+JSX; always-on error recovery; avoids `@babel/traverse` ESM crash; read-only scan needs no traverse path API. Supersedes the seed's Babel choice. | ✓ Good (Phase 2) |
 
 ## Evolution
 

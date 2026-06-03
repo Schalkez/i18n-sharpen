@@ -27,8 +27,8 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 - [x] **Phase 1: Foundation & Error Model** - Shared types, workspace dep resolver, and the fatal-vs-collected error-kind split that every parser depends on (1/1 plan — 2026-05-31)
 - [ ] **Phase 2: JS/TS Parser Core + Golden Cases** - TypeScript Compiler API parser producing a unified `ParsedFileResult` in a single traversal, plus the two golden edge-case tests
 - [x] **Phase 3: Framework Parsers + Dispatcher** - Vue/Svelte/Astro compilers, embedded-block offset rebasing, and the extension-based `parseFile()` dispatcher
-- [ ] **Phase 4: Async Migration (shadow mode on, regex still default)** - Async `detectUsedKeys` with bounded-concurrency pool and `useAst` flag; full async cascade to public API; regex remains the default
-- [ ] **Phase 5: Shadow Comparison, Perf Gate & Default Flip** - Differential harness proves zero false-negatives on a real corpus; perf gate passes; `useAst` default flipped to true
+- [x] **Phase 4: Async Migration (shadow mode on, regex still default)** - Async `detectUsedKeys` with bounded-concurrency pool and `useAst` flag; full async cascade to public API; regex remains the default
+- [x] **Phase 5: Shadow Comparison, Perf Gate & Default Flip** - Differential harness proves zero false-negatives on a real corpus; perf gate passes; `useAst` default flipped to true
 - [ ] **Phase 6: Cleanup & Release** - Delete regex/dynamic/hardcoded modules, remove shadow flag, BREAKING CHANGELOG, version bump to 0.4.0
 
 ## Phase Details
@@ -127,8 +127,8 @@ Full details: [milestones/v0.3.0-ROADMAP.md](milestones/v0.3.0-ROADMAP.md)
 | 1. Foundation & Error Model | v0.4.0 | 1/1 | Complete | 2026-05-31 |
 | 2. JS/TS Parser Core + Golden Cases | v0.4.0 | 3/3 | Complete | 2026-06-01 |
 | 3. Framework Parsers + Dispatcher | v0.4.0 | 5/5 | Complete | 2026-06-01 |
-| 4. Async Migration | v0.4.0 | 0/? | Not started | - |
-| 5. Shadow Comparison, Perf Gate & Default Flip | v0.4.0 | 0/4 | Not started | - |
+| 4. Async Migration | v0.4.0 | 1/1 | Complete | 2026-06-03 |
+| 5. Shadow Comparison, Perf Gate & Default Flip | v0.4.0 | 4/4 | Complete | 2026-06-03 |
 | 6. Cleanup & Release | v0.4.0 | 0/? | Not started | - |
 
 ---
