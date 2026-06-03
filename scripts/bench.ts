@@ -34,19 +34,19 @@ async function walkDir(dir: string, fileList: string[] = []): Promise<string[]> 
   return fileList;
 }
 
-async function timeEngine(files: string[], useAst: boolean): Promise<number[]> {
+async function timeEngine(files: string[]): Promise<number[]> {
   const matchFunctions = ["t"];
   const matchAttributes = ["i18nKey"];
   const cwd = process.cwd();
 
   for (let i = 0; i < WARMUP; i++) {
-    await detectUsedKeys(files, matchFunctions, matchAttributes, { cwd, useAst });
+    await detectUsedKeys(files, matchFunctions, matchAttributes, { cwd });
   }
 
   const durations: number[] = [];
   for (let i = 0; i < N; i++) {
     const start = performance.now();
-    await detectUsedKeys(files, matchFunctions, matchAttributes, { cwd, useAst });
+    await detectUsedKeys(files, matchFunctions, matchAttributes, { cwd });
     durations.push(performance.now() - start);
   }
 
@@ -79,28 +79,20 @@ async function main() {
     return;
   }
 
-  console.log(`[bench] Timing Regex engine (warmup=${WARMUP}, N=${N})...`);
-  const regexDurations = await timeEngine(slice, false);
-  const regexMedian = median(regexDurations);
-
   console.log(`[bench] Timing AST engine (warmup=${WARMUP}, N=${N})...`);
-  const astDurations = await timeEngine(slice, true);
+  const astDurations = await timeEngine(slice);
   const astMedian = median(astDurations);
 
-  const delta = astMedian - regexMedian;
-
   console.log("\n=== PERFORMANCE GATE RESULTS ===");
-  console.log(`Regex Median : ${regexMedian.toFixed(2)}ms`);
   console.log(`AST Median   : ${astMedian.toFixed(2)}ms`);
-  console.log(`Delta        : ${delta > 0 ? "+" : ""}${delta.toFixed(2)}ms`);
-  console.log(`Threshold    : +${THRESHOLD_MS}ms max regression`);
+  console.log(`Threshold    : ${THRESHOLD_MS}ms max`);
   console.log("================================");
 
-  if (delta > THRESHOLD_MS) {
-    console.error(`\nFAIL: AST engine is ${delta.toFixed(2)}ms slower than Regex, exceeding the ${THRESHOLD_MS}ms budget!`);
+  if (astMedian > THRESHOLD_MS) {
+    console.error(`\nFAIL: AST engine took ${astMedian.toFixed(2)}ms, exceeding the ${THRESHOLD_MS}ms budget!`);
     process.exitCode = 1;
   } else {
-    console.log(`\nPASS: AST engine meets performance budget (delta: ${delta.toFixed(2)}ms).`);
+    console.log(`\nPASS: AST engine meets performance budget (time: ${astMedian.toFixed(2)}ms).`);
   }
 }
 
