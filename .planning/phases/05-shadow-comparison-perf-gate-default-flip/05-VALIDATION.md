@@ -2,8 +2,8 @@
 phase: 5
 slug: shadow-comparison-perf-gate-default-flip
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-02
 ---
 
@@ -42,11 +42,11 @@ created: 2026-06-02
 
 | Requirement | Behavior | Test Type | Automated Command | File Exists |
 |-------------|----------|-----------|-------------------|-------------|
-| SHADOW-02 | `scripts/shadow-compare.ts` runs regex + AST over corpus, emits JSON report + stdout summary | smoke (script runs, report written) | `pnpm shadow` | ❌ W0 |
-| SHADOW-03 | Zero false-negatives → `shadow-compare` exits 0; any false-negative → exit 1 | smoke (exit code) | `pnpm shadow` exits 0 | ❌ W0 |
-| PERF-01 | AST median − regex median ≤ 100ms over the deterministic slice | smoke (exit code) | `pnpm bench` exits 0 | ❌ W0 |
-| PERF-01 (CI) | `pnpm bench` wired into `.github/workflows/ci.yml` build-test job | CI config | grep `bench` in ci.yml; CI run on push | ❌ W0 |
-| SHADOW-03 / crit #4 | Default engine (no explicit `useAst`) runs the AST path (D-16 guard) | unit | `pnpm vitest run src/__tests__/ast-shadow.test.ts` | ❌ W0 |
+| SHADOW-02 | `scripts/shadow-compare.ts` runs regex + AST over corpus, emits JSON report + stdout summary | smoke (script runs, report written) | `pnpm shadow` | ✅ W0 |
+| SHADOW-03 | Zero false-negatives → `shadow-compare` exits 0; any false-negative → exit 1 | smoke (exit code) | `pnpm shadow` exits 0 | ✅ W0 |
+| PERF-01 | AST median − regex median ≤ 100ms over the deterministic slice | smoke (exit code) | `pnpm bench` exits 0 | ✅ W0 |
+| PERF-01 (CI) | `pnpm bench` wired into `.github/workflows/ci.yml` build-test job | CI config | grep `bench` in ci.yml; CI run on push | ✅ W0 |
+| SHADOW-03 / crit #4 | Default engine (no explicit `useAst`) runs the AST path (D-16 guard) | unit | `pnpm vitest run src/__tests__/ast-shadow.test.ts` | ✅ W0 |
 | crit #4 | Full suite passes with AST as the default driver | unit/integration | `pnpm test` | ✅ (extends after flip) |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
@@ -55,16 +55,16 @@ created: 2026-06-02
 
 ## Wave 0 Requirements
 
-- [ ] `scratch/` added to `.gitignore` (currently NOT ignored — report + test temp dirs write there)
-- [ ] `tsx` added to `package.json` devDependencies (no runtime dep added — honors D-10)
-- [ ] `scripts/*.ts` brought under typecheck (extend `tsconfig.json` `include` to `["src","scripts"]` or add `tsconfig.scripts.json`; preserve `@/` alias)
-- [ ] `tests/corpus/` created + `SOURCES.md` provenance manifest (D-03)
-- [ ] Corpus files vendored for all four frameworks (D-01/D-02, SHAs pinned per RESEARCH.md)
-- [ ] `scripts/shadow-compare.ts` created (SHADOW-02)
-- [ ] `scripts/bench.ts` created (PERF-01)
-- [ ] `package.json` scripts: `"shadow"` and `"bench"` entries
-- [ ] `.github/workflows/ci.yml`: `pnpm bench` step added (D-14)
-- [ ] D-16 default-is-AST guard test added to `src/__tests__/ast-shadow.test.ts`
+- [x] `scratch/` added to `.gitignore` (currently NOT ignored — report + test temp dirs write there)
+- [x] `tsx` added to `package.json` devDependencies (no runtime dep added — honors D-10)
+- [x] `scripts/*.ts` brought under typecheck (extend `tsconfig.json` `include` to `["src","scripts"]` or add `tsconfig.scripts.json`; preserve `@/` alias)
+- [x] `tests/corpus/` created + `SOURCES.md` provenance manifest (D-03)
+- [x] Corpus files vendored for all four frameworks (D-01/D-02, SHAs pinned per RESEARCH.md)
+- [x] `scripts/shadow-compare.ts` created (SHADOW-02)
+- [x] `scripts/bench.ts` created (PERF-01)
+- [x] `package.json` scripts: `"shadow"` and `"bench"` entries
+- [x] `.github/workflows/ci.yml`: `pnpm bench` step added (D-14)
+- [x] D-16 default-is-AST guard test added to `src/__tests__/ast-shadow.test.ts`
 
 ---
 
@@ -79,11 +79,11 @@ created: 2026-06-02
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved
