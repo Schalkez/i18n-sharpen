@@ -5,6 +5,16 @@ All notable changes to `i18n-sharpen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-06-03
+
+### Added
+- **Configurable hardcoded-string attributes** (`hardcoded.attributes`): The list of HTML/JSX attributes scanned for un-translated text is now configurable in `i18n-sharpen.json`. Defaults to `["placeholder", "label", "title", "alt", "aria-label"]` when omitted. All AST parsers (TypeScript/JSX, Vue, Svelte, Astro) use the configured list instead of a hard-coded constant.
+
+### Fixed
+- **`hardcoded.ignore` passthrough**: User-configured `hardcoded.ignore` values were silently dropped by the config loader and never applied. They are now correctly passed through to the validator.
+
+---
+
 ## [0.4.0] - 2026-06-03
 
 ### Changed (BREAKING)
