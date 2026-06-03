@@ -62,7 +62,7 @@ export async function prune(
     files,
     matchFunctions,
     matchAttributes,
-    { cwd, useAst: options.useAst ?? false }
+    { cwd, useAst: options.useAst ?? true }
   )
 
   for (const err of parseErrors) {

@@ -101,7 +101,7 @@ export async function validate(
   const matchFunctions = config.matchFunctions ?? ["t", "getTranslation"]
   const matchAttributes = config.matchAttributes ?? ["i18nKey", "id"]
 
-  const useAst = options?.useAst ?? false
+  const useAst = options?.useAst ?? true
 
   const { usedKeys, fileContents, parsedResults, parseErrors } =
     await detectUsedKeys(files, matchFunctions, matchAttributes, {

@@ -34,7 +34,7 @@ export async function detectUsedKeys(
   parsedResults: ParsedFileResult[]
   parseErrors: FileParseError[]
 }> {
-  const useAst = opts?.useAst ?? false
+  const useAst = opts?.useAst ?? true
   const cwd = opts?.cwd ?? process.cwd()
   const maxConcurrency = opts?.maxConcurrency ?? 4
 
