@@ -20,3 +20,54 @@
 | 4. Async Migration | v0.4.0 | 1/1 | Complete | 2026-06-03 |
 | 5. Shadow Comparison, Perf Gate & Default Flip | v0.4.0 | 4/4 | Complete | 2026-06-03 |
 | 6. Cleanup & Release | v0.4.0 | 5/5 | Complete | 2026-06-03 |
+
+---
+
+## Backlog
+
+Unsequenced ideas — not committed to any milestone yet. Promote with `/gsd-review-backlog` when ready to plan.
+
+### Phase 999.1: Translation Impact Analysis (BACKLOG)
+
+**Goal:** When a key is renamed or deleted, output the full blast radius — which files reference it, which locales are affected — instead of just "key missing". CLI: `i18n-sharpen impact auth.login.button`.
+**Why:** AST parser (v0.4.0) already builds file→key index. Reversing it to key→[files] is minimal work on existing infra. Enterprise teams ask for this immediately when refactoring key names.
+**Effort:** Low
+**Requirements:** TBD
+**Plans:** 0 plans (backlog)
+
+Plans:
+- [ ] TBD — promote with `/gsd-review-backlog` when ready
+
+### Phase 999.2: Translation Coverage Dashboard (BACKLOG)
+
+**Goal:** `validate --coverage` outputs completion % per locale and per namespace. Example: `Japanese: 82% (338/412 keys) — settings.*: 72%, premium.*: 54%`. JSON output mode for CI/PR comment integration.
+**Why:** All data already computed by validate. Mostly a formatting/reporting layer. High PM and stakeholder appeal.
+**Effort:** Low
+**Requirements:** TBD
+**Plans:** 0 plans (backlog)
+
+Plans:
+- [ ] TBD — promote with `/gsd-review-backlog` when ready
+
+### Phase 999.3: Translation Ownership — i18n CODEOWNERS (BACKLOG)
+
+**Goal:** Config-driven namespace→team mapping. Validate output tags each finding with the owning team. Example: `{ "ownership": { "auth.*": "auth-team", "payment.*": "payment-team" } }`. When `payment.checkout.button` is missing in `ja`, the report shows `[payment-team]`.
+**Why:** Low implementation effort (config read + label injection). Very high value for monorepos with multiple teams. No new parser work needed.
+**Effort:** Low
+**Requirements:** TBD
+**Plans:** 0 plans (backlog)
+
+Plans:
+- [ ] TBD — promote with `/gsd-review-backlog` when ready
+
+### Phase 999.4: Key Refactor Command — AST Write-Back (BACKLOG)
+
+**Goal:** Rename/restructure i18n keys across the entire codebase atomically — source files AND locale JSONs updated in one command. `i18n-sharpen refactor "auth.login.*" "auth.signin.*"`. Dry-run mode. No AI API key required for the core rename; optional `--suggest` mode can use AI for structure recommendations.
+**Why:** Killer feature — no existing i18n tool does this well. AST read path (v0.4.0) is done; missing piece is AST write-back (ts-morph / jscodeshift) + JSON key rename. 90% of value needs no AI.
+**Effort:** Medium
+**Requirements:** TBD
+**Plans:** 0 plans (backlog)
+
+Plans:
+- [ ] Phase 1 (no AI): explicit --from/--to rename, AST transform, atomic JSON rewrite
+- [ ] Phase 2 (optional): --suggest mode with AI API key, graceful heuristic fallback without key
