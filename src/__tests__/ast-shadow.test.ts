@@ -12,6 +12,7 @@ import {
 import { extract } from "@/commands/extract"
 import { validate } from "@/commands/validate"
 import { readLocaleFile, flattenObject } from "@/core/locale-io"
+import { detectUsedKeys } from "@/core/scanner"
 import type { I18nSharpenConfig } from "@/types"
 
 // ast-shadow.test.ts — SHADOW-01 / criterion #5
@@ -258,5 +259,24 @@ describe("ast-shadow: useAst:true end-to-end (SHADOW-01)", () => {
     const typesPath = path.resolve(__dirname, "../../src/types.ts")
     const content = fs.readFileSync(typesPath, "utf8")
     expect(content).not.toContain("useAst")
+  })
+
+  // ── I: D-16 default-is-AST guard test ───────────────────────────────────
+  it("uses AST as the default engine when useAst is omitted (D-16)", async () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `t("auth.login")`
+    })
+
+    // Call with NO useAst option.
+    // In regex mode, parsedResults is []. In AST mode, it's populated.
+    const { parsedResults } = await detectUsedKeys(
+      [path.join(tempDir, "src/index.ts")],
+      ["t"],
+      [],
+      { cwd: tempDir }
+    )
+
+    // This asserts that the AST path was executed by default.
+    expect(parsedResults.length).toBeGreaterThan(0)
   })
 })

@@ -42,14 +42,16 @@ function mergeWithRebase(
 
 function walkSvelteTemplate(
   node: any,
+  matchFunctions: string[],
   matchAttributes: string[],
   out: ParsedFileResult,
+  filePath: string,
+  cwd: string,
+  errors: FileParseError[],
+  source: string,
   isV5: boolean
 ): void {
   if (!node) return
-
-  if (isV5 && node.type === "SvelteHead") return
-  if (!isV5 && node.type === "Element" && node.name === "svelte:head") return
 
   if (node.name && SVELTE_SKIP_TAGS.has(node.name.toLowerCase())) {
     return
@@ -67,6 +69,24 @@ function walkSvelteTemplate(
     return
   }
 
+  if (
+    node.expression &&
+    typeof node.expression.start === "number" &&
+    typeof node.expression.end === "number"
+  ) {
+    const text = source.substring(node.expression.start, node.expression.end)
+    const { result, errors: tsErrors } = parseTypeScriptFile(
+      text,
+      filePath,
+      matchFunctions,
+      matchAttributes,
+      cwd
+    )
+    mergeWithRebase(out, result, node.expression.start)
+    errors.push(...tsErrors)
+  }
+
+  const childrenToWalk = new Set<any>()
   for (const attr of node.attributes ?? []) {
     if (attr.type === "Attribute") {
       const valueNode = Array.isArray(attr.value) ? attr.value[0] : null
@@ -76,10 +96,16 @@ function walkSvelteTemplate(
           out.usedKeys.push({ key: val, offset: valueNode.start })
         }
       }
+      if (Array.isArray(attr.value)) {
+        for (const val of attr.value) {
+          childrenToWalk.add(val)
+        }
+      } else if (attr.value && typeof attr.value === "object") {
+        childrenToWalk.add(attr.value)
+      }
     }
   }
 
-  const childrenToWalk = new Set<any>()
   if (node.fragment?.nodes) {
     for (const c of node.fragment.nodes) childrenToWalk.add(c)
   }
@@ -91,7 +117,17 @@ function walkSvelteTemplate(
   }
 
   for (const child of childrenToWalk) {
-    walkSvelteTemplate(child, matchAttributes, out, isV5)
+    walkSvelteTemplate(
+      child,
+      matchFunctions,
+      matchAttributes,
+      out,
+      filePath,
+      cwd,
+      errors,
+      source,
+      isV5
+    )
   }
 }
 
@@ -150,7 +186,17 @@ export async function parseSvelteFile(
 
   const templateRoot = isV5 ? ast.fragment : ast.html
   if (templateRoot) {
-    walkSvelteTemplate(templateRoot, matchAttributes, merged, isV5)
+    walkSvelteTemplate(
+      templateRoot,
+      matchFunctions,
+      matchAttributes,
+      merged,
+      filePath,
+      cwd,
+      collectedErrors,
+      source,
+      isV5
+    )
   }
 
   return { result: merged, errors: collectedErrors }

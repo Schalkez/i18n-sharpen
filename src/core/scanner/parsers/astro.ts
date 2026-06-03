@@ -62,6 +62,26 @@ function walkAstroAst(
     return
   }
 
+  if (node.type === "expression") {
+    const textNodes = node.children?.filter((c: any) => c.type === "text") ?? []
+    const text = textNodes.map((c: any) => String(c.value)).join("")
+    if (text) {
+      const offset =
+        textNodes[0]?.position?.start?.offset ??
+        node.position?.start?.offset ??
+        0
+      const { result, errors: tsErrors } = parseTypeScriptFile(
+        text,
+        filePath,
+        matchFunctions,
+        matchAttributes,
+        cwd
+      )
+      mergeWithRebase(out, result, offset)
+      errors.push(...tsErrors)
+    }
+  }
+
   if (node.type === "text") {
     const data = node.value ?? ""
     const trimmed = data.trim()
@@ -88,6 +108,22 @@ function walkAstroAst(
             offset: attr.position?.start?.offset ?? 0
           })
         }
+      } else if (attr.kind === "expression" && attr.value) {
+        const text = attr.value
+        let offset = attr.position?.start?.offset ?? 0
+        const valIndex = source.indexOf(text, offset)
+        if (valIndex !== -1) {
+          offset = valIndex
+        }
+        const { result, errors: tsErrors } = parseTypeScriptFile(
+          text,
+          filePath,
+          matchFunctions,
+          matchAttributes,
+          cwd
+        )
+        mergeWithRebase(out, result, offset)
+        errors.push(...tsErrors)
       }
     }
   }
