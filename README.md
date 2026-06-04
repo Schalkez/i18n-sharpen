@@ -1,8 +1,12 @@
 # i18n-sharpen ⚡️
 
-A lightning-fast, zero-dependency, and configuration-driven CLI tool & library to **validate**, **extract**, and **prune** i18n translation keys in JS/TS codebases.
+[![npm version](https://img.shields.io/npm/v/i18n-sharpen)](https://www.npmjs.com/package/i18n-sharpen)
+[![CI](https://github.com/Schalkez/i18n-sharpen/actions/workflows/ci.yml/badge.svg)](https://github.com/Schalkez/i18n-sharpen/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Keep your locale files clean, synchronized, and type-safe with ease.
+A **static analysis engine for localization** — not just a JSON checker. Uses real per-framework AST parsers to find missing keys, unused keys, dynamic key patterns, and hardcoded strings across **TS, JS, Vue, Svelte, and Astro** codebases.
+
+Keep your locale files clean, synchronized, and type-safe — with the accuracy of a compiler, not a grep.
 
 ---
 
@@ -100,6 +104,10 @@ Alternatively, you can add an `"i18nSharpen"` field to your `package.json`:
 | `looseKeyMatch` | `boolean` | `false` | Opt-in fuzzy match: any quoted occurrence of a locale key counts as "used". |
 | `ignoreKeys` | `string[]` | `[]` | Key patterns (supports wildcards like `status.*`) to ignore during checks and pruning. |
 | `pluralSuffixes` | `string[]` | `["_zero", "_one", ...]` | Custom suffixes used for plural keys (which are automatically resolved). |
+| `sortKeys` | `"alpha" \| "source" \| "preserve"` | `"preserve"` | Key ordering on `extract`/`prune` writes. `alpha` = alphabetical, `source` = order first seen in source, `preserve` = keep existing order. |
+| `ignoreDynamicKeys` | `string[]` | `[]` | Suppress dynamic-key warnings for patterns matching these prefixes (e.g. `["status.*", "error.*"]`). |
+| `hardcoded.attributes` | `string[]` | `["placeholder","label","title","alt","aria-label"]` | HTML/JSX attributes scanned for un-translated text when using `--check-hardcoded`. Override to add framework-specific attrs. |
+| `hardcoded.ignore` | `string[]` | `[]` | Strings to suppress from hardcoded-string findings (exact match or pattern). |
 
 ---
 
@@ -120,17 +128,21 @@ npx i18n-sharpen prune
 
 ### Options
 
-*   `-c, --config <path>`: Specify a custom path to your configuration file (Phase 5).
+*   `-c, --config <path>`: Specify a custom path to your configuration file.
 *   `-d, --cwd <path>`: Set custom working directory (defaults to `process.cwd()`).
+
+`validate` accepts an additional flag:
+
+*   `--check-hardcoded`: Scan for un-translated hardcoded strings in HTML/JSX attributes and text nodes (e.g. `placeholder="Submit"` instead of `placeholder={t("form.submit")}`). Exits with code `1` in CI when findings are present.
 
 `prune` accepts two additional flags:
 
-*   `--dry-run`: Preview only — never write. The default behavior; the
-    flag exists for explicit CI scripts.
+*   `--dry-run`: Preview only — never write. The default behavior; the flag exists for explicit CI scripts.
 *   `--force`: Actually write the pruned locale files to disk.
 
 ```bash
 npx i18n-sharpen validate --config configs/i18n.json --cwd ./packages/app
+npx i18n-sharpen validate --check-hardcoded
 npx i18n-sharpen prune --force
 ```
 
@@ -318,6 +330,29 @@ jobs:
           filePath: i18n-coverage.md
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+---
+
+## Why i18n-sharpen?
+
+Most i18n tools compare locale JSON files against each other. `i18n-sharpen` goes further — it parses your **source code** with real AST parsers to understand how keys are actually used.
+
+| Capability | grep-based tools | i18n-sharpen |
+|---|---|---|
+| Missing / unused keys | ✅ | ✅ |
+| Dynamic keys `t(\`auth.${action}\`)` | ❌ miss | ✅ detected |
+| Hardcoded string detection | ❌ | ✅ `--check-hardcoded` |
+| Vue / Svelte / Astro (real AST) | ⚠️ partial | ✅ per-framework parser |
+| Namespaced locale layouts | ⚠️ partial | ✅ full support |
+| CI exit codes + markdown report | ⚠️ partial | ✅ |
+
+The core difference: grep matches string literals. AST analysis understands code structure — template expressions, JSX spreads, dynamic concatenations, framework-specific syntax.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "name": "i18n-sharpen",
   "version": "0.4.1",
-  "description": "A type-safe and configuration-driven i18n validator, extractor, and pruner CLI tool.",
+  "description": "AST-based static analysis for i18n — finds missing keys, unused keys, dynamic patterns, and hardcoded strings across TS, JS, Vue, Svelte, and Astro.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -31,11 +31,23 @@
   "keywords": [
     "i18n",
     "internationalization",
+    "localization",
+    "l10n",
+    "translation",
+    "ast",
+    "static-analysis",
     "validator",
     "extractor",
     "pruner",
     "cli",
-    "translation"
+    "typescript",
+    "vue",
+    "svelte",
+    "astro",
+    "react",
+    "missing-keys",
+    "unused-keys",
+    "hardcoded-strings"
   ],
   "author": "Schalkez",
   "repository": {
