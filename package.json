@@ -1,6 +1,6 @@
 {
   "name": "i18n-sharpen",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "AST-based static analysis for i18n — finds missing keys, unused keys, dynamic patterns, and hardcoded strings across TS, JS, Vue, Svelte, and Astro.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
