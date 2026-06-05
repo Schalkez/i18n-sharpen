@@ -1,10 +1,15 @@
-# i18n-sharpen ⚡️
+<div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/concepts/finalists/ink-amber-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="./assets/logo/concepts/finalists/ink-amber-light.svg">
-  <img alt="i18n-sharpen logo" src="./assets/logo/concepts/finalists/ink-amber-light.svg" width="250" height="64">
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/logo/logo-light.svg">
+  <img alt="i18n / sharpen" src="./assets/logo/logo-light.svg" width="300" height="73">
 </picture>
+
+<p>
+  <strong>AST-based i18n linting</strong> — missing keys, unused keys, dynamic patterns &amp; hardcoded strings<br>
+  across <strong>TS&nbsp;·&nbsp;JS&nbsp;·&nbsp;Vue&nbsp;·&nbsp;Svelte&nbsp;·&nbsp;Astro</strong>.
+</p>
 
 [![npm version](https://img.shields.io/npm/v/i18n-sharpen)](https://www.npmjs.com/package/i18n-sharpen)
 [![npm downloads](https://img.shields.io/npm/dm/i18n-sharpen.svg)](https://www.npmjs.com/package/i18n-sharpen)
@@ -14,6 +19,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
+
+</div>
 
 A **static analysis engine for localization** — not just a JSON checker. Uses real per-framework AST parsers to find missing keys, unused keys, dynamic key patterns, and hardcoded strings across **TS, JS, Vue, Svelte, and Astro** codebases.
 

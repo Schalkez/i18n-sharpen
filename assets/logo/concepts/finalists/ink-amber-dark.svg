@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="250" height="64" viewBox="0 0 250 64" fill="none" role="img" aria-label="i18n-sharpen">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1E293B"/><stop offset="1" stop-color="#0F172A"/></linearGradient></defs>
-  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#g)"/>
-  <text x="32" y="38" text-anchor="middle" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" font-size="23" font-weight="800" letter-spacing="-0.5" fill="#F8FAFC">i<tspan fill="#F59E0B">18</tspan>n</text>
-  <polygon points="14,45 50,47.5 14,50" fill="#F59E0B"/>
-  <text x="76" y="42" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" font-size="27" font-weight="700" letter-spacing="-0.5" fill="#F8FAFC">-sharpen</text>
-</svg>

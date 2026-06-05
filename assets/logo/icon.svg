@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="i18n / sharpen">
+  <defs>
+    <linearGradient id="iconBg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="iconBlade" x1="34" y1="52" x2="56" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#FCD34D"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="15" fill="url(#iconBg)"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.08"/>
+
+  <!-- 18 monogram -->
+  <text x="20" y="44" text-anchor="middle"
+    font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    font-size="34" font-weight="900" letter-spacing="-1" fill="#F8FAFC">18</text>
+
+  <!-- Sharpen blade (the "/" motif, tapered to an edge) -->
+  <polygon points="34,50 46,50 56,14 50,14" fill="url(#iconBlade)"/>
+</svg>
