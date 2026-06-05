@@ -7,12 +7,37 @@
 </picture>
 
 [![npm version](https://img.shields.io/npm/v/i18n-sharpen)](https://www.npmjs.com/package/i18n-sharpen)
+[![npm downloads](https://img.shields.io/npm/dm/i18n-sharpen.svg)](https://www.npmjs.com/package/i18n-sharpen)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/i18n-sharpen)](https://bundlephobia.com/package/i18n-sharpen)
+[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%23007ACC.svg)](https://www.typescriptlang.org/)
 [![CI](https://github.com/Schalkez/i18n-sharpen/actions/workflows/ci.yml/badge.svg)](https://github.com/Schalkez/i18n-sharpen/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 
 A **static analysis engine for localization** — not just a JSON checker. Uses real per-framework AST parsers to find missing keys, unused keys, dynamic key patterns, and hardcoded strings across **TS, JS, Vue, Svelte, and Astro** codebases.
 
 Keep your locale files clean, synchronized, and type-safe — with the accuracy of a compiler, not a grep.
+
+---
+
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Installation](#installation)
+- [Configuration](#configuration)
+  - [Config Options](#config-options)
+- [CLI Usage](#cli-usage)
+- [Supported File Formats](#supported-file-formats)
+- [Locale Layouts](#locale-layouts)
+- [Framework Coverage](#framework-coverage)
+- [Programmatic API](#programmatic-api)
+- [Migration Guides](#migration-to-040)
+- [CLI Exit Codes](#cli-exit-codes)
+- [GitHub Actions CI Integration](#github-actions-ci-integration)
+- [Why i18n-sharpen?](#why-i18n-sharpen)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
@@ -141,15 +166,53 @@ npx i18n-sharpen prune
 
 *   `--check-hardcoded`: Scan for un-translated hardcoded strings in HTML/JSX attributes and text nodes (e.g. `placeholder="Submit"` instead of `placeholder={t("form.submit")}`). Exits with code `1` in CI when findings are present.
 
-`prune` accepts two additional flags:
+`prune` accepts three additional flags:
 
 *   `--dry-run`: Preview only — never write. The default behavior; the flag exists for explicit CI scripts.
 *   `--force`: Actually write the pruned locale files to disk.
+*   `--interactive`: Pick which unused keys to prune via an arrow-key TUI (interactive selection).
+
+#### Interactive TUI Pruner
+
+Running `npx i18n-sharpen prune --interactive` opens a clean command-line interface to interactively check/uncheck keys:
+
+```text
+$ npx i18n-sharpen prune --interactive
+
+? Select the keys you want to prune (Space to toggle, Enter to confirm):
+❯ [x] auth.login.title_old   (unused)
+  [ ] common.header.logo     (unused)
+  [x] error.unknown_legacy   (unused)
+```
 
 ```bash
 npx i18n-sharpen validate --config configs/i18n.json --cwd ./packages/app
 npx i18n-sharpen validate --check-hardcoded
-npx i18n-sharpen prune --force
+npx i18n-sharpen prune --interactive --force
+```
+
+### Markdown Quality Report Preview
+
+When running `validate` in CI, the markdown report generated at `i18n-coverage.md` (or your configured path) looks like this:
+
+```markdown
+# i18n Coverage Report
+
+### Summary
+| Metric | Value |
+| :--- | :--- |
+| **Default Language** | `en` |
+| **Supported Languages** | `en, ja, vi` |
+| **Total Defined Keys** | 124 |
+| **Used Keys in Source** | 98 |
+| **Utilization Rate** | 79.03% |
+| **Code Key Coverage** | 81.67% |
+
+#### ⚠️ Missing Keys (2)
+* `auth.error.unauthorized` - Referenced in:
+  - `src/components/LoginForm.tsx:32`
+* `common.footer.copyright` - Referenced in:
+  - `src/components/Footer.tsx:12`
 ```
 
 ---
