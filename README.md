@@ -207,23 +207,59 @@ npx i18n-sharpen prune --interactive --force
 When running `validate` in CI, the markdown report generated at `i18n-coverage.md` (or your configured path) looks like this:
 
 ```markdown
-# i18n Coverage Report
+# i18n Quality and Coverage Report
 
-### Summary
-| Metric | Value |
-| :--- | :--- |
-| **Default Language** | `en` |
-| **Supported Languages** | `en, ja, vi` |
-| **Total Defined Keys** | 124 |
-| **Used Keys in Source** | 98 |
-| **Utilization Rate** | 79.03% |
-| **Code Key Coverage** | 81.67% |
+Generated on: 2026-06-05T09:14:40.015Z
 
-#### ⚠️ Missing Keys (2)
-* `auth.error.unauthorized` - Referenced in:
-  - `src/components/LoginForm.tsx:32`
-* `common.footer.copyright` - Referenced in:
-  - `src/components/Footer.tsx:12`
+## Quality Metrics Summary
+
+| Metric | Value | Status |
+| :--- | :--- | :--- |
+| **Code Translation Coverage** | 100.00% | 🟢 100% Perfect |
+| **Locales Key Utilization** | 79.80% | 🟡 Medium |
+| **Total Defined Keys** | 698 | - |
+| **Actually Used Keys** | 557 | - |
+| **Missing Keys** | 0 | 🟢 Clean |
+| **Active Placeholders** | 0 | 🟢 Clean |
+| **Unused Keys** | 141 | 🟡 Can be pruned |
+| **Locale Alignment** | Align'd | 🟢 Perfect |
+| **Dynamic Keys** | fully-dynamic: 1, structured-concat: 12 | 🟡 Review |
+
+## ✅ Missing Keys
+
+No missing translation keys detected in the source code.
+
+## ✅ Active Placeholders
+
+No active placeholder keys detected in the source code.
+
+## ⚠️ Unused Keys (141)
+
+These keys are defined in the locale file but are not used anywhere in the source code. They can be safely pruned to reduce bundle size:
+
+- `analytics.summary`
+- `analytics.year`
+- `bottom_panel.details`
+- `calculator.guest_mode`
+- `collab.connected`
+- *(136 more keys)...*
+
+## ⚙️ Dynamic Keys
+
+### Fully-dynamic keys (1)
+
+| File | Line | Expression |
+| :--- | :--- | :--- |
+| `src/components/organisms/PaywallModal/PaywallModal.view.tsx` | 82 | `t(benefit.key)` |
+
+### Structured-concat keys (12)
+
+| Prefix | File | Line | Expression |
+| :--- | :--- | :--- | :--- |
+| `modal.split_mode.` | `src/components/.../SplitModeButton.tsx` | 35 | `` t(`modal.split_mode.${mode}`) `` |
+| `debts.filter_` | `src/components/pages/DebtsPage/DebtsPage.view.tsx` | 159 | `` t(`debts.filter_${f}`) `` |
+| `landing.hero.` | `src/components/pages/LandingPage/LandingPage.tsx` | 22 | `` t(`landing.hero.${key}`) `` |
+| *(9 more dynamic keys)...*
 ```
 
 ---
