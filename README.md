@@ -22,6 +22,10 @@
 
 </div>
 
+<div align="center">
+  <img src="assets/validate-demo.gif" alt="i18n-sharpen validate command demonstration" width="600">
+</div>
+
 A **static analysis engine for localization** — not just a JSON checker. Uses real per-framework AST parsers to find missing keys, unused keys, dynamic key patterns, and hardcoded strings across **TS, JS, Vue, Svelte, and Astro** codebases.
 
 Keep your locale files clean, synchronized, and type-safe — with the accuracy of a compiler, not a grep.
