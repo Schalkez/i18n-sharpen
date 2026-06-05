@@ -58,7 +58,7 @@
   "bugs": {
     "url": "https://github.com/Schalkez/i18n-sharpen/issues"
   },
-  "homepage": "https://github.com/Schalkez/i18n-sharpen#readme",
+  "homepage": "https://i18n-sharpen-docs.pages.dev",
   "license": "MIT",
   "dependencies": {
     "commander": "^12.1.0",

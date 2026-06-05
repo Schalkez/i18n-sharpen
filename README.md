@@ -28,6 +28,7 @@
 
 A **static analysis engine for localization** — not just a JSON checker. Uses real per-framework AST parsers to find missing keys, unused keys, dynamic key patterns, and hardcoded strings across **TS, JS, Vue, Svelte, and Astro** codebases.
 
+📖 **[Read the Official Documentation](https://i18n-sharpen-docs.pages.dev)**
 Keep your locale files clean, synchronized, and type-safe — with the accuracy of a compiler, not a grep.
 
 ---
