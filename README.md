@@ -199,11 +199,20 @@ Running `npx i18n-sharpen prune --force` directly removes all unused keys withou
   <img src="assets/prune-force-demo.gif" alt="i18n-sharpen prune with force flag" width="600">
 </div>
 
+#### Verification of Pruned Keys
+
+After running the prune command, your translation files (e.g., JSON/YAML) will have all unused keys removed. You can see the clean deletions in your Git diff (e.g., in VSCode):
+
+<div align="center">
+  <img src="assets/prune-diff-demo.gif" alt="VSCode Git Diff after Pruning" width="600">
+</div>
+
 ```bash
 npx i18n-sharpen validate --config configs/i18n.json --cwd ./packages/app
 npx i18n-sharpen validate --check-hardcoded
 npx i18n-sharpen prune --force
 ```
+
 
 ### Markdown Quality Report Preview
 
