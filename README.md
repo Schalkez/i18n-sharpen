@@ -1,10 +1,6 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="./assets/logo/logo-light.svg">
-  <img alt="i18n / sharpen" src="./assets/logo/logo-light.svg" width="300" height="73">
-</picture>
+<img alt="i18n / sharpen" src="./assets/logo/logo-dark.svg" width="264" height="64">
 
 <p>
   <strong>AST-based i18n linting</strong> — missing keys, unused keys, dynamic patterns &amp; hardcoded strings<br>
