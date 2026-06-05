@@ -1,5 +1,11 @@
 # i18n-sharpen ⚡️
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo/concepts/finalists/ink-amber-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/logo/concepts/finalists/ink-amber-light.svg">
+  <img alt="i18n-sharpen logo" src="assets/logo/concepts/finalists/ink-amber-light.svg" width="250" height="64">
+</picture>
+
 [![npm version](https://img.shields.io/npm/v/i18n-sharpen)](https://www.npmjs.com/package/i18n-sharpen)
 [![CI](https://github.com/Schalkez/i18n-sharpen/actions/workflows/ci.yml/badge.svg)](https://github.com/Schalkez/i18n-sharpen/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
