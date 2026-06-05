@@ -24,6 +24,7 @@
     "lint": "eslint src/",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "bench": "tsx scripts/bench.ts",
     "prepare": "simple-git-hooks",
     "prepublishOnly": "pnpm build"
@@ -89,6 +90,7 @@
     "@astrojs/compiler": "^4.0.0",
     "@eslint/js": "^9.39.4",
     "@types/node": "^20.12.7",
+    "@vitest/coverage-v8": "1.6.1",
     "@vue/compiler-sfc": "^3.5.35",
     "eslint": "^9.39.4",
     "eslint-plugin-import-x": "^4.16.2",

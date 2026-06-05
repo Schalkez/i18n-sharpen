@@ -65,7 +65,10 @@ function readVersion(): string {
   return "0.0.0"
 }
 
-const program = new Command()
+// Exported so the test suite can drive the command tree in-process via
+// `program.parseAsync(...)`. Not part of the published package surface
+// (only `src/index.ts` is exported); `src/cli.ts` is the bin entry.
+export const program = new Command()
 
 program
   .name("i18n-sharpen")

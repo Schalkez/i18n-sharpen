@@ -58,6 +58,35 @@ describe("validate/report: renderMarkdownReport", () => {
     expect(md).toContain("`src/a.ts`")
   })
 
+  it("renders the unused-placeholders section when present", () => {
+    const md = renderMarkdownReport({
+      defaultBasename: "en.json",
+      results: baseResults({
+        unusedPlaceholderKeys: [
+          { key: "b.key", lang: "fr" },
+          { key: "a.key", lang: "en" }
+        ]
+      }),
+      keyToFilesMap: emptyLookup,
+      getBaseKey: (k) => k
+    })
+    expect(md).toContain("Unused Placeholders (2)")
+    expect(md).toContain("`a.key` [`EN`]")
+    // sorted by key: a.key before b.key
+    expect(md.indexOf("a.key")).toBeLessThan(md.indexOf("b.key"))
+  })
+
+  it("renders the hardcoded all-clear section when the check ran with zero findings", () => {
+    const md = renderMarkdownReport({
+      defaultBasename: "en.json",
+      results: baseResults({ hardcodedStrings: [] }),
+      keyToFilesMap: emptyLookup,
+      getBaseKey: (k) => k
+    })
+    expect(md).toContain("✅ Hardcoded Strings")
+    expect(md).toContain("No un-translated hardcoded strings detected")
+  })
+
   it("renders alignment mismatches with sorted keys", () => {
     const md = renderMarkdownReport({
       defaultBasename: "en.json",

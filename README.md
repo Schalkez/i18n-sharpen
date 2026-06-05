@@ -142,7 +142,9 @@ Alternatively, you can add an `"i18nSharpen"` field to your `package.json`:
 | `matchAttributes` | `string[]` | `["i18nKey", "id", ...]` | HTML/JSX/Vue/Astro attribute names that carry translation keys. |
 | `outputReport` | `string \| null` | `"i18n-coverage.md"` | Path to save quality report (`""` to disable). |
 | `localesLayout` | `"flat" \| "namespaced"` | `"flat"` | Locale file layout — see [Locale Layouts](#locale-layouts). |
+| `defaultNamespace` | `string` | `"common"` | Namespace used for keys without a prefix when `localesLayout === "namespaced"`. |
 | `prune.force` | `boolean` | `false` | Make `prune` write by default. CLI `--force` overrides per invocation. |
+| `prune.cleanEmpty` | `boolean` | `false` | Delete empty namespace files after pruning (namespaced layout only). |
 | `looseKeyMatch` | `boolean` | `false` | Opt-in fuzzy match: any quoted occurrence of a locale key counts as "used". |
 | `ignoreKeys` | `string[]` | `[]` | Key patterns (supports wildcards like `status.*`) to ignore during checks and pruning. |
 | `pluralSuffixes` | `string[]` | `["_zero", "_one", ...]` | Custom suffixes used for plural keys (which are automatically resolved). |
@@ -177,11 +179,17 @@ npx i18n-sharpen prune
 
 *   `--check-hardcoded`: Scan for un-translated hardcoded strings in HTML/JSX attributes and text nodes (e.g. `placeholder="Submit"` instead of `placeholder={t("form.submit")}`). Exits with code `1` in CI when findings are present.
 
-`prune` accepts three additional flags:
+`extract` accepts an additional flag:
+
+*   `--sort <mode>`: Override key sorting mode (`alpha`, `source`, `preserve`).
+
+`prune` accepts five additional flags:
 
 *   `--dry-run`: Preview only — never write. The default behavior; the flag exists for explicit CI scripts.
 *   `--force`: Actually write the pruned locale files to disk.
 *   `--interactive`: Pick which unused keys to prune via an arrow-key TUI (interactive selection).
+*   `--clean-empty`: Delete namespace files that have zero keys after pruning (namespaced layout only).
+*   `--sort <mode>`: Override key sorting mode (`alpha`, `source`, `preserve`).
 
 #### Interactive TUI Pruner
 
