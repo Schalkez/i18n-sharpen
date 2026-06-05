@@ -1,6 +1,10 @@
 # i18n-sharpen ⚡️
 
-![i18n-sharpen logo](assets/logo/concepts/finalists/ink-amber-light.svg#gh-light-mode-only)![i18n-sharpen logo](assets/logo/concepts/finalists/ink-amber-dark.svg#gh-dark-mode-only)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/concepts/finalists/ink-amber-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/logo/concepts/finalists/ink-amber-light.svg">
+  <img alt="i18n-sharpen logo" src="./assets/logo/concepts/finalists/ink-amber-light.svg" width="250" height="64">
+</picture>
 
 [![npm version](https://img.shields.io/npm/v/i18n-sharpen)](https://www.npmjs.com/package/i18n-sharpen)
 [![npm downloads](https://img.shields.io/npm/dm/i18n-sharpen.svg)](https://www.npmjs.com/package/i18n-sharpen)
