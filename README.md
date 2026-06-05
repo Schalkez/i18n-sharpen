@@ -185,21 +185,24 @@ npx i18n-sharpen prune
 
 #### Interactive TUI Pruner
 
-Running `npx i18n-sharpen prune --interactive` opens a clean command-line interface to interactively check/uncheck keys:
+Running `npx i18n-sharpen prune --interactive` (or simply `npx i18n-sharpen prune` which defaults to interactive) opens a clean command-line TUI to check/uncheck keys:
 
-```text
-$ npx i18n-sharpen prune --interactive
+<div align="center">
+  <img src="assets/prune-demo.gif" alt="i18n-sharpen prune interactive TUI" width="600">
+</div>
 
-? Select the keys you want to prune (Space to toggle, Enter to confirm):
-❯ [x] auth.login.title_old   (unused)
-  [ ] common.header.logo     (unused)
-  [x] error.unknown_legacy   (unused)
-```
+#### Direct Pruning with Force Flag
+
+Running `npx i18n-sharpen prune --force` directly removes all unused keys without confirmation:
+
+<div align="center">
+  <img src="assets/prune-force-demo.gif" alt="i18n-sharpen prune with force flag" width="600">
+</div>
 
 ```bash
 npx i18n-sharpen validate --config configs/i18n.json --cwd ./packages/app
 npx i18n-sharpen validate --check-hardcoded
-npx i18n-sharpen prune --interactive --force
+npx i18n-sharpen prune --force
 ```
 
 ### Markdown Quality Report Preview
