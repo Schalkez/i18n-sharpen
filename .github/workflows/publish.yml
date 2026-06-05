@@ -34,6 +34,18 @@ jobs:
           pnpm typecheck
           pnpm test
 
+      - name: Swap README logo to light theme for npm
+        run: |
+          node -e "
+            const fs = require('fs');
+            let md = fs.readFileSync('README.md', 'utf8');
+            md = md.replace(
+              /<picture>[\s\S]*?<\/picture>/,
+              '<img alt=\"i18n / sharpen\" src=\"https://raw.githubusercontent.com/Schalkez/i18n-sharpen/master/assets/logo/logo-light.svg\" width=\"264\" height=\"64\">'
+            );
+            fs.writeFileSync('README.md', md);
+          "
+
       - name: Publish to NPM
         run: pnpm publish --no-git-checks
         env:
