@@ -101,16 +101,22 @@ print(f"wrote {svg_path}")
 print(f"lockup {lockup_w:.0f}×{lockup_h:.0f}px  scale={og_s:.3f}  tagline y={tagline_y:.0f}")
 
 # Render to PNG for social crawlers (SVG not supported by most)
-tmp_dir = "/tmp/ogprev"
-os.makedirs(tmp_dir, exist_ok=True)
-subprocess.run(["qlmanage", "-t", "-s", "1200", "-o", tmp_dir, svg_path],
-               capture_output=True)
-rendered = glob.glob(os.path.join(tmp_dir, "og-card.svg.png"))
-if rendered:
-    png_path = os.path.join(ROOT, "docs/public/og-card.png")
-    # qlmanage pads to a square; crop to exact 1200×630 from top-left
-    subprocess.run(["magick", rendered[0],
-                    "-crop", f"{OW}x{OH}+0+0", "+repage", png_path], check=True)
-    print(f"rendered + cropped PNG → {png_path}")
+png_path = os.path.join(ROOT, "docs/public/og-card.png")
+if shutil.which("rsvg-convert"):
+    subprocess.run(["rsvg-convert", "-w", str(OW), "-h", str(OH), svg_path, "-o", png_path], check=True)
+    print(f"rendered PNG using rsvg-convert → {png_path}")
 else:
-    print("PNG render failed — qlmanage returned nothing; SVG only")
+    # fallback to qlmanage
+    tmp_dir = "/tmp/ogprev"
+    os.makedirs(tmp_dir, exist_ok=True)
+    subprocess.run(["qlmanage", "-t", "-s", str(OW), "-o", tmp_dir, svg_path], capture_output=True)
+    rendered = glob.glob(os.path.join(tmp_dir, "og-card.svg.png"))
+    if rendered and shutil.which("magick"):
+        # qlmanage pads to a square; crop to exact 1200×630 from top-left
+        subprocess.run(["magick", rendered[0], "-crop", f"{OW}x{OH}+0+0", "+repage", png_path], check=True)
+        print(f"rendered + cropped PNG using qlmanage & magick → {png_path}")
+    elif rendered:
+        shutil.copy(rendered[0], png_path)
+        print(f"rendered PNG using qlmanage (uncropped) → {png_path}")
+    else:
+        print("PNG render failed — no converter succeeded; SVG only")
