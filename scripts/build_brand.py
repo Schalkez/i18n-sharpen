@@ -81,7 +81,7 @@ wordmark("assets/logo/logo-light.svg", KNIFE_LIGHT, "#1B2330", W, H)
 wordmark("assets/logo/logo-dark.svg",  KNIFE_DARK,  "#F4F8FC", W, H)
 
 # icon: dark rounded square + dagger (favicon + hero, works on any theme)
-icon = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="64" height="64" '
+icon = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" '
         f'role="img" aria-label="i18n-sharpen icon">\n<defs>{GRADS}</defs>\n'
         f'<rect x="0" y="0" width="100" height="100" rx="24" fill="#141A24"/>\n'
         f'<g transform="translate(43.8,92) scale(0.71)">{KNIFE_LIGHT}</g>\n</svg>\n')
