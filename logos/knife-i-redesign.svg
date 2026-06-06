@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 420" width="980" height="420">
+  <defs>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8FB4CE"/><stop offset="0.42" stop-color="#E3EFF7"/><stop offset="0.5" stop-color="#FBFEFF"/><stop offset="0.58" stop-color="#DCEAF4"/><stop offset="1" stop-color="#9CC0D8"/>
+    </linearGradient>
+    <linearGradient id="goldG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F8D784"/><stop offset="0.5" stop-color="#E7B23F"/><stop offset="1" stop-color="#C98A1E"/>
+    </linearGradient>
+    <linearGradient id="grip" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2A313C"/><stop offset="0.5" stop-color="#171C24"/><stop offset="1" stop-color="#0E1218"/>
+    </linearGradient>
+    <g id="knife">
+      <rect x="4" y="-22" width="10" height="20" rx="2.5" fill="url(#grip)" stroke="#0C1118" stroke-width="1.2"/>
+      <path d="M5,-6 L13,-12 M5,-12 L13,-18" stroke="url(#goldG)" stroke-width="1.4" opacity="0.85"/>
+      <rect x="-1.5" y="-32" width="21" height="9.5" rx="3" fill="url(#goldG)" stroke="#1B2330" stroke-width="1.6"/>
+      <circle cx="9" cy="-27.2" r="1.7" fill="#1B2330" opacity="0.55"/>
+      <path d="M4,-31 L14,-31 L14,-86 L8,-100 L4,-80 Z" fill="url(#steel)" stroke="#1B2330" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M5,-34 L5,-78" stroke="#FFFFFF" stroke-width="1.4" opacity="0.75"/>
+      <path d="M5,-79 L7.4,-97" stroke="#FFFFFF" stroke-width="1.2" opacity="0.6"/>
+      <path d="M12.4,-34 L12.4,-85" stroke="#1B2330" stroke-width="1" opacity="0.16"/>
+      <path d="M4.4,-80 L13.6,-86" stroke="#1B2330" stroke-width="1" opacity="0.28"/>
+      <polygon points="9,-118 15,-111 9,-104 3,-111" fill="url(#goldG)" stroke="#1B2330" stroke-width="1.2"/>
+    </g>
+  </defs>
+  <style>
+    .lbl{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;fill:#9AA3AF;letter-spacing:1px;}
+    .ink{fill:#1B2330;}
+  </style>
+
+  <use href="#knife" transform="translate(120,230) scale(1.9)"/>
+  <text class="lbl" x="40" y="290">↑ dao "i" phóng to</text>
+
+  <use href="#knife" transform="translate(300,120) scale(0.55)"/>
+  <text class="ink" x="314" y="120" font-size="72" font-family="DIN Condensed" font-weight="bold">18n-sharpen</text>
+  <text class="lbl" x="314" y="148">DIN Condensed</text>
+
+  <use href="#knife" transform="translate(300,230) scale(0.46)"/>
+  <text class="ink" x="312" y="230" font-size="54" font-family="Menlo" font-weight="bold">18n-sharpen</text>
+  <text class="lbl" x="312" y="256">Menlo · mono</text>
+
+  <use href="#knife" transform="translate(300,340) scale(0.52)"/>
+  <text class="ink" x="314" y="340" font-size="66" font-family="Futura Condensed ExtraBold">18n-sharpen</text>
+  <text class="lbl" x="314" y="368">Futura Condensed ExtraBold</text>
+</svg>

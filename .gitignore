@@ -52,7 +52,7 @@ vendor/
 coverage/
 .cache/
 tmp/
-.gitnexus
 docs/
-
 i18n-sharpen-docs/
+.claude/skills/
+skills-lock.json

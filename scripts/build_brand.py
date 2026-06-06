@@ -87,10 +87,22 @@ icon = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="6
         f'<g transform="translate(43.8,92) scale(0.71)">{KNIFE_LIGHT}</g>\n</svg>\n')
 open(os.path.join(ROOT, "assets/logo/icon.svg"), "w").write(icon)
 
+# nav icons: knife only, transparent bg (navbar: icon + siteTitle pattern)
+def nav_icon(fname, knife):
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" '
+           f'width="28" height="28" role="img" aria-label="i18n-sharpen icon">\n'
+           f'<defs>{GRADS}</defs>\n'
+           f'<g transform="translate(43.8,92) scale(0.71)">{knife}</g>\n</svg>\n')
+    open(os.path.join(ROOT, fname), "w").write(svg)
+
+nav_icon("assets/logo/nav-icon-light.svg", KNIFE_LIGHT)
+nav_icon("assets/logo/nav-icon-dark.svg",  KNIFE_DARK)
+
 # mirror to docs/public
-for f in ("logo-light.svg", "logo-dark.svg", "icon.svg"):
+for f in ("logo-light.svg", "logo-dark.svg", "icon.svg",
+          "nav-icon-light.svg", "nav-icon-dark.svg"):
     shutil.copy(os.path.join(ROOT, "assets/logo", f), os.path.join(ROOT, "docs/public", f))
 
 print(f"viewBox: {minX} {minY} {VW} {VH}")
 print(f"banner W x H = {W} x {H}  (README aspect)")
-print("wrote assets/logo/{logo-light,logo-dark,icon}.svg + mirrored to docs/public/")
+print("wrote assets/logo/{logo-light,logo-dark,icon,nav-icon-light,nav-icon-dark}.svg + mirrored to docs/public/")

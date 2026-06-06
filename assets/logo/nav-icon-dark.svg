@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="28" height="28" role="img" aria-label="i18n-sharpen icon">
+<defs>
+ <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8FB4CE"/><stop offset="0.42" stop-color="#E3EFF7"/><stop offset="0.5" stop-color="#FBFEFF"/><stop offset="0.58" stop-color="#DCEAF4"/><stop offset="1" stop-color="#9CC0D8"/></linearGradient>
+ <linearGradient id="goldG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F8D784"/><stop offset="0.5" stop-color="#E7B23F"/><stop offset="1" stop-color="#C98A1E"/></linearGradient>
+ <linearGradient id="grip" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2A313C"/><stop offset="0.5" stop-color="#171C24"/><stop offset="1" stop-color="#0E1218"/></linearGradient>
+ <linearGradient id="gripD" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5C6776"/><stop offset="0.5" stop-color="#444E5C"/><stop offset="1" stop-color="#39414D"/></linearGradient></defs>
+<g transform="translate(43.8,92) scale(0.71)"><g>
+  <rect x="4" y="-22" width="10" height="20" rx="2.5" fill="url(#gripD)"/>
+  <path d="M5,-6 L13,-12 M5,-12 L13,-18" stroke="url(#goldG)" stroke-width="1.4" opacity="0.95"/>
+  <rect x="-1.5" y="-32" width="21" height="9.5" rx="3" fill="url(#goldG)"/>
+  <circle cx="9" cy="-27.2" r="1.7" fill="#5A3E12" opacity="0.6"/>
+  <path d="M4,-31 L14,-31 L14,-86 L8,-100 L4,-80 Z" fill="url(#steel)"/>
+  <path d="M5,-34 L5,-78" stroke="#FFFFFF" stroke-width="1.4" opacity="0.6"/>
+  <path d="M12.4,-34 L12.4,-85" stroke="#1B2330" stroke-width="1" opacity="0.18"/>
+  <polygon points="9,-118 15,-111 9,-104 3,-111" fill="url(#goldG)"/>
+</g></g>
+</svg>
