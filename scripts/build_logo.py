@@ -101,7 +101,7 @@ write("lockup-mono.svg",
 # 3) COMPACT MARK (i18n) - Square 1:1 ratio with padding
 W_mark = W_18n + 16
 H_mark = DESC - TOP
-size_mark = max(W_mark, H_mark) + 22
+size_mark = max(W_mark, H_mark) + 52
 cx_mark = -8 + W_mark / 2
 cy_mark = TOP + H_mark / 2
 write("mark.svg",
