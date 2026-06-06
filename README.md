@@ -2,8 +2,8 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Schalkez/i18n-sharpen/master/assets/logo/logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Schalkez/i18n-sharpen/master/assets/logo/logo-dark.svg">
-  <img alt="i18n / sharpen" src="https://raw.githubusercontent.com/Schalkez/i18n-sharpen/master/assets/logo/logo-light.svg" width="264" height="64">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Schalkez/i18n-sharpen/master/assets/logo/logo-light.svg">
+  <img alt="i18n-sharpen" src="https://raw.githubusercontent.com/Schalkez/i18n-sharpen/master/assets/logo/logo-light.svg" width="300" height="76">
 </picture>
 
 <p>

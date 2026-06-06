@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -120 198.1292134831461 156">
+<defs>
+ <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0">
+  <stop offset="0" stop-color="#8FB4CE"/><stop offset="0.42" stop-color="#E3EFF7"/><stop offset="0.5" stop-color="#FBFEFF"/><stop offset="0.58" stop-color="#DCEAF4"/><stop offset="1" stop-color="#9CC0D8"/>
+ </linearGradient>
+ <linearGradient id="goldG" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#F8D784"/><stop offset="0.5" stop-color="#E7B23F"/><stop offset="1" stop-color="#C98A1E"/>
+ </linearGradient>
+ <linearGradient id="grip" x1="0" y1="0" x2="1" y2="0">
+  <stop offset="0" stop-color="#2A313C"/><stop offset="0.5" stop-color="#171C24"/><stop offset="1" stop-color="#0E1218"/>
+ </linearGradient>
+</defs>
+<g>
+  <rect x="4" y="-22" width="10" height="20" rx="2.5" fill="url(#grip)" stroke="#0C1118" stroke-width="1.2"/>
+  <path d="M5,-6 L13,-12 M5,-12 L13,-18" stroke="url(#goldG)" stroke-width="1.4" opacity="0.85"/>
+  <rect x="-1.5" y="-32" width="21" height="9.5" rx="3" fill="url(#goldG)" stroke="#1B2330" stroke-width="1.6"/>
+  <circle cx="9" cy="-27.2" r="1.7" fill="#1B2330" opacity="0.55"/>
+  <path d="M4,-31 L14,-31 L14,-86 L8,-100 L4,-80 Z" fill="url(#steel)" stroke="#1B2330" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M5,-34 L5,-78" stroke="#FFFFFF" stroke-width="1.4" opacity="0.75"/>
+  <path d="M5,-79 L7.4,-97" stroke="#FFFFFF" stroke-width="1.2" opacity="0.6"/>
+  <path d="M12.4,-34 L12.4,-85" stroke="#1B2330" stroke-width="1" opacity="0.16"/>
+  <path d="M4.4,-80 L13.6,-86" stroke="#1B2330" stroke-width="1" opacity="0.28"/>
+  <polygon points="9,-118 15,-111 9,-104 3,-111" fill="url(#goldG)" stroke="#1B2330" stroke-width="1.2"/>
+</g>
+<path d="M155.0 0V604L53.0 529V637L155.0 712H257.0V0Z M608.0 566Q608.0 587 593.0 601.5Q578.0 616 558.0 616Q538.0 616 523.0 601.5Q508.0 587 508.0 566V462Q508.0 441 523.0 426.5Q538.0 412 558.0 412Q578.0 412 593.0 426.5Q608.0 441 608.0 462ZM406.0 526Q406.0 555 408.0 575.5Q410.0 596 415.0 611Q420.0 626 426.5 638.0Q433.0 650 443.0 663Q463.0 689 493.0 703.5Q523.0 718 558.0 718Q593.0 718 623.0 703.5Q653.0 689 673.0 663Q683.0 650 690.0 638.0Q697.0 626 702.0 611Q707.0 596 708.5 575.5Q710.0 555 710.0 526Q710.0 494 709.0 472.0Q708.0 450 703.0 433Q698.0 416 687.5 402.5Q677.0 389 659.0 374Q677.0 360 687.5 346.0Q698.0 332 703.0 313Q708.0 294 709.0 266.5Q710.0 239 710.0 199Q710.0 166 708.5 144.5Q707.0 123 704.0 107Q701.0 91 695.5 80.0Q690.0 69 682.0 57Q665.0 31 634.0 12.5Q603.0 -6 558.0 -6Q513.0 -6 482.0 12.5Q451.0 31 434.0 57Q426.0 69 420.5 80.0Q415.0 91 412.0 107Q409.0 123 407.5 144.5Q406.0 166 406.0 199Q406.0 239 407.0 266.5Q408.0 294 413.0 313Q418.0 332 428.5 346.0Q439.0 360 457.0 374Q439.0 389 428.5 402.5Q418.0 416 413.0 433Q408.0 450 407.0 472.0Q406.0 494 406.0 526ZM608.0 286Q608.0 307 593.0 321.5Q578.0 336 558.0 336Q538.0 336 523.0 321.5Q508.0 307 508.0 286V146Q508.0 125 523.0 110.5Q538.0 96 558.0 96Q578.0 96 593.0 110.5Q608.0 125 608.0 146Z M786.0 0V507H888.0V458H890.0Q906.0 482 928.5 497.5Q951.0 513 986.0 513Q1005.0 513 1024.0 506.5Q1043.0 500 1058.0 485Q1073.0 470 1082.0 446.5Q1091.0 423 1091.0 389V0H989.0V351Q989.0 379 976.0 395.0Q963.0 411 939.0 411Q910.0 411 899.0 393.0Q888.0 375 888.0 341V0Z" transform="translate(23,0) scale(0.14045,-0.14045)" fill="#1B2330"/>
+</svg>
