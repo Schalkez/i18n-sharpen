@@ -98,9 +98,14 @@ write("lockup-mono.svg",
       (-8, TOP, W_full + 16, (DESC - TOP)),
       KNIFE_MONO.format(c="#1B2330", bg="#FFFFFF") + "\n" + text_path(d_full, "#1B2330"))
 
-# 3) COMPACT MARK (i18n)
+# 3) COMPACT MARK (i18n) - Square 1:1 ratio with padding
+W_mark = W_18n + 16
+H_mark = DESC - TOP
+size_mark = max(W_mark, H_mark) + 22
+cx_mark = -8 + W_mark / 2
+cy_mark = TOP + H_mark / 2
 write("mark.svg",
-      (-8, TOP, W_18n + 16, (DESC - TOP)),
+      (cx_mark - size_mark / 2, cy_mark - size_mark / 2, size_mark, size_mark),
       KNIFE + "\n" + text_path(d_18n, "#1B2330"))
 
 # 4) APP ICON DARK
