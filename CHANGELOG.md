@@ -5,6 +5,12 @@ All notable changes to `i18n-sharpen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-06-07
+
+### Added
+- **Namespace Scoped Hooks Support**: Added support for modern namespace-scoped hooks in Next.js/React (`useTranslations`, `useNamespace`, `useTranslation`). It automatically prepends the namespace prefix (e.g. `auth.`) to all translation calls scoped within that hook.
+- **`ignoreKeys` in `validate`**: The quality validation engine now respects configured `ignoreKeys` wildcard patterns when reporting missing keys, ensuring parity with the prune command.
+
 ## [0.4.1] - 2026-06-03
 
 ### Added
