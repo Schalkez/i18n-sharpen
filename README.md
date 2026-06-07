@@ -340,6 +340,22 @@ src/locales/
 
 Note for 0.2.x: `validate`, `extract`, and `prune` fully support both flat and namespaced layouts end-to-end.
 
+### Namespace Scoped Hooks (e.g. `next-intl`)
+
+For modern React/Next.js localization libraries like `next-intl` that scope translation functions within a namespace, `i18n-sharpen` automatically detects the namespace and prepends it to all nested translation keys:
+
+```typescript
+// Detects 'auth' namespace and resolves the key as 'auth.signIn'
+const t = useTranslations('auth');
+t('signIn'); 
+
+// Destructuring is also fully supported
+const { t } = useTranslation('common');
+t('cancel'); // Resolves as 'common.cancel'
+```
+
+Supported hooks out of the box: `useTranslations` (Next-intl), `useNamespace`, and `useTranslation` (React-i18next).
+
 ---
 
 ## Framework Coverage
