@@ -1,4 +1,4 @@
-import { isKeyUsed, getBaseKey } from "@/core/scanner"
+import { isKeyUsed, getBaseKey, matchWildcard } from "@/core/scanner"
 import type { I18nSharpenConfig, LocaleAlignmentMismatch } from "@/types"
 
 /**
@@ -9,12 +9,17 @@ import type { I18nSharpenConfig, LocaleAlignmentMismatch } from "@/types"
 export function findMissingKeys(
   usedKeys: Set<string>,
   defaultKeySet: Set<string>,
-  config: Pick<I18nSharpenConfig, "pluralSuffixes">
+  config: Pick<I18nSharpenConfig, "pluralSuffixes" | "ignoreKeys">
 ): string[] {
   const suffixes = config.pluralSuffixes ?? []
+  const ignoreKeys = config.ignoreKeys ?? []
   const missing: string[] = []
 
   for (const key of usedKeys) {
+    if (ignoreKeys.some((pattern) => matchWildcard(pattern, key))) {
+      continue
+    }
+
     let exists = defaultKeySet.has(key)
     if (!exists) {
       for (const suffix of suffixes) {

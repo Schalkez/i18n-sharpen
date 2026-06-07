@@ -21,6 +21,15 @@ describe("checks: findMissingKeys", () => {
     expect(missing).toEqual(["gone"])
   })
 
+  it("respects ignoreKeys wildcards", () => {
+    const missing = findMissingKeys(
+      set("a", "b", "debug.a", "debug.b"),
+      set("a"),
+      { ignoreKeys: ["debug.*"] }
+    )
+    expect(missing).toEqual(["b"])
+  })
+
   it("returns nothing when every used key is defined", () => {
     expect(findMissingKeys(set("a"), set("a"), {})).toEqual([])
   })

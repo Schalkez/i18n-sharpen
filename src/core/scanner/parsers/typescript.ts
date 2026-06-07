@@ -15,6 +15,12 @@ const SKIP_TAGS = new Set([
   "iframe"
 ])
 
+const HOOK_NAMES = new Set([
+  "useTranslations",
+  "useNamespace",
+  "useTranslation"
+])
+
 // D-10: hardcoded-attribute list is now driven by config
 // caller passes it via hardcodedAttributes, filtering remains via isHardcodedIgnored
 
@@ -61,6 +67,7 @@ export function parseTypeScriptFile(
   const usedKeys: ParsedFileResult["usedKeys"] = []
   const dynamicCalls: ParsedFileResult["dynamicCalls"] = []
   const hardcodedCandidates: ParsedFileResult["hardcodedCandidates"] = []
+  const localNamespaces = new Map<string, string>()
 
   // --- helpers ---
 
@@ -151,30 +158,81 @@ export function parseTypeScriptFile(
       if (SKIP_TAGS.has(getTagName(node.tagName))) return
     }
 
+    // --- Namespace extraction ---
+    if (ts.isVariableDeclaration(node)) {
+      const init = node.initializer
+      if (init && ts.isCallExpression(init)) {
+        const callee = init.expression
+        if (ts.isIdentifier(callee) && HOOK_NAMES.has(callee.text)) {
+          if (init.arguments.length > 0) {
+            const arg0 = init.arguments[0]
+            if (
+              ts.isStringLiteral(arg0) ||
+              ts.isNoSubstitutionTemplateLiteral(arg0)
+            ) {
+              const ns = arg0.text
+              const prefix = ns ? `${ns}.` : ""
+              if (ts.isIdentifier(node.name)) {
+                localNamespaces.set(node.name.text, prefix)
+              } else if (ts.isObjectBindingPattern(node.name)) {
+                for (const element of node.name.elements) {
+                  if (ts.isIdentifier(element.name)) {
+                    const propName = element.propertyName
+                      ? ts.isIdentifier(element.propertyName)
+                        ? element.propertyName.text
+                        : null
+                      : element.name.text
+                    if (propName === "t" || propName === "translate") {
+                      localNamespaces.set(element.name.text, prefix)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     // --- PARSE-02 + PARSE-04: call-expression detection ---
     if (ts.isCallExpression(node)) {
       const arg0 = node.arguments[0]
-      if (node.arguments.length > 0 && matchesCallee(node.expression)) {
+      const isLocalNamespace =
+        ts.isIdentifier(node.expression) &&
+        localNamespaces.has(node.expression.text)
+
+      if (
+        node.arguments.length > 0 &&
+        (matchesCallee(node.expression) || isLocalNamespace)
+      ) {
+        const nsPrefix =
+          ts.isIdentifier(node.expression) &&
+          localNamespaces.has(node.expression.text)
+            ? (localNamespaces.get(node.expression.text) ?? "")
+            : ""
+
         if (
           ts.isStringLiteral(arg0) ||
           ts.isNoSubstitutionTemplateLiteral(arg0)
         ) {
           // PARSE-02 static key. D-09: keys ending in '.' excluded.
-          if (!arg0.text.endsWith(".")) {
+          const fullKey = nsPrefix + arg0.text
+          if (!fullKey.endsWith(".")) {
             usedKeys.push({
-              key: arg0.text,
+              key: fullKey,
               offset: node.getStart(sourceFile)
             })
           }
         } else {
           // PARSE-04 dynamic candidate.
           const { classification, prefix } = classifyArg(arg0)
+          const fullPrefix = prefix ? nsPrefix + prefix : undefined
           dynamicCalls.push({
             expression: node.getText(sourceFile),
             arg: arg0.getText(sourceFile),
             offset: node.getStart(sourceFile),
             classification,
-            prefix
+            prefix: fullPrefix
           })
         }
       }

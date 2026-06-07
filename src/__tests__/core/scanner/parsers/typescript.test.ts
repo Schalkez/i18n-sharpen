@@ -282,3 +282,64 @@ describe("D-08 AST-only gain", () => {
     ).toContain("hero.title")
   })
 })
+
+// =============================================================================
+// Namespace Scoped Hooks (useTranslations, useNamespace, useTranslation)
+// =============================================================================
+describe("Namespace Scoped Hooks", () => {
+  it("extracts keys with namespace prepended for useTranslations hook", () => {
+    const src = `
+      const t = useTranslations('auth');
+      t('signIn');
+      t('signUp');
+    `
+    const { usedKeys } = parse(src, "test.ts")
+    const keys = usedKeys.map((k) => k.key)
+    expect(keys).toContain("auth.signIn")
+    expect(keys).toContain("auth.signUp")
+  })
+
+  it("extracts keys with namespace prepended for useNamespace hook", () => {
+    const src = `
+      const t = useNamespace('common.errors');
+      t('notFound');
+    `
+    const { usedKeys } = parse(src, "test.ts")
+    const keys = usedKeys.map((k) => k.key)
+    expect(keys).toContain("common.errors.notFound")
+  })
+
+  it("extracts keys with namespace prepended for destructured useTranslation hook", () => {
+    const src = `
+      const { t } = useTranslation('auth');
+      t('signIn');
+    `
+    const { usedKeys } = parse(src, "test.ts")
+    const keys = usedKeys.map((k) => k.key)
+    expect(keys).toContain("auth.signIn")
+  })
+
+  it("supports multiple namespaces in the same file", () => {
+    const src = `
+      const tAuth = useTranslations('auth');
+      const tCommon = useTranslations('common');
+      tAuth('login');
+      tCommon('cancel');
+    `
+    const { usedKeys } = parse(src, "test.ts")
+    const keys = usedKeys.map((k) => k.key)
+    expect(keys).toContain("auth.login")
+    expect(keys).toContain("common.cancel")
+  })
+
+  it("handles structured-concat dynamic keys with namespace prefix", () => {
+    const src = `
+      const t = useTranslations('auth');
+      t('error.' + code);
+    `
+    const { dynamicCalls } = parse(src, "test.ts")
+    expect(dynamicCalls).toHaveLength(1)
+    expect(dynamicCalls[0].classification).toBe("structured-concat")
+    expect(dynamicCalls[0].prefix).toBe("auth.error.")
+  })
+})
