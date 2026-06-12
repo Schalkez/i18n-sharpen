@@ -2,7 +2,11 @@ import * as fs from "fs"
 import * as path from "path"
 import pc from "picocolors"
 import { normalizeDisplayPath } from "@/core/locale-io"
-import type { ValidationResults, LocaleAlignmentMismatch } from "@/types"
+import type {
+  ValidationResults,
+  LocaleAlignmentMismatch,
+  StructuredConcatFinding
+} from "@/types"
 import { log } from "@/utils"
 
 /**
@@ -54,6 +58,7 @@ export function renderMarkdownReport(args: {
 }): string {
   const {
     missingKeys,
+    missingDynamicKeys,
     activePlaceholderKeys,
     unusedKeys,
     unusedPlaceholderKeys,
@@ -74,6 +79,7 @@ export function renderMarkdownReport(args: {
     `| **Total Defined Keys** | ${totalDefinedKeys} | - |`,
     `| **Actually Used Keys** | ${usedDefinedKeysCount} | - |`,
     `| **Missing Keys** | ${missingKeys.length} | ${missingKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |`,
+    `| **Missing Dynamic Key Prefixes** | ${missingDynamicKeys.length} | ${missingDynamicKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |`,
     `| **Active Placeholders** | ${activePlaceholderKeys.length} | ${activePlaceholderKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |`,
     `| **Unused Keys** | ${unusedKeys.length} | ${unusedKeys.length === 0 ? "🟢 Optimized" : "🟡 Can be pruned"} |`,
     `| **Locale Alignment** | ${keysOnlyInLanguages.length === 0 ? "Align'd" : "Mismatch"} | ${keysOnlyInLanguages.length === 0 ? "🟢 Perfect" : "🔴 Action Required"} |`,
@@ -97,6 +103,8 @@ Generated on: ${new Date().toISOString()}
 ${metricsRows.join("\n")}
 
 ${renderMissingKeysSection(missingKeys, keyToFilesMap, defaultBasename)}
+
+${renderMissingDynamicKeysSection(missingDynamicKeys)}
 
 ${renderActivePlaceholdersSection(activePlaceholderKeys, keyToFilesMap, getBaseKey)}
 
@@ -327,4 +335,23 @@ function renderHardcodedSection(
   }
 
   return parts.join("\n")
+}
+
+function renderMissingDynamicKeysSection(
+  missingDynamicKeys: StructuredConcatFinding[]
+): string {
+  if (missingDynamicKeys.length === 0) {
+    return "## ✅ Missing Dynamic Key Prefixes\n\nNo missing dynamic key prefixes detected."
+  }
+  return `## ❌ Missing Dynamic Key Prefixes (${missingDynamicKeys.length})
+
+The following prefixes are used dynamically in the code but have no matching keys defined in any translation files:
+
+${missingDynamicKeys
+  .map(
+    (f) =>
+      `- **\`${f.prefix}*\`** (referenced as \`${f.expression}\` in \`${f.file}:${f.line}\`)`
+  )
+  .join("\n")}
+`
 }

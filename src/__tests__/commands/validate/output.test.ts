@@ -11,6 +11,7 @@ function baseResults(
 ): ValidationResults {
   return {
     missingKeys: [],
+    missingDynamicKeys: [],
     activePlaceholderKeys: [],
     unusedKeys: [],
     unusedPlaceholderKeys: [],

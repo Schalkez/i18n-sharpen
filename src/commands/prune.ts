@@ -58,12 +58,11 @@ export async function prune(
   const files = scanSourceFiles(config, cwd)
   const matchFunctions = config.matchFunctions ?? ["t", "getTranslation"]
   const matchAttributes = config.matchAttributes ?? ["i18nKey", "id"]
-  const { usedKeys, fileContents, parseErrors } = await detectUsedKeys(
-    files,
-    matchFunctions,
-    matchAttributes,
-    { cwd, hardcodedAttributes: config.hardcoded?.attributes ?? [] }
-  )
+  const { usedKeys, fileContents, parsedResults, parseErrors } =
+    await detectUsedKeys(files, matchFunctions, matchAttributes, {
+      cwd,
+      hardcodedAttributes: config.hardcoded?.attributes ?? []
+    })
 
   for (const err of parseErrors) {
     log.warn(
@@ -75,20 +74,51 @@ export async function prune(
     `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
   )
 
+  let activeConfig = config
+  if (config.autoIgnoreDynamicPrefixes !== false) {
+    const dynamicPrefixes = new Set<string>()
+    for (const r of parsedResults) {
+      for (const dc of r.dynamicCalls) {
+        if (dc.classification === "structured-concat" && dc.prefix) {
+          dynamicPrefixes.add(dc.prefix)
+        }
+      }
+    }
+    if (dynamicPrefixes.size > 0) {
+      const localIgnoreKeys = [...(config.ignoreKeys ?? [])]
+      for (const prefix of dynamicPrefixes) {
+        const pattern = prefix + "*"
+        if (!localIgnoreKeys.includes(pattern)) {
+          localIgnoreKeys.push(pattern)
+        }
+      }
+      activeConfig = {
+        ...config,
+        ignoreKeys: localIgnoreKeys
+      }
+    }
+  }
+
   const wantInteractive = options.interactive === true
 
   // ───── Non-interactive path (Phases 1-2 behavior, untouched) ─────
   if (!wantInteractive) {
-    if (config.localesLayout === "namespaced") {
+    if (activeConfig.localesLayout === "namespaced") {
       return pruneNamespaced(
-        config,
+        activeConfig,
         localesDirAbs,
         usedKeys,
         fileContents,
         dryRun
       )
     }
-    return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+    return pruneFlat(
+      activeConfig,
+      localesDirAbs,
+      usedKeys,
+      fileContents,
+      dryRun
+    )
   }
 
   // ───── Interactive path (Phase 3 D-13..D-17) ─────
@@ -111,37 +141,54 @@ export async function prune(
     }
     // Force dry-run regardless of force/configForce (D-15 safety override)
     dryRun = true
-    if (config.localesLayout === "namespaced") {
+    if (activeConfig.localesLayout === "namespaced") {
       return pruneNamespaced(
-        config,
+        activeConfig,
         localesDirAbs,
         usedKeys,
         fileContents,
         dryRun
       )
     }
-    return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+    return pruneFlat(
+      activeConfig,
+      localesDirAbs,
+      usedKeys,
+      fileContents,
+      dryRun
+    )
   }
 
   // TTY path: compute candidates and decide short-circuit (D-16) or launch TUI
-  const isNamespaced = config.localesLayout === "namespaced"
+  const isNamespaced = activeConfig.localesLayout === "namespaced"
   const candidates = isNamespaced
-    ? collectNamespacedCandidates(config, localesDirAbs, usedKeys, fileContents)
-    : collectFlatCandidates(config, localesDirAbs, usedKeys, fileContents)
+    ? collectNamespacedCandidates(
+        activeConfig,
+        localesDirAbs,
+        usedKeys,
+        fileContents
+      )
+    : collectFlatCandidates(activeConfig, localesDirAbs, usedKeys, fileContents)
 
   if (candidates.length === 0) {
     // D-16: skip TUI entirely — defer to the existing pipeline which logs
     // the standard "✨ No unused keys" message.
     if (isNamespaced) {
       return pruneNamespaced(
-        config,
+        activeConfig,
         localesDirAbs,
         usedKeys,
         fileContents,
         dryRun
       )
     }
-    return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+    return pruneFlat(
+      activeConfig,
+      localesDirAbs,
+      usedKeys,
+      fileContents,
+      dryRun
+    )
   }
 
   const stdoutStream = _interactiveIOOverride?.stdout ?? process.stdout
@@ -154,14 +201,20 @@ export async function prune(
     dryRun = true
     if (isNamespaced) {
       return pruneNamespaced(
-        config,
+        activeConfig,
         localesDirAbs,
         usedKeys,
         fileContents,
         dryRun
       )
     }
-    return pruneFlat(config, localesDirAbs, usedKeys, fileContents, dryRun)
+    return pruneFlat(
+      activeConfig,
+      localesDirAbs,
+      usedKeys,
+      fileContents,
+      dryRun
+    )
   }
 
   // Launch the TUI
@@ -197,7 +250,7 @@ export async function prune(
 
   if (isNamespaced) {
     return pruneNamespaced(
-      config,
+      activeConfig,
       localesDirAbs,
       augmentedUsedKeys,
       fileContents,
@@ -206,7 +259,7 @@ export async function prune(
     )
   }
   return pruneFlat(
-    config,
+    activeConfig,
     localesDirAbs,
     augmentedUsedKeys,
     fileContents,

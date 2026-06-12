@@ -38,7 +38,8 @@ export const DEFAULT_CONFIG = {
     "_male",
     "_female"
   ],
-  localesLayout: "flat"
+  localesLayout: "flat",
+  autoIgnoreDynamicPrefixes: true
 } satisfies Partial<I18nSharpenConfig>
 
 // Restrict matchFunctions / matchAttributes to plain identifier-like tokens
@@ -86,6 +87,7 @@ export const I18nSharpenConfigSchema = z.object({
   matchAttributes: z.array(attributeName).optional(),
   ignoreKeys: z.array(z.string()).optional(),
   ignoreDynamicKeys: z.array(z.string()).optional(),
+  autoIgnoreDynamicPrefixes: z.boolean().optional(),
   pluralSuffixes: z.array(z.string()).optional(),
   looseKeyMatch: z.boolean().optional(),
   localesLayout: z.enum(["flat", "namespaced"]).optional(),

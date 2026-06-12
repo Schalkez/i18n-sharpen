@@ -40,6 +40,27 @@ export function printValidationResults(
     log.success("Zero missing keys detected in the source code!")
   }
 
+  // 1.5. Missing dynamic keys
+  if (results.missingDynamicKeys.length > 0) {
+    log.info(
+      `\n${pc.bold(pc.red(`❌ Missing Dynamic Key Prefixes (${results.missingDynamicKeys.length}):`))}`
+    )
+    log.info(
+      pc.yellow(
+        "  (These prefixes are used dynamically in code, but no keys starting with them exist in translations)"
+      )
+    )
+    results.missingDynamicKeys.forEach((f) => {
+      log.info(
+        `  - ${pc.red(f.prefix + "*")}  ← ${pc.yellow(f.expression)} (${pc.cyan(
+          `${f.file}:${f.line}`
+        )})`
+      )
+    })
+  } else {
+    log.success("Zero missing dynamic key prefixes detected!")
+  }
+
   // 2. Active placeholders
   if (activePlaceholderKeys.length > 0) {
     log.info(

@@ -397,6 +397,69 @@ describe("validate: integration", () => {
       // Negative: NO backslash-escape pattern should appear.
       expect(report).not.toMatch(/\\`/)
     })
+
+    // New tests for missing dynamic keys validation and autoIgnoreDynamicPrefixes
+    it("fails validation when a dynamic key prefix has zero keys in the default locale", async () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": `t("error." + code)`,
+        "locales/en.json": JSON.stringify({ "user.greeting": "Hi" }) // No key starting with "error."
+      })
+      const results = await validate(baseConfig(), tempDir)
+      expect(results.missingDynamicKeys).toHaveLength(1)
+      expect(results.missingDynamicKeys[0].prefix).toBe("error.")
+    })
+
+    it("passes validation when a dynamic key prefix has at least one key in the default locale", async () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": `t("error." + code)`,
+        "locales/en.json": JSON.stringify({
+          "error.generic": "An error occurred"
+        })
+      })
+      const results = await validate(baseConfig(), tempDir)
+      expect(results.missingDynamicKeys).toHaveLength(0)
+    })
+
+    it("does not fail validation for a missing dynamic key prefix if it is ignored via ignoreDynamicKeys", async () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": `t("error." + code)`,
+        "locales/en.json": JSON.stringify({ "user.greeting": "Hi" })
+      })
+      const results = await validate(
+        baseConfig({ ignoreDynamicKeys: ["error.*"] }),
+        tempDir
+      )
+      // Since it is suppressed, it is not in missingDynamicKeys or structuredConcat
+      expect(results.missingDynamicKeys).toHaveLength(0)
+    })
+
+    it("does not report keys as unused if autoIgnoreDynamicPrefixes is true (default)", async () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": `t("error." + code)`,
+        "locales/en.json": JSON.stringify({
+          "error.generic": "An error occurred"
+        })
+      })
+      const results = await validate(baseConfig(), tempDir)
+      // "error.generic" would normally be unused because there is no static reference in code.
+      // But since autoIgnoreDynamicPrefixes is true, it is treated as used/ignored.
+      expect(results.unusedKeys).toHaveLength(0)
+    })
+
+    it("reports keys as unused if autoIgnoreDynamicPrefixes is false", async () => {
+      createMockProject(tempDir, {
+        "src/auth.ts": `t("error." + code)`,
+        "locales/en.json": JSON.stringify({
+          "error.generic": "An error occurred"
+        })
+      })
+      const results = await validate(
+        baseConfig({ autoIgnoreDynamicPrefixes: false }),
+        tempDir
+      )
+      // Since autoIgnoreDynamicPrefixes is false, "error.generic" is marked as unused.
+      expect(results.unusedKeys).toContain("error.generic")
+    })
   })
 
   describe("hardcoded string checks", () => {

@@ -5,6 +5,12 @@ All notable changes to `i18n-sharpen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-06-12
+
+### Added
+- **Dynamic Key Auto-Preservation**: Added `autoIgnoreDynamicPrefixes` option (default `true`). The scanner automatically detects prefix patterns from structured-concat dynamic translation calls (e.g. `t('landing.hero.' + key)`) and preserves all corresponding keys in locale files from being pruned.
+- **Missing Dynamic Key Validation**: Validation now checks if a detected structured-concat dynamic prefix has at least one key defined in translations. If all keys matching a prefix are missing from the default locale, validation fails to prevent silent key loss.
+
 ## [0.5.1] - 2026-06-08
 
 ### Documentation

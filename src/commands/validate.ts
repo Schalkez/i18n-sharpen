@@ -224,21 +224,57 @@ export async function validate(
   }
 
   // --- Pure checks ---
-  const suffixes = config.pluralSuffixes ?? []
-  const missingKeys = findMissingKeys(usedKeys, defaultKeySet, config)
-  const unusedKeys = findUnusedKeys(defaultKeys, usedKeys, config)
+  let activeConfig = config
+  if (config.autoIgnoreDynamicPrefixes !== false) {
+    const dynamicPrefixes = new Set<string>()
+    for (const finding of structuredConcatFindings) {
+      if (finding.prefix) {
+        dynamicPrefixes.add(finding.prefix)
+      }
+    }
+    if (dynamicPrefixes.size > 0) {
+      const localIgnoreKeys = [...(config.ignoreKeys ?? [])]
+      for (const prefix of dynamicPrefixes) {
+        const pattern = prefix + "*"
+        if (!localIgnoreKeys.includes(pattern)) {
+          localIgnoreKeys.push(pattern)
+        }
+      }
+      activeConfig = {
+        ...config,
+        ignoreKeys: localIgnoreKeys
+      }
+    }
+  }
+
+  const suffixes = activeConfig.pluralSuffixes ?? []
+  const missingKeys = findMissingKeys(usedKeys, defaultKeySet, activeConfig)
+  const unusedKeys = findUnusedKeys(defaultKeys, usedKeys, activeConfig)
   const keysOnlyInLanguages = findAlignmentMismatches(
-    config,
+    activeConfig,
     defaultKeys,
     defaultKeySet,
     localesFlat,
     localeKeySets
   )
   const { activePlaceholderKeys, unusedPlaceholderKeys } = findPlaceholderKeys(
-    config,
+    activeConfig,
     usedKeys,
     localesFlat
   )
+
+  const missingDynamicKeys: StructuredConcatFinding[] = []
+  for (const finding of structuredConcatFindings) {
+    const prefix = finding.prefix
+    if (prefix) {
+      const hasAnyKey = Array.from(defaultKeySet).some((k) =>
+        k.startsWith(prefix)
+      )
+      if (!hasAnyKey) {
+        missingDynamicKeys.push(finding)
+      }
+    }
+  }
 
   // Coverage stats
   const totalDefinedKeys = defaultKeys.length
@@ -254,6 +290,7 @@ export async function validate(
 
   const results: ValidationResults = {
     missingKeys,
+    missingDynamicKeys,
     activePlaceholderKeys,
     unusedKeys,
     unusedPlaceholderKeys,
@@ -286,13 +323,14 @@ export async function validate(
 
   const hasError =
     missingKeys.length > 0 ||
+    missingDynamicKeys.length > 0 ||
     activePlaceholderKeys.length > 0 ||
     keysOnlyInLanguages.length > 0 ||
     (options?.checkHardcoded && hardcodedFindings.length > 0)
 
   if (hasError) {
     log.error(
-      "Validation failed. Please fix the missing keys, active placeholders, locale mismatches, or hardcoded strings."
+      "Validation failed. Please fix the missing keys, missing dynamic keys, active placeholders, locale mismatches, or hardcoded strings."
     )
   } else {
     log.success("i18n Quality Validation passed successfully!\n")

@@ -71,6 +71,14 @@ export interface I18nSharpenConfig {
    */
   ignoreDynamicKeys?: string[]
   /**
+   * If true, structured-concat dynamic key prefixes (e.g. "landing.hero.")
+   * are automatically treated as wildcard ignore patterns (i.e. "landing.hero.*")
+   * to protect them from being pruned.
+   *
+   * Defaults to true.
+   */
+  autoIgnoreDynamicPrefixes?: boolean
+  /**
    * Prune-only knobs. When `prune.force` is false (the default), `prune`
    * runs in dry-run mode: it prints a summary of which keys WOULD be
    * removed but does not modify any locale file. Set `prune.force: true`
@@ -109,11 +117,6 @@ export interface PruneOptions {
    * If true, launch the interactive TUI picker (arrow-key + Space)
    * when running in a TTY. In a non-TTY environment (pipe, CI),
    * the picker is skipped — see Phase 3 D-13/D-14/D-15 for the
-   * fallback semantics. The standard `force` / `dryRun` write gate
-   * still applies: `interactive` selects WHICH keys to prune; `force`
-   * decides WHETHER they are written. Per IPRUNE-01..06.
-   *
-   * Defaults to false (existing non-interactive behavior preserved).
    */
   interactive?: boolean
 }
@@ -150,6 +153,7 @@ export interface LocaleAlignmentMismatch {
 
 export interface ValidationResults {
   missingKeys: string[]
+  missingDynamicKeys: StructuredConcatFinding[]
   activePlaceholderKeys: { key: string; lang: string }[]
   unusedKeys: string[]
   unusedPlaceholderKeys: { key: string; lang: string }[]

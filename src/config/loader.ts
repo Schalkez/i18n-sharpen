@@ -109,6 +109,10 @@ export function loadConfig(
     matchAttributes:
       fileConfig.matchAttributes ?? DEFAULT_CONFIG.matchAttributes,
     ignoreKeys: fileConfig.ignoreKeys ?? DEFAULT_CONFIG.ignoreKeys,
+    ignoreDynamicKeys: fileConfig.ignoreDynamicKeys,
+    autoIgnoreDynamicPrefixes:
+      fileConfig.autoIgnoreDynamicPrefixes ??
+      DEFAULT_CONFIG.autoIgnoreDynamicPrefixes,
     pluralSuffixes: fileConfig.pluralSuffixes ?? DEFAULT_CONFIG.pluralSuffixes,
     looseKeyMatch: fileConfig.looseKeyMatch ?? false,
     localesLayout: fileConfig.localesLayout ?? DEFAULT_CONFIG.localesLayout,

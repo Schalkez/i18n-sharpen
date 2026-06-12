@@ -211,6 +211,59 @@ describe("prune: integration", () => {
     })
   })
 
+  it("should preserve keys matching structured dynamic prefixes if autoIgnoreDynamicPrefixes is enabled", async () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `t('status.' + code)`,
+      "locales/en.json": JSON.stringify({
+        "status.success": "Success",
+        "status.error": "Error",
+        "unused.key": "Unused"
+      })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      autoIgnoreDynamicPrefixes: true
+    }
+
+    await prune(config, tempDir, { force: true })
+    const prunedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
+    expect(flattenObject(prunedLocale)).toEqual({
+      "status.success": "Success",
+      "status.error": "Error"
+    })
+  })
+
+  it("should delete keys matching structured dynamic prefixes if autoIgnoreDynamicPrefixes is false", async () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `t('status.' + code)`,
+      "locales/en.json": JSON.stringify({
+        "status.success": "Success",
+        "status.error": "Error",
+        "unused.key": "Unused"
+      })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      autoIgnoreDynamicPrefixes: false
+    }
+
+    await prune(config, tempDir, { force: true })
+    const prunedLocale = readLocaleFile(path.join(tempDir, "locales/en.json"))
+    expect(flattenObject(prunedLocale)).toEqual({})
+  })
+
   it("should handle plural suffix alignment in prune", async () => {
     createMockProject(tempDir, {
       "src/index.ts": `t('count')`,
