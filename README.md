@@ -151,6 +151,7 @@ Alternatively, you can add an `"i18nSharpen"` field to your `package.json`:
 | `pluralSuffixes` | `string[]` | `["_zero", "_one", ...]` | Custom suffixes used for plural keys (which are automatically resolved). |
 | `sortKeys` | `"alpha" \| "source" \| "preserve"` | `"preserve"` | Key ordering on `extract`/`prune` writes. `alpha` = alphabetical, `source` = order first seen in source, `preserve` = keep existing order. |
 | `ignoreDynamicKeys` | `string[]` | `[]` | Suppress dynamic-key warnings for patterns matching these prefixes (e.g. `["status.*", "error.*"]`). |
+| `autoIgnoreDynamicPrefixes` | `boolean` | `true` | Automatically treat structured-concat dynamic prefixes (e.g. `landing.hero.`) as wildcard ignores to protect them from pruning. |
 | `hardcoded.attributes` | `string[]` | `["placeholder","label","title","alt","aria-label"]` | HTML/JSX attributes scanned for un-translated text when using `--check-hardcoded`. Override to add framework-specific attrs. |
 | `hardcoded.ignore` | `string[]` | `[]` | Strings to suppress from hardcoded-string findings (exact match or pattern). |
 
