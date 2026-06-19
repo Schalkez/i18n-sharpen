@@ -291,7 +291,9 @@ export async function validate(
       : "0.00"
   const codeKeyCoverage =
     usedKeys.size > 0
-      ? ((usedDefinedKeysCount / usedKeys.size) * 100).toFixed(2)
+      ? (((usedKeys.size - missingKeys.length) / usedKeys.size) * 100).toFixed(
+          2
+        )
       : "100.00"
 
   const results: ValidationResults = {

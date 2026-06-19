@@ -633,5 +633,33 @@ describe("validate: integration", () => {
       expect(fallbacks).toHaveLength(1)
       expect(fallbacks[0].key).toBe("title")
     })
+
+    it("should calculate correct codeKeyCoverage without exceeding 100% when ignoreKeys are active", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `
+          t('title')
+          t('ignored_key')
+        `,
+        "locales/en.json": JSON.stringify({
+          title: "Welcome",
+          ignored_key: "Ignore Me",
+          other_unused: "Stale"
+        })
+      })
+
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"],
+        ignoreKeys: ["ignored_key", "other_unused"]
+      }
+
+      const results = await validate(config, tempDir)
+      expect(results.codeKeyCoverage).toBe("100.00")
+      expect(results.utilizationPercent).toBe("100.00")
+    })
   })
 })
