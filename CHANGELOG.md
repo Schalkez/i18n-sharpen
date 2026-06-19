@@ -5,6 +5,14 @@ All notable changes to `i18n-sharpen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-06-19
+
+### Documentation
+- **Documented missing options and commands**: Added README documentation for the `translate` command, `metadataFile`, `strictFallbacks`, `ignoreFallbackKeys`, and `stubPlaceholder` options.
+
+### Changed
+- **CI Prepublish Gate**: Updated the `prepublishOnly` script to run `pnpm lint`, `pnpm typecheck`, and `pnpm test` before building.
+
 ## [0.8.0] - 2026-06-19
 
 ### Fixed

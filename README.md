@@ -58,14 +58,18 @@ Keep your locale files clean, synchronized, and type-safe — with the accuracy 
 1.  **Strict Quality Validation (`validate`)**:
     *   Detects missing translation keys used in source code.
     *   **Active Placeholder Detection**: Catches keys whose value is equal to their dot-notation path (meaning they are still untranslated placeholders).
+    *   **Untranslated Fallback Validation**: Detects if translation values match default/fallback values (optional via `strictFallbacks`).
     *   **Cross-Locale Key Alignment**: Ensures that all translation JSON files have the exact same keys as the default language file.
 2.  **Automatic Key Extraction (`extract`)**:
     *   Scans codebase for translation patterns and automatically appends missing keys to all JSON files while maintaining formatting.
-3.  **Safe Key Pruning (`prune`)**:
+    *   **Context Metadata Extraction**: Automatically extracts inline context comments (e.g., `// @context: Describe key`) next to translation calls and writes them into a JSON metadata file (configured by `metadataFile`), providing helpful context for translators.
+3.  **Interactive CLI Translation (`translate`)**:
+    *   Interactively input missing or placeholder translations in the terminal, showing context-aware comment hints and default values for comparison.
+4.  **Safe Key Pruning (`prune`)**:
     *   Detects unused keys in JSON files and safely removes them to reduce bundle size.
-4.  **CI/CD Markdown Reports**:
+5.  **CI/CD Markdown Reports**:
     *   Generates a clean quality and coverage report (`i18n-coverage.md`) ideal for PR comments and CI dashboards.
-5.  **Programmatic API**:
+6.  **Programmatic API**:
     *   Can be imported and run dynamically in Node.js scripts.
 
 ---
@@ -154,6 +158,10 @@ Alternatively, you can add an `"i18nSharpen"` field to your `package.json`:
 | `autoIgnoreDynamicPrefixes` | `boolean` | `true` | Automatically treat structured-concat dynamic prefixes (e.g. `landing.hero.`) as wildcard ignores to protect them from pruning. |
 | `hardcoded.attributes` | `string[]` | `["placeholder","label","title","alt","aria-label"]` | HTML/JSX attributes scanned for un-translated text when using `--check-hardcoded`. Override to add framework-specific attrs. |
 | `hardcoded.ignore` | `string[]` | `[]` | Strings to suppress from hardcoded-string findings (exact match or pattern). |
+| `metadataFile` | `string` | `"metadata.json"` | Path to save extracted translation context metadata relative to `localesDir` (empty/falsy to disable). |
+| `strictFallbacks` | `boolean` | `false` | Fail validation if any translations match their default fallback values (untranslated fallbacks). |
+| `ignoreFallbackKeys` | `string[]` | `[]` | Key patterns (supports wildcards like `brand.*`) to ignore during untranslated fallback validation. |
+| `stubPlaceholder` | `string` | `"key"` | Initial translation value populated during extraction. Mode `"key"` uses the key path, `"default"` copies default language value, or any custom string. Note: `"key"` and `"default"` are reserved mode words. |
 
 ---
 
@@ -170,6 +178,9 @@ npx i18n-sharpen extract
 
 # Prune unused keys from json files
 npx i18n-sharpen prune
+
+# Interactively translate missing or placeholder keys
+npx i18n-sharpen translate
 ```
 
 ### Options
@@ -221,6 +232,18 @@ After running the prune command, your translation files (e.g., JSON/YAML) will h
 npx i18n-sharpen validate --config configs/i18n.json --cwd ./packages/app
 npx i18n-sharpen validate --check-hardcoded
 npx i18n-sharpen prune --force
+```
+
+#### Interactive CLI Translator
+
+Running `npx i18n-sharpen translate` starts an interactive terminal session to translate missing or placeholder keys in your locale files:
+
+- **Context-Aware Hints**: Displays inline context comments extracted next to the translation calls (e.g., `// @context: Describe key` or `// @i18n-context: Describe key`) to assist translators.
+- **Reference Values**: Shows the default language translation for comparison when translating other supported languages.
+- **Auto-Save on Interrupt**: Press `Ctrl+C` or send `SIGINT` to exit the session at any time; your progress is automatically saved to disk before exit.
+
+```bash
+npx i18n-sharpen translate
 ```
 
 
