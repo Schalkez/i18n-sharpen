@@ -24,7 +24,8 @@ import {
   findMissingKeys,
   findUnusedKeys,
   findAlignmentMismatches,
-  findPlaceholderKeys
+  findPlaceholderKeys,
+  findUntranslatedFallbacks
 } from "./validate/checks"
 import {
   printValidationResults,
@@ -262,6 +263,11 @@ export async function validate(
     usedKeys,
     localesFlat
   )
+  const untranslatedFallbackKeys = findUntranslatedFallbacks(
+    activeConfig,
+    usedKeys,
+    localesFlat
+  )
 
   const missingDynamicKeys: StructuredConcatFinding[] = []
   for (const finding of structuredConcatFindings) {
@@ -292,6 +298,7 @@ export async function validate(
     missingKeys,
     missingDynamicKeys,
     activePlaceholderKeys,
+    untranslatedFallbackKeys,
     unusedKeys,
     unusedPlaceholderKeys,
     keysOnlyInLanguages,
@@ -307,7 +314,12 @@ export async function validate(
   }
 
   // --- Output ---
-  printValidationResults(results, keyToFilesMap, suffixes)
+  printValidationResults(
+    results,
+    keyToFilesMap,
+    suffixes,
+    !!activeConfig.strictFallbacks
+  )
   printDynamicKeysSummary(results.dynamicKeys)
 
   if (config.outputReport) {
@@ -326,11 +338,12 @@ export async function validate(
     missingDynamicKeys.length > 0 ||
     activePlaceholderKeys.length > 0 ||
     keysOnlyInLanguages.length > 0 ||
+    (!!activeConfig.strictFallbacks && untranslatedFallbackKeys.length > 0) ||
     (options?.checkHardcoded && hardcodedFindings.length > 0)
 
   if (hasError) {
     log.error(
-      "Validation failed. Please fix the missing keys, missing dynamic keys, active placeholders, locale mismatches, or hardcoded strings."
+      "Validation failed. Please fix the missing keys, missing dynamic keys, active placeholders, untranslated fallback keys, locale mismatches, or hardcoded strings."
     )
   } else {
     log.success("i18n Quality Validation passed successfully!\n")

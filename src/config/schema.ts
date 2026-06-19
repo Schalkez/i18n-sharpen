@@ -39,7 +39,9 @@ export const DEFAULT_CONFIG = {
     "_female"
   ],
   localesLayout: "flat",
-  autoIgnoreDynamicPrefixes: true
+  autoIgnoreDynamicPrefixes: true,
+  metadataFile: "metadata.json",
+  strictFallbacks: false
 } satisfies Partial<I18nSharpenConfig>
 
 // Restrict matchFunctions / matchAttributes to plain identifier-like tokens
@@ -107,5 +109,7 @@ export const I18nSharpenConfigSchema = z.object({
       ignore: z.array(z.string()).optional(),
       attributes: z.array(z.string()).optional()
     })
-    .optional()
+    .optional(),
+  metadataFile: z.string().optional(),
+  strictFallbacks: z.boolean().optional()
 })

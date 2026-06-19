@@ -60,6 +60,7 @@ export function renderMarkdownReport(args: {
     missingKeys,
     missingDynamicKeys,
     activePlaceholderKeys,
+    untranslatedFallbackKeys = [],
     unusedKeys,
     unusedPlaceholderKeys,
     keysOnlyInLanguages,
@@ -81,6 +82,7 @@ export function renderMarkdownReport(args: {
     `| **Missing Keys** | ${missingKeys.length} | ${missingKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |`,
     `| **Missing Dynamic Key Prefixes** | ${missingDynamicKeys.length} | ${missingDynamicKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |`,
     `| **Active Placeholders** | ${activePlaceholderKeys.length} | ${activePlaceholderKeys.length === 0 ? "🟢 Clean" : "🔴 Action Required"} |`,
+    `| **Untranslated Fallbacks** | ${untranslatedFallbackKeys.length} | ${untranslatedFallbackKeys.length === 0 ? "🟢 Clean" : "🟡 Review fallback values"} |`,
     `| **Unused Keys** | ${unusedKeys.length} | ${unusedKeys.length === 0 ? "🟢 Optimized" : "🟡 Can be pruned"} |`,
     `| **Locale Alignment** | ${keysOnlyInLanguages.length === 0 ? "Align'd" : "Mismatch"} | ${keysOnlyInLanguages.length === 0 ? "🟢 Perfect" : "🔴 Action Required"} |`,
     `| **Dynamic Keys** | fully-dynamic: ${dynamicKeys.fullyDynamic.length}, structured-concat: ${dynamicKeys.structuredConcat.length} | ${dynamicKeys.fullyDynamic.length + dynamicKeys.structuredConcat.length === 0 ? "🟢 None" : "🟡 Review"} |`
@@ -107,6 +109,8 @@ ${renderMissingKeysSection(missingKeys, keyToFilesMap, defaultBasename)}
 ${renderMissingDynamicKeysSection(missingDynamicKeys)}
 
 ${renderActivePlaceholdersSection(activePlaceholderKeys, keyToFilesMap, getBaseKey)}
+
+${renderUntranslatedFallbacksSection(untranslatedFallbackKeys, keyToFilesMap)}
 
 ${renderAlignmentSection(keysOnlyInLanguages)}
 
@@ -351,6 +355,34 @@ ${missingDynamicKeys
   .map(
     (f) =>
       `- **\`${f.prefix}*\`** (referenced as \`${f.expression}\` in \`${f.file}:${f.line}\`)`
+  )
+  .join("\n")}
+`
+}
+
+function renderUntranslatedFallbacksSection(
+  untranslatedFallbackKeys: { key: string; lang: string; value: string }[],
+  keyToFilesMap: KeyToFilesLookup
+): string {
+  if (untranslatedFallbackKeys.length === 0) {
+    return "## ✅ Untranslated Fallbacks\n\nNo untranslated fallback keys (matching default language values) detected."
+  }
+  return `## ⚠️ Untranslated Fallbacks (${untranslatedFallbackKeys.length})
+
+The following keys in non-default languages match the default language translation value exactly (indicating potential copy-paste placeholders):
+
+${untranslatedFallbackKeys
+  .sort((a, b) => a.key.localeCompare(b.key))
+  .map(
+    ({ key, lang, value }) =>
+      `- **\`${key}\`** [\`${lang.toUpperCase()}\`] (value matches default: \`"${value}"\`) ${
+        keyToFilesMap.has(key)
+          ? `(referenced in: ${keyToFilesMap
+              .get(key)
+              ?.map((f) => `\`${f}\``)
+              .join(", ")})`
+          : ""
+      }`
   )
   .join("\n")}
 `

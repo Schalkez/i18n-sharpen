@@ -100,6 +100,16 @@ export interface I18nSharpenConfig {
     ignore?: string[]
     attributes?: string[]
   }
+  /**
+   * Path (relative to localesDir) where metadata (like translation contexts) is saved.
+   * Defaults to "metadata.json". Set to "" to disable metadata writing.
+   */
+  metadataFile?: string
+  /**
+   * If true, matching default language fallback values in non-default languages
+   * will fail validation. Defaults to false.
+   */
+  strictFallbacks?: boolean
 }
 
 /**
@@ -155,6 +165,7 @@ export interface ValidationResults {
   missingKeys: string[]
   missingDynamicKeys: StructuredConcatFinding[]
   activePlaceholderKeys: { key: string; lang: string }[]
+  untranslatedFallbackKeys?: { key: string; lang: string; value: string }[]
   unusedKeys: string[]
   unusedPlaceholderKeys: { key: string; lang: string }[]
   /**

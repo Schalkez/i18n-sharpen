@@ -126,7 +126,10 @@ export function loadConfig(
         "aria-label"
       ],
       ignore: fileConfig.hardcoded?.ignore
-    }
+    },
+    metadataFile: fileConfig.metadataFile ?? DEFAULT_CONFIG.metadataFile,
+    strictFallbacks:
+      fileConfig.strictFallbacks ?? DEFAULT_CONFIG.strictFallbacks
   }
 
   // Zod validation

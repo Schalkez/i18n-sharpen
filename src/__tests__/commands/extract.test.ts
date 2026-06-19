@@ -312,4 +312,46 @@ describe("extract: integration", () => {
     expect(idxA).toBeLessThan(idxM)
     expect(idxM).toBeLessThan(idxZ)
   })
+
+  it("should extract context comments and write metadata.json", async () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        // @context: Greeting to the user
+        t('greeting')
+
+        t('farewell') // @i18n-context: Say goodbye
+      `,
+      "locales/en.json": JSON.stringify({})
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      metadataFile: "metadata.json"
+    }
+
+    await extract(config, tempDir)
+
+    const metadataPath = path.join(tempDir, "locales/metadata.json")
+    expect(fs.existsSync(metadataPath)).toBe(true)
+
+    const meta = JSON.parse(fs.readFileSync(metadataPath, "utf8")) as Record<
+      string,
+      { context: string; file: string; line: number }
+    >
+    expect(meta.greeting).toEqual({
+      context: "Greeting to the user",
+      file: "src/index.ts",
+      line: 3
+    })
+    expect(meta.farewell).toEqual({
+      context: "Say goodbye",
+      file: "src/index.ts",
+      line: 5
+    })
+  })
 })

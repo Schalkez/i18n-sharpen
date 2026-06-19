@@ -136,6 +136,52 @@ export function findPlaceholderKeys(
 }
 
 /**
+ * Find translation keys in non-default languages that match the default language value
+ * (indicating a copy-paste fallback).
+ */
+export function findUntranslatedFallbacks(
+  config: Pick<
+    I18nSharpenConfig,
+    "defaultLanguage" | "supportedLanguages" | "pluralSuffixes" | "ignoreKeys"
+  >,
+  usedKeys: Set<string>,
+  localesFlat: Record<string, Record<string, string>>
+): { key: string; lang: string; value: string }[] {
+  const suffixes = config.pluralSuffixes ?? []
+  const ignoreKeys = config.ignoreKeys ?? []
+  const fallbacks: { key: string; lang: string; value: string }[] = []
+
+  const defaultLang = config.defaultLanguage
+  const defaultFlatMap = localesFlat[defaultLang] ?? {}
+
+  for (const lang of config.supportedLanguages) {
+    if (lang === defaultLang) continue
+    const flatMap = localesFlat[lang] ?? {}
+    for (const key in flatMap) {
+      if (!isKeyUsed(key, usedKeys, ignoreKeys, suffixes)) {
+        continue
+      }
+
+      const defaultVal = defaultFlatMap[key]
+      const targetVal = flatMap[key]
+
+      if (
+        key in defaultFlatMap &&
+        targetVal === defaultVal &&
+        defaultVal !== ""
+      ) {
+        // Exclude keys whose value is equal to key (already caught by findPlaceholderKeys)
+        if (targetVal !== key) {
+          fallbacks.push({ key, lang, value: targetVal })
+        }
+      }
+    }
+  }
+
+  return fallbacks
+}
+
+/**
  * Re-export getBaseKey with a bound suffixes array for use by output/report modules.
  */
 export { getBaseKey }

@@ -5,6 +5,13 @@ All notable changes to `i18n-sharpen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-06-19
+
+### Added
+- **Interactive CLI Translate Command**: Added `translate` command to interactively input missing/fallback translations in the terminal, showing context-aware comment hints. Saves progress on exit or SIGINT.
+- **Context-Aware Translation**: Added extraction of context comments (`// @i18n-context:` or `// @context:`) from JS/TS files to write into `locales/metadata.json`.
+- **Detect Untranslated Placeholders & Fallbacks**: Quality validation check for keys with values matching either the key path itself (placeholder) or default fallback values.
+
 ## [0.6.0] - 2026-06-12
 
 ### Added

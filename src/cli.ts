@@ -5,6 +5,7 @@ import { fileURLToPath } from "url"
 import { Command } from "commander"
 import { extract } from "./commands/extract"
 import { prune } from "./commands/prune"
+import { translate } from "./commands/translate"
 import { validate } from "./commands/validate"
 import { loadConfig } from "./config/index"
 import { I18nSharpenError } from "./core/errors"
@@ -145,6 +146,25 @@ program
         config.sortKeys = cmdOpts.sort
       }
       await extract(config, cwd)
+      process.exitCode = 0
+    } catch (error) {
+      reportError(error)
+      process.exitCode = fatalExitCode(error)
+    }
+  })
+
+program
+  .command("translate")
+  .description(
+    "Interactively translate missing or placeholder translation keys in locales."
+  )
+  .action(async () => {
+    const opts = program.opts()
+    const cwd = typeof opts.cwd === "string" ? opts.cwd : undefined
+    const configPath = typeof opts.config === "string" ? opts.config : undefined
+    try {
+      const config = loadConfig(cwd, configPath)
+      await translate(config, cwd)
       process.exitCode = 0
     } catch (error) {
       reportError(error)

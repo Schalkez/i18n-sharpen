@@ -7,7 +7,7 @@
  */
 export interface ParsedFileResult {
   /** Static translation keys: t("key"), i18nKey="key". Offsets are document-absolute. */
-  usedKeys: { key: string; offset: number }[]
+  usedKeys: { key: string; offset: number; context?: string }[]
   /** Dynamic/non-static calls: t(variable), t("prefix." + x). Offsets are document-absolute. */
   dynamicCalls: {
     expression: string

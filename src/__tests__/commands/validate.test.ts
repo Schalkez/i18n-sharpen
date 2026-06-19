@@ -524,5 +524,80 @@ describe("validate: integration", () => {
       expect(report).toContain("Goodbye")
       expect(report).toContain("Template String")
     })
+
+    it("should detect untranslated fallback keys matching the default language value", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `
+          t('title')
+          t('desc')
+        `,
+        "locales/en.json": JSON.stringify({
+          title: "Welcome",
+          desc: "Description"
+        }),
+        "locales/ja.json": JSON.stringify({
+          title: "Welcome",
+          desc: "説明"
+        })
+      })
+
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en", "ja"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"],
+        strictFallbacks: true
+      }
+
+      const results = await validate(config, tempDir)
+      expect(results.untranslatedFallbackKeys).toBeDefined()
+      const fallbacks = results.untranslatedFallbackKeys ?? []
+      expect(fallbacks).toHaveLength(1)
+      expect(fallbacks[0].key).toBe("title")
+      expect(fallbacks[0].lang).toBe("ja")
+      expect(fallbacks[0].value).toBe("Welcome")
+
+      await validate({ ...config, outputReport: "report.md" }, tempDir)
+      const reportContent = fs.readFileSync(
+        path.join(tempDir, "report.md"),
+        "utf8"
+      )
+      expect(reportContent).toContain("## ⚠️ Untranslated Fallbacks")
+      expect(reportContent).toContain('value matches default: `"Welcome"`')
+    })
+
+    it("should not detect empty-string default values as fallbacks", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `
+          t('title')
+          t('desc')
+        `,
+        "locales/en.json": JSON.stringify({
+          title: "",
+          desc: "Description"
+        }),
+        "locales/ja.json": JSON.stringify({
+          title: "",
+          desc: "説明"
+        })
+      })
+
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en", "ja"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"],
+        strictFallbacks: true
+      }
+
+      const results = await validate(config, tempDir)
+      expect(results.untranslatedFallbackKeys).toBeDefined()
+      const fallbacks = results.untranslatedFallbackKeys ?? []
+      expect(fallbacks).toHaveLength(0)
+    })
   })
 })

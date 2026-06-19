@@ -10,9 +10,15 @@ import {
   writeLocaleFile,
   writeLocaleFilesAtomic,
   loadNamespacedLocales,
-  sortLocaleObject
+  sortLocaleObject,
+  normalizeDisplayPath
 } from "@/core/locale-io"
-import { scanSourceFiles, detectUsedKeys } from "@/core/scanner"
+import {
+  scanSourceFiles,
+  detectUsedKeys,
+  computeLineOffsets,
+  offsetToLine
+} from "@/core/scanner"
 import type { I18nSharpenConfig } from "@/types"
 import { log } from "@/utils"
 import { warnLegacyDefaultNamespace } from "./_shared/migration-warnings"
@@ -37,7 +43,7 @@ export async function extract(
   const files = scanSourceFiles(config, cwd)
   const matchFunctions = config.matchFunctions ?? ["t", "getTranslation"]
   const matchAttributes = config.matchAttributes ?? ["i18nKey", "id"]
-  const { usedKeys, parseErrors } = await detectUsedKeys(
+  const { usedKeys, parsedResults, parseErrors } = await detectUsedKeys(
     files,
     matchFunctions,
     matchAttributes,
@@ -53,6 +59,60 @@ export async function extract(
   log.info(
     `Found ${pc.green(usedKeys.size)} unique translation keys referenced in code.`
   )
+
+  // Extract context comments
+  const metadata: Record<
+    string,
+    { context: string; file: string; line: number }
+  > = {}
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    const relativePath = normalizeDisplayPath(path.relative(cwd, file))
+    const parsed = parsedResults[i]
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!parsed) continue
+
+    const hasContext = parsed.usedKeys.some((uk) => uk.context)
+    if (!hasContext) continue
+
+    let rawContent = ""
+    try {
+      rawContent = fs.readFileSync(file, "utf8")
+    } catch {
+      rawContent = ""
+    }
+    const lineOffsets = computeLineOffsets(rawContent)
+
+    for (const uk of parsed.usedKeys) {
+      if (uk.context) {
+        const line = offsetToLine(lineOffsets, uk.offset)
+        metadata[uk.key] = {
+          context: uk.context,
+          file: relativePath,
+          line
+        }
+      }
+    }
+  }
+
+  // Write metadata to file
+  if (config.metadataFile && Object.keys(metadata).length > 0) {
+    const metadataPath = path.resolve(localesDirAbs, config.metadataFile)
+    try {
+      fs.writeFileSync(
+        metadataPath,
+        JSON.stringify(metadata, null, 2) + "\n",
+        "utf8"
+      )
+      log.info(
+        `💾 Metadata saved to: ${pc.cyan(normalizeDisplayPath(path.relative(cwd, metadataPath)))}`
+      )
+    } catch (error) {
+      log.warn(
+        `⚠️ Failed to write metadata file '${metadataPath}': ${(error as Error).message}`
+      )
+    }
+  }
 
   if (config.localesLayout === "namespaced") {
     extractNamespaced(config, localesDirAbs, usedKeys)

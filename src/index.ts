@@ -40,6 +40,11 @@ export { validate } from "./commands/validate"
 export { extract } from "./commands/extract"
 
 /**
+ * Interactively translate missing or placeholder keys via terminal.
+ */
+export { translate } from "./commands/translate"
+
+/**
  * Prune unused translation keys from locale files. Safe-by-default:
  * runs as a dry-run unless `--force` / `options.force` / `config.prune.force`
  * is set. Returns a {@link PruneResult} so programmatic callers can

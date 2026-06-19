@@ -15,11 +15,13 @@ export interface KeyToFilesLookup {
 export function printValidationResults(
   results: ValidationResults,
   keyToFilesMap: KeyToFilesLookup,
-  pluralSuffixes: string[]
+  pluralSuffixes: string[],
+  strictFallbacks = false
 ): void {
   const {
     missingKeys,
     activePlaceholderKeys,
+    untranslatedFallbackKeys = [],
     unusedKeys,
     unusedPlaceholderKeys,
     keysOnlyInLanguages
@@ -138,6 +140,31 @@ export function printValidationResults(
       })
   }
 
+  // 5.5. Untranslated fallback keys (warning or error)
+  if (untranslatedFallbackKeys.length > 0) {
+    const title = strictFallbacks
+      ? pc.red(
+          `❌ Untranslated Fallback Keys (${untranslatedFallbackKeys.length}):`
+        )
+      : pc.yellow(
+          `⚠️  Untranslated Fallback Keys (${untranslatedFallbackKeys.length}):`
+        )
+    log.info(`\n${pc.bold(title)}`)
+    log.info(
+      pc.yellow(
+        "  (These keys in non-default languages match the default language translation value)"
+      )
+    )
+    untranslatedFallbackKeys
+      .sort((a, b) => a.key.localeCompare(b.key))
+      .forEach(({ key, lang, value }) => {
+        const files = keyToFilesMap.get(key) ?? []
+        log.info(
+          `  - [${lang.toUpperCase()}] ${pc.yellow(key)} (value matches default value: "${pc.dim(value)}") ${files.length > 0 ? `(referenced in: ${files.join(", ")})` : ""}`
+        )
+      })
+  }
+
   // Quality metrics summary
   log.header("QUALITY METRICS SUMMARY")
   log.info(
@@ -150,6 +177,9 @@ export function printValidationResults(
   log.info(`- Actually Used in Code: ${pc.bold(results.usedDefinedKeysCount)}`)
   log.info(`- Missing/Undefined: ${pc.bold(missingKeys.length)}`)
   log.info(`- Unused/Stale: ${pc.bold(unusedKeys.length)}`)
+  log.info(
+    `- Untranslated Fallbacks: ${pc.bold(untranslatedFallbackKeys.length)}`
+  )
 }
 
 /**

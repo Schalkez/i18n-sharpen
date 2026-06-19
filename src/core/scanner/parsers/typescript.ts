@@ -149,6 +149,27 @@ export function parseTypeScriptFile(
     return { classification: "fully-dynamic" }
   }
 
+  function extractContextComment(node: TS.Node): string | undefined {
+    const sourceText = sourceFile.text
+    const trailingRanges = ts.getTrailingCommentRanges(sourceText, node.end)
+    if (trailingRanges) {
+      for (const range of trailingRanges) {
+        const text = sourceText.substring(range.pos, range.end)
+        const match = /@(?:i18n-)?context:\s*(.*)/.exec(text)
+        if (match) return match[1].trim()
+      }
+    }
+    const leadingRanges = ts.getLeadingCommentRanges(sourceText, node.pos)
+    if (leadingRanges) {
+      for (const range of leadingRanges) {
+        const text = sourceText.substring(range.pos, range.end)
+        const match = /@(?:i18n-)?context:\s*(.*)/.exec(text)
+        if (match) return match[1].trim()
+      }
+    }
+    return undefined
+  }
+
   function visit(node: Parameters<typeof ts.isJsxElement>[0]): void {
     // SKIP_TAGS: do not recurse into a skip-tag subtree (D-10).
     if (ts.isJsxElement(node)) {
@@ -220,7 +241,8 @@ export function parseTypeScriptFile(
           if (!fullKey.endsWith(".")) {
             usedKeys.push({
               key: fullKey,
-              offset: node.getStart(sourceFile)
+              offset: node.getStart(sourceFile),
+              context: extractContextComment(node)
             })
           }
         } else {
@@ -264,7 +286,11 @@ export function parseTypeScriptFile(
       if (strValue !== null && strOffset !== null) {
         // Attribute key extraction (PARSE-03)
         if (matchAttributes.includes(attrName) && !strValue.endsWith(".")) {
-          usedKeys.push({ key: strValue, offset: strOffset }) // D-09: '.'-terminated excluded
+          usedKeys.push({
+            key: strValue,
+            offset: strOffset,
+            context: extractContextComment(node)
+          }) // D-09: '.'-terminated excluded
         }
         // Hardcoded attribute candidate (PARSE-05)
         if (hardcodedAttrsSet.has(attrName)) {

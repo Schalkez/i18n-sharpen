@@ -20,7 +20,14 @@ describe("public API (src/index.ts)", () => {
     // Type-only exports are erased at runtime, so the surface is exactly
     // the five runtime symbols above.
     expect(Object.keys(api).sort()).toEqual(
-      ["I18nSharpenError", "extract", "loadConfig", "prune", "validate"].sort()
+      [
+        "I18nSharpenError",
+        "extract",
+        "loadConfig",
+        "prune",
+        "translate",
+        "validate"
+      ].sort()
     )
   })
 
