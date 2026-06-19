@@ -143,9 +143,19 @@ function extractFlat(
   const writePlans: Plan[] = []
   const suffixes = config.pluralSuffixes ?? []
 
+  let defaultFlatJson: Record<string, unknown> = {}
+  const defaultLangPath = findLocaleFile(localesDirAbs, config.defaultLanguage)
+  if (defaultLangPath) {
+    try {
+      defaultFlatJson = flattenObject(readLocaleFile(defaultLangPath))
+    } catch {
+      // ignore
+    }
+  }
+
   for (const lang of config.supportedLanguages) {
     let langPath = findLocaleFile(localesDirAbs, lang)
-    let flatJson: Record<string, string> = {}
+    let flatJson: Record<string, unknown> = {}
 
     if (!langPath) {
       langPath = path.join(localesDirAbs, `${lang}.json`)
@@ -181,7 +191,17 @@ function extractFlat(
     if (missingKeys.length > 0) {
       missingKeys.sort()
       for (const key of missingKeys) {
-        flatJson[key] = key
+        let stubVal: unknown = key
+        const placeholderOpt = config.stubPlaceholder ?? "key"
+        if (placeholderOpt === "default" && lang !== config.defaultLanguage) {
+          stubVal =
+            defaultFlatJson[key] !== undefined ? defaultFlatJson[key] : key
+        } else if (placeholderOpt === "key" || placeholderOpt === "default") {
+          stubVal = key
+        } else {
+          stubVal = placeholderOpt
+        }
+        flatJson[key] = stubVal
       }
       const nestedJson = unflattenObject(flatJson)
       const sortedNestedJson = sortLocaleObject(
@@ -316,7 +336,7 @@ function extractNamespaced(
 
   for (const plan of writePlans) {
     const langDir = path.dirname(plan.filePath)
-    let existingFlat: Record<string, string> = {}
+    let existingFlat: Record<string, unknown> = {}
 
     if (fs.existsSync(plan.filePath)) {
       try {
@@ -333,7 +353,22 @@ function extractNamespaced(
     }
 
     for (const keyPath of plan.missingKeys) {
-      existingFlat[keyPath] = keyPath
+      let stubVal: unknown = keyPath
+      const placeholderOpt = config.stubPlaceholder ?? "key"
+      if (
+        placeholderOpt === "default" &&
+        plan.lang !== config.defaultLanguage
+      ) {
+        const fullKey = `${plan.ns}:${keyPath}`
+        const defaultFlat = localesFlat[config.defaultLanguage] ?? {}
+        stubVal =
+          defaultFlat[fullKey] !== undefined ? defaultFlat[fullKey] : keyPath
+      } else if (placeholderOpt === "key" || placeholderOpt === "default") {
+        stubVal = keyPath
+      } else {
+        stubVal = placeholderOpt
+      }
+      existingFlat[keyPath] = stubVal
     }
 
     const nestedJson = unflattenObject(existingFlat)

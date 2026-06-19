@@ -64,7 +64,7 @@ export async function translate(
 
   // 3. Load all translations
   const isNamespaced = config.localesLayout === "namespaced"
-  let localesFlat: Record<string, Record<string, string>> = {}
+  let localesFlat: Record<string, Record<string, unknown>> = {}
   let localePaths: Record<string, string | null> = {}
   let localeNamespaces: Record<string, Record<string, string>> = {}
 
@@ -306,7 +306,7 @@ export async function translate(
 function saveTranslations(
   config: I18nSharpenConfig,
   localesDirAbs: string,
-  localesFlat: Record<string, Record<string, string>>,
+  localesFlat: Record<string, Record<string, unknown>>,
   localePaths: Record<string, string | null>,
   localeNamespaces: Record<string, Record<string, string>>,
   usedKeys: Set<string>
@@ -325,7 +325,7 @@ function saveTranslations(
       const nsFilePaths = localeNamespaces[lang] ?? {}
 
       // Group keys in this language flatMap by namespace
-      const keysByNs: Record<string, Record<string, string> | undefined> = {}
+      const keysByNs: Record<string, Record<string, unknown> | undefined> = {}
       for (const [flatKey, value] of Object.entries(flatMap)) {
         const colonIdx = flatKey.indexOf(":")
         const ns =

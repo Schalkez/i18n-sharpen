@@ -24,8 +24,8 @@ export const FORBIDDEN_KEY_SEGMENTS = new Set([
 export function flattenObject(
   obj: Record<string, unknown>,
   prefix = ""
-): Record<string, string> {
-  const map: Record<string, string> = {}
+): Record<string, unknown> {
+  const map: Record<string, unknown> = {}
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       if (FORBIDDEN_KEY_SEGMENTS.has(key)) continue
@@ -46,7 +46,7 @@ export function flattenObject(
           flattenObject(value as Record<string, unknown>, newKey)
         )
       } else {
-        map[newKey] = String(value)
+        map[newKey] = value
       }
     }
   }

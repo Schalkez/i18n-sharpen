@@ -354,12 +354,12 @@ export function loadAllLocales(
   }
 ): {
   locales: Record<string, Record<string, unknown>>
-  localesFlat: Record<string, Record<string, string>>
+  localesFlat: Record<string, Record<string, unknown>>
   localeKeySets: Record<string, Set<string>>
   localePaths: Record<string, string | null>
 } {
   const locales: Record<string, Record<string, unknown>> = {}
-  const localesFlat: Record<string, Record<string, string>> = {}
+  const localesFlat: Record<string, Record<string, unknown>> = {}
   const localeKeySets: Record<string, Set<string>> = {}
   const localePaths: Record<string, string | null> = {}
 
@@ -404,12 +404,12 @@ export function loadNamespacedLocales(
   }
 ): {
   locales: Record<string, Record<string, unknown>>
-  localesFlat: Record<string, Record<string, string>>
+  localesFlat: Record<string, Record<string, unknown>>
   localeKeySets: Record<string, Set<string>>
   localeNamespaces: Record<string, Record<string, string>>
 } {
   const locales: Record<string, Record<string, unknown>> = {}
-  const localesFlat: Record<string, Record<string, string>> = {}
+  const localesFlat: Record<string, Record<string, unknown>> = {}
   const localeKeySets: Record<string, Set<string>> = {}
   const localeNamespaces: Record<string, Record<string, string>> = {}
 
@@ -426,7 +426,7 @@ export function loadNamespacedLocales(
 
     const entries = fs.readdirSync(langDir, { withFileTypes: true })
     const merged: Record<string, unknown> = {}
-    const mergedFlat: Record<string, string> = {}
+    const mergedFlat: Record<string, unknown> = {}
 
     for (const entry of entries) {
       if (!entry.isFile()) continue

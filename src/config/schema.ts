@@ -41,7 +41,9 @@ export const DEFAULT_CONFIG = {
   localesLayout: "flat",
   autoIgnoreDynamicPrefixes: true,
   metadataFile: "metadata.json",
-  strictFallbacks: false
+  strictFallbacks: false,
+  ignoreFallbackKeys: [],
+  stubPlaceholder: "key"
 } satisfies Partial<I18nSharpenConfig>
 
 // Restrict matchFunctions / matchAttributes to plain identifier-like tokens
@@ -111,5 +113,7 @@ export const I18nSharpenConfigSchema = z.object({
     })
     .optional(),
   metadataFile: z.string().optional(),
-  strictFallbacks: z.boolean().optional()
+  strictFallbacks: z.boolean().optional(),
+  ignoreFallbackKeys: z.array(z.string()).optional(),
+  stubPlaceholder: z.string().optional()
 })

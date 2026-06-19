@@ -175,7 +175,7 @@ export function pruneFlat(
   interactiveSummary?: { kept: number; removed: number }
 ): PruneResult {
   const allLocaleKeys = new Set<string>()
-  const localesFlat: Record<string, Record<string, string>> = {}
+  const localesFlat: Record<string, Record<string, unknown>> = {}
   const localeFilePaths: Record<string, string> = {}
 
   for (const lang of config.supportedLanguages) {
@@ -234,7 +234,7 @@ export function pruneFlat(
     if (!langPath) continue
 
     const flatJson = localesFlat[lang]
-    const newFlatJson: Record<string, string> = {}
+    const newFlatJson: Record<string, unknown> = {}
     const prunedKeys: string[] = []
 
     for (const key in flatJson) {
@@ -333,7 +333,7 @@ export function pruneNamespaced(
     const nsFilePaths = localeNamespaces[lang] ?? {}
     const langFlat = localesFlat[lang] ?? {}
 
-    const keysByNs = new Map<string, Record<string, string>>()
+    const keysByNs = new Map<string, Record<string, unknown>>()
     for (const [namespacedKey, value] of Object.entries(langFlat)) {
       const colonIdx = namespacedKey.indexOf(":")
       const ns =
@@ -354,7 +354,7 @@ export function pruneNamespaced(
       const filePath = nsFilePaths[ns]
       if (!filePath) continue
 
-      const newFlatJson: Record<string, string> = {}
+      const newFlatJson: Record<string, unknown> = {}
       const prunedKeys: string[] = []
 
       for (const keyPath of Object.keys(nsFlatKeys)) {
@@ -447,7 +447,7 @@ export function collectFlatCandidates(
   fileContents: string[]
 ): string[] {
   const allLocaleKeys = new Set<string>()
-  const localesFlat: Record<string, Record<string, string>> = {}
+  const localesFlat: Record<string, Record<string, unknown>> = {}
   const localeFilePaths: Record<string, string> = {}
 
   for (const lang of config.supportedLanguages) {

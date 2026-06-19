@@ -129,7 +129,11 @@ export function loadConfig(
     },
     metadataFile: fileConfig.metadataFile ?? DEFAULT_CONFIG.metadataFile,
     strictFallbacks:
-      fileConfig.strictFallbacks ?? DEFAULT_CONFIG.strictFallbacks
+      fileConfig.strictFallbacks ?? DEFAULT_CONFIG.strictFallbacks,
+    ignoreFallbackKeys:
+      fileConfig.ignoreFallbackKeys ?? DEFAULT_CONFIG.ignoreFallbackKeys,
+    stubPlaceholder:
+      fileConfig.stubPlaceholder ?? DEFAULT_CONFIG.stubPlaceholder
   }
 
   // Zod validation

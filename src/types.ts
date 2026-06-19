@@ -110,6 +110,15 @@ export interface I18nSharpenConfig {
    * will fail validation. Defaults to false.
    */
   strictFallbacks?: boolean
+  /**
+   * Wildcard glob patterns of keys to exclude from untranslated fallback checks.
+   */
+  ignoreFallbackKeys?: string[]
+  /**
+   * Initial value for extracted translation keys.
+   * Can be "key", "default", or a custom stub string.
+   */
+  stubPlaceholder?: string
 }
 
 /**
@@ -150,7 +159,7 @@ export interface PruneResult {
   totalPruned: number
 }
 
-export type FlatTranslationsMap = Record<string, string>
+export type FlatTranslationsMap = Record<string, unknown>
 
 export interface LocaleAlignmentMismatch {
   /** Source language that has the keys */

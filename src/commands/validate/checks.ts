@@ -67,7 +67,7 @@ export function findAlignmentMismatches(
   config: Pick<I18nSharpenConfig, "defaultLanguage" | "supportedLanguages">,
   defaultKeys: string[],
   defaultKeySet: Set<string>,
-  localesFlat: Record<string, Record<string, string>>,
+  localesFlat: Record<string, Record<string, unknown>>,
   localeKeySets: Record<string, Set<string>>
 ): LocaleAlignmentMismatch[] {
   const mismatches: LocaleAlignmentMismatch[] = []
@@ -110,7 +110,7 @@ export function findPlaceholderKeys(
     "supportedLanguages" | "pluralSuffixes" | "ignoreKeys"
   >,
   usedKeys: Set<string>,
-  localesFlat: Record<string, Record<string, string>>
+  localesFlat: Record<string, Record<string, unknown>>
 ): {
   activePlaceholderKeys: { key: string; lang: string }[]
   unusedPlaceholderKeys: { key: string; lang: string }[]
@@ -142,13 +142,18 @@ export function findPlaceholderKeys(
 export function findUntranslatedFallbacks(
   config: Pick<
     I18nSharpenConfig,
-    "defaultLanguage" | "supportedLanguages" | "pluralSuffixes" | "ignoreKeys"
+    | "defaultLanguage"
+    | "supportedLanguages"
+    | "pluralSuffixes"
+    | "ignoreKeys"
+    | "ignoreFallbackKeys"
   >,
   usedKeys: Set<string>,
-  localesFlat: Record<string, Record<string, string>>
+  localesFlat: Record<string, Record<string, unknown>>
 ): { key: string; lang: string; value: string }[] {
   const suffixes = config.pluralSuffixes ?? []
   const ignoreKeys = config.ignoreKeys ?? []
+  const ignoreFallbackKeys = config.ignoreFallbackKeys ?? []
   const fallbacks: { key: string; lang: string; value: string }[] = []
 
   const defaultLang = config.defaultLanguage
@@ -161,9 +166,16 @@ export function findUntranslatedFallbacks(
       if (!isKeyUsed(key, usedKeys, ignoreKeys, suffixes)) {
         continue
       }
+      if (ignoreFallbackKeys.some((pattern) => matchWildcard(pattern, key))) {
+        continue
+      }
 
       const defaultVal = defaultFlatMap[key]
       const targetVal = flatMap[key]
+
+      if (typeof defaultVal !== "string" || typeof targetVal !== "string") {
+        continue
+      }
 
       if (
         key in defaultFlatMap &&

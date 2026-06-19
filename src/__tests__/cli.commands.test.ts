@@ -39,7 +39,10 @@ describe("cli: command actions", () => {
 
   /** Read a locale file back as a flat { "a.b": value } map. */
   function readFlatLocale(rel: string): Record<string, string> {
-    return flattenObject(readLocaleFile(path.join(tempDir, rel)))
+    return flattenObject(readLocaleFile(path.join(tempDir, rel))) as Record<
+      string,
+      string
+    >
   }
 
   /** Run the CLI with the given args, returning the resulting exit code. */

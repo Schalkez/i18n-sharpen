@@ -599,5 +599,39 @@ describe("validate: integration", () => {
       const fallbacks = results.untranslatedFallbackKeys ?? []
       expect(fallbacks).toHaveLength(0)
     })
+
+    it("should respect ignoreFallbackKeys to exclude matches from fallback check", async () => {
+      createMockProject(tempDir, {
+        "src/index.ts": `
+          t('brand')
+          t('title')
+        `,
+        "locales/en.json": JSON.stringify({
+          brand: "SplitWay",
+          title: "Welcome"
+        }),
+        "locales/ja.json": JSON.stringify({
+          brand: "SplitWay",
+          title: "Welcome"
+        })
+      })
+
+      const config = {
+        scanDirs: ["src"],
+        localesDir: "locales",
+        defaultLanguage: "en",
+        supportedLanguages: ["en", "ja"],
+        fileExtensions: [".ts"],
+        matchFunctions: ["t"],
+        strictFallbacks: true,
+        ignoreFallbackKeys: ["brand"]
+      }
+
+      const results = await validate(config, tempDir)
+      expect(results.untranslatedFallbackKeys).toBeDefined()
+      const fallbacks = results.untranslatedFallbackKeys ?? []
+      expect(fallbacks).toHaveLength(1)
+      expect(fallbacks[0].key).toBe("title")
+    })
   })
 })

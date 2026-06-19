@@ -354,4 +354,72 @@ describe("extract: integration", () => {
       line: 5
     })
   })
+
+  it("should support customizable stubPlaceholder config option in extract", async () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        t('missing_key')
+      `,
+      "locales/en.json": JSON.stringify({
+        existing: "value"
+      }),
+      "locales/ja.json": JSON.stringify({
+        existing: "値"
+      })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en", "ja"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      stubPlaceholder: "__TODO__"
+    }
+
+    await extract(config, tempDir)
+
+    const en = JSON.parse(
+      fs.readFileSync(path.join(tempDir, "locales/en.json"), "utf8")
+    ) as Record<string, string>
+    const ja = JSON.parse(
+      fs.readFileSync(path.join(tempDir, "locales/ja.json"), "utf8")
+    ) as Record<string, string>
+
+    expect(en.missing_key).toBe("__TODO__")
+    expect(ja.missing_key).toBe("__TODO__")
+  })
+
+  it("should support stubPlaceholder: 'default' to copy default language values in extract", async () => {
+    createMockProject(tempDir, {
+      "src/index.ts": `
+        t('missing_key')
+      `,
+      "locales/en.json": JSON.stringify({
+        existing: "value",
+        missing_key: "English Value"
+      }),
+      "locales/ja.json": JSON.stringify({
+        existing: "値"
+      })
+    })
+
+    const config = {
+      scanDirs: ["src"],
+      localesDir: "locales",
+      defaultLanguage: "en",
+      supportedLanguages: ["en", "ja"],
+      fileExtensions: [".ts"],
+      matchFunctions: ["t"],
+      stubPlaceholder: "default"
+    }
+
+    await extract(config, tempDir)
+
+    const ja = JSON.parse(
+      fs.readFileSync(path.join(tempDir, "locales/ja.json"), "utf8")
+    ) as Record<string, string>
+    expect(ja.missing_key).toBe("English Value")
+  })
 })

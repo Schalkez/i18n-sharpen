@@ -52,6 +52,28 @@ describe("locale-io: nested helpers", () => {
     const nested = { a: { b: { c: "deep" } } }
     expect(buildNestedObject(flattenObject(nested))).toEqual(nested)
   })
+  it("flattenObject preserves arrays and complex values", () => {
+    const nested = {
+      section: {
+        title: "Terms",
+        items: [
+          { text: "Item 1", value: 1 },
+          { text: "Item 2", value: 2 }
+        ],
+        tags: ["a", "b"]
+      }
+    }
+    const flat = flattenObject(nested)
+    expect(flat).toEqual({
+      "section.title": "Terms",
+      "section.items": [
+        { text: "Item 1", value: 1 },
+        { text: "Item 2", value: 2 }
+      ],
+      "section.tags": ["a", "b"]
+    })
+    expect(buildNestedObject(flat)).toEqual(nested)
+  })
 })
 
 describe("locale-io: write/read roundtrip", () => {
