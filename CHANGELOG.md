@@ -5,6 +5,11 @@ All notable changes to `i18n-sharpen` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-06-19
+
+### Fixed
+- **Code Translation Coverage Calculation**: Fixed logic bug in `validate` where coverage exceeded 100.00% when using `ignoreKeys`. Normalized calculation to reflect the proportion of non-missing translation keys.
+
 ## [0.8.1] - 2026-06-19
 
 ### Documentation
