@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node '/Users/mac/Documents/Individuals/i18n/.codex/hooks/git-commit-reminder.mjs'"
+            "command": "node \"$CLAUDE_PROJECT_DIR/.codex/hooks/git-commit-reminder.mjs\""
           }
         ]
       }
